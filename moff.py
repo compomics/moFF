@@ -6,6 +6,7 @@ import sys
 import subprocess
 import shlex 
 import  logging
+import argparse
 from StringIO import StringIO
 
 ### input###
@@ -15,74 +16,67 @@ from StringIO import StringIO
 ###### output
 ##  list of intensities..+
 
-file_name=str(sys.argv[1])
-tol=str(sys.argv[2])
-h_rt_w = float(sys.argv[3])
-s_w= float(sys.argv[4])
-loc_raw =str(sys.argv[5])
-loc_output =str(sys.argv[6])
+parser = argparse.ArgumentParser(description='moFF input parameter')
 
 
-##output name
-## just for debug one file at time
-##print os.getcwd()
+parser.add_argument('--input', dest='name', action='store',
+                   help='specify input list of MS2 peptides ', required=True)
 
-## ncomment these two lines, when you run from the split
-#os.chdir(file_name.split('/')[0] + "/")
-#file_name= file_name.split('/')[1]
+parser.add_argument('--tol', dest='toll',action='store',type= float,
+                   help='specify the tollerance  parameter in ppm', required=True)
 
-first_file=False
-#nn =  file_name.split('.')[0]
-#count = file_name.split('.')[1]
+parser.add_argument('--rt_w', dest='rt_window', action='store',type= float, default=3, 
+                   help='specify rt window for xic (minute). Default value is 3 min', required=True)
 
+parser.add_argument('--rt_p', dest='rt_p_window', action='store',type= float, default=0.4,
+                   help='specify the time windows for the peak ( minute). Default value is 0.4 ', required=False)
 
-## 20080 series
-nn =  file_name.split('.')[0].split('_')[0 ] + '_' + file_name.split('.')[0].split('_')[1 ] + '_' + file_name.split('.')[0].split('_')[2] + '_' + file_name.split('.')[0].split('_')[3]
-count = file_name.split('.')[0].split('_')[4]
+parser.add_argument('--raw_repo', dest='raw', action='store',
+                   help='specify the raw file repository ', required=False)
 
+parser.add_argument('--output_folder', dest='loc_out', action='store', default='',
+                   help='specify the folder output', required=False)
 
-## mam series
-
-#if 'r3' in file_name.split('.')[0] :
-#	nn =  file_name.split('.')[0].split('_')[0 ] + '_' + file_name.split('.')[0].split('_')[1 ] + '_' + file_name.split('.')[0].split('_')[2] + '_' + file_name.split('.')[0].split('_')[3] +  '_'  + file_name.split('.')[0].split('_')[4 ]    + '_'   + file_name.split('.')[0].split('_')[5 ] 
-#	count = file_name.split('.')[0].split('_')[6]
-#else:
-#	nn =  file_name.split('.')[0].split('_')[0 ] + '_' + file_name.split('.')[0].split('_')[1 ] + '_' + file_name.split('.')[0].split('_')[2] + '_' + file_name.split('.')[0].split('_')[3] +  '_'  + file_name.split('.')[0].split('_')[4]
-#	count = file_name.split('.')[0].split('_')[5]
+args = parser.parse_args()
 
 
-## orbi series
-
-#if ('_01' in file_name.split('.')[0]) or  ('_02' in file_name.split('.')[0]) :
-#        nn =  file_name.split('.')[0].split('_')[0 ] + '_' + file_name.split('.')[0].split('_')[1 ] + '_' + file_name.split('.')[0].split('_')[2] + '_' + file_name.split('.')[0].split('_')[3] +  '_'  + file_name.split('.')[0].split('_')[4 ]    + '_'   + file_name.split('.')[0].split('_')[5 ] + '_'   + file_name.split('.')[0].split('_')[6 ] + '_'   + file_name.split('.')[0].split('_')[7 ]  + '_'   + file_name.split('.')[0].split('_')[8]
-#        count = file_name.split('.')[0].split('_')[9]
-#else:
-#        nn =  file_name.split('.')[0].split('_')[0 ] + '_' + file_name.split('.')[0].split('_')[1 ] + '_' + file_name.split('.')[0].split('_')[2] + '_' + file_name.split('.')[0].split('_')[3] +  '_'  + file_name.split('.')[0].split('_')[4] + '_'   + file_name.split('.')[0].split('_')[5 ] + '_'   + file_name.split('.')[0].split('_')[6] + '_'   + file_name.split('.')[0].split('_')[7]
-#        count = file_name.split('.')[0].split('_')[8]
 
 
-outputname=  loc_output  +  nn  + "_" + count  + "_result.txt"
-if  int (  count )==0:
-        print "First file"
-       	first_file=True
+
+file_name=  args.name
+tol= args.toll
+h_rt_w = args.rt_window
+s_w= args.rt_p_window
+loc_raw = args.raw
+loc_output = args.loc_out
 
 
-#+ "_" + file_name.split('.')[0].split('_')[4]   
 
-logging.basicConfig(filename= nn +  "_" + count +   '__moff.log',filemode='w',level=logging.INFO)
+name =  file_name.split('/')[1].split('.')[0] 
+
+if loc_output != '':
+	if  not (os.path.isdir(loc_output)):
+                #print "created output Dir ",output_dir
+                os.makedirs(loc_output )
+
+	outputname=  loc_output + '/'  +  name  +  "_moff_result.txt"
+	logging.basicConfig(filename= loc_output + '/' +  name +    '__moff.log',filemode='w',level=logging.INFO)
+else:	
+	
+	outputname = name  +  "_moff_result.txt"
+	logging.basicConfig(filename= name +  '__moff.log',filemode='w',level=logging.INFO)
+
+if loc_raw != None:
+        loc = loc_raw +  name+ '.RAW'
+else:
+        loc =   name + '.RAW'
+
+
+
 
 logging.info('moff Input file %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ',file_name,tol,h_rt_w,s_w)
 logging.info('Output_file in %s', outputname)
-
-
-#outputname=  loc_output  +  nn  + "_" + file_name.split('.')[0].split('_')[5] + "_result.txt"
-
-#print "OUTPUT:", outputname
-#irst_file=False
-#f  int (   file_name.split('.')[0].split('_')[5] )==0:
-#print "primo file"
-#first_file=True
-
+logging.info('RAW file location %s',loc)
 
 ##read data from file 
 data_ms2 = pd.read_csv(file_name,sep= "\t" ,header=0)
@@ -110,24 +104,12 @@ data_ms2["log_L_R"]= data_ms2['log_L_R'].astype('float64')
 data_ms2["log_int"]= data_ms2['log_int'].astype('float64')
 
 
-#parametri fixed abs path  
-## RAW per acluni file 
-## raw per altri
-file_raw =  nn +  ".RAW"
-#loc_file="/home/compomics/extra_space/2981/"
-###
-logging.info(file_raw)
-#print loc_raw
-##location to get file
-loc= loc_raw + file_raw
-#rint loc
+
 
 c=0
 for index_ms2, row in data_ms2.iterrows():
 	logging.info('line: %i',c)
-	# versione per il vecchio formato
 	mz_opt= "-mz="+str(row['mz'])
-	#mz_opt= "-mz="+str(row['mz'])
 	if row['rt']==-1:
 		logging.info('rt not found. Wrong matched peptide in the mbr step line: %i',c)
 		c+=1
@@ -137,7 +119,7 @@ for index_ms2, row in data_ms2.iterrows():
 	time_w= row['rt']/60
         ## original s_W values is 0.40
 	#=0.10 # time of refinement in minutes about 20 sec
-	args = shlex.split("./txic " + mz_opt + " -tol="+ tol + " -t " + str(time_w - h_rt_w) + " -t "+ str(time_w +h_rt_w) +" " + loc   )
+	args = shlex.split("./txic " + mz_opt + " -tol="+ str(tol) + " -t " + str(time_w - h_rt_w) + " -t "+ str(time_w +h_rt_w) +" " + loc   )
 	p= subprocess.Popen(args,stdout=subprocess.PIPE)
 	output, err = p.communicate()
 	#print p
@@ -162,8 +144,8 @@ for index_ms2, row in data_ms2.iterrows():
 				continue
 			val_max = data_xic.ix[pos_p,1].values 
 		else:
-			logging.info("LW_BOUND finestra per il max %4.4f", time_w - s_w )
-			logging.info("UP_BOUND finestra per il max %4.4f", time_w + s_w )
+			logging.info("LW_BOUND window  %4.4f", time_w - s_w )
+			logging.info("UP_BOUND windows %4.4f", time_w + s_w )
 			logging.info(data_xic[(data_xic['rt']> (time_w - (+0.60))) & ( data_xic['rt']< (time_w + (s_w+0.60)) )]   )
 			logging.info("WARNINGS: moff_rtWin_peak is not enough to detect the max peak line : %i", c )
 			logging.info( 'MZ: %4.4f RT: %4.4f Mass: %i',row['mz'] ,row['rt'],index_ms2 )
@@ -226,10 +208,5 @@ for index_ms2, row in data_ms2.iterrows():
 		data_ms2.ix[index_ms2, (index_offset +9 ) ]=  np.log2(  val_max  )
 
 		c+=1
-	##if c==4:
-	##  exit()
-##print result 
-if first_file:
-	data_ms2.to_csv(path_or_buf =outputname ,sep="\t",header=True,index=False )
-else:
-	data_ms2.to_csv(path_or_buf =outputname ,sep="\t",header=False,index=False )
+## save  result 
+data_ms2.to_csv(path_or_buf =outputname ,sep="\t",header=True,index=False )
