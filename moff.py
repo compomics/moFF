@@ -28,8 +28,12 @@ parser.add_argument('--tol', dest='toll',action='store',type= float,
 parser.add_argument('--rt_w', dest='rt_window', action='store',type= float, default=3, 
                    help='specify rt window for xic (minute). Default value is 3 min', required=True)
 
-parser.add_argument('--rt_p', dest='rt_p_window', action='store',type= float, default=0.4,
+parser.add_argument('--rt_p', dest='rt_p_window', action='store',type= float, default=0.1,
                    help='specify the time windows for the peak ( minute). Default value is 0.4 ', required=False)
+
+parser.add_argument('--rt_p_match', dest='rt_p_window_match', action='store',type= float, default=0.4,
+                   help='specify the time windows for the matched peptide peak ( minute). Default value is 0.4 ', required=False)
+
 
 parser.add_argument('--raw_repo', dest='raw', action='store',
                    help='specify the raw file repository ', required=False)
@@ -47,10 +51,11 @@ file_name=  args.name
 tol= args.toll
 h_rt_w = args.rt_window
 s_w= args.rt_p_window
+s_w_match= args.rt_p_window_match
 loc_raw = args.raw
 loc_output = args.loc_out
-
-
+# flag_for matching
+mbr_flag=0
 
 name =  file_name.split('/')[1].split('.')[0] 
 
@@ -104,12 +109,15 @@ data_ms2["log_L_R"]= data_ms2['log_L_R'].astype('float64')
 data_ms2["log_int"]= data_ms2['log_int'].astype('float64')
 
 
-
-
+##set mbr_flag
+if 'matched' in data_ms2.columns :
+	mbr_flag=1
 c=0
 for index_ms2, row in data_ms2.iterrows():
 	logging.info('line: %i',c)
 	mz_opt= "-mz="+str(row['mz'])
+	if mbr_flag==1:
+		s_w = s_w_match
 	if row['rt']==-1:
 		logging.info('rt not found. Wrong matched peptide in the mbr step line: %i',c)
 		c+=1
