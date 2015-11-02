@@ -22,17 +22,17 @@ from StringIO import StringIO
 
 
 
-def run_apex( args  )
+def run_apex( file_name, tol, h_rt_w , s_w, s_w_match, loc_raw,loc_output  ):
 		
-	file_name=  args.name
-	tol= args.toll
-	h_rt_w = args.rt_window
-	s_w= args.rt_p_window
-	s_w_match= args.rt_p_window_match
-	loc_raw = args.raw
-	loc_output = args.loc_out
+	#file_name=  args.name
+	#tol= args.toll
+	#h_rt_w = args.rt_window
+	#s_w= args.rt_p_window
+	#s_w_match= args.rt_p_window_match
+	#loc_raw = args.raw
+	#loc_output = args.loc_out
 	# flag_for matching
-	mbr_flag=0
+	#mbr_flag=0
 
 	name =  file_name.split('/')[1].split('.')[0]
 
@@ -196,29 +196,35 @@ def run_apex( args  )
 
 
 
-parser = argparse.ArgumentParser(description='moFF input parameter')
-
-
-parser.add_argument('--input', dest='name', action='store',help='specify input list of MS2 peptides ', required=True)
-
-parser.add_argument('--tol', dest='toll',action='store',type= float,help='specify the tollerance  parameter in ppm', required=True)
-
-parser.add_argument('--rt_w', dest='rt_window', action='store',type= float, default=3,help='specify rt window for xic (minute). Default value is 3 min', required=True)
-
-parser.add_argument('--rt_p', dest='rt_p_window', action='store',type= float, default=0.1,help='specify the time windows for the peak ( minute). Default value is 0.1 ', required=False)
-
-parser.add_argument('--rt_p_match', dest='rt_p_window_match', action='store',type= float, default=0.4,help='specify the time windows for the matched peptide peak ( minute). Default value is 0.4 ', required=False)
-
-parser.add_argument('--raw_repo', dest='raw', action='store',help='specify the raw file repository ', required=True)
-
-parser.add_argument('--output_folder', dest='loc_out', action='store', default='',help='specify the folder output', required=False)
-
-args = parser.parse_args()
-
-
 
 
 
 if __name__ == '__main__':
-        run_apex(args)
+	parser = argparse.ArgumentParser(description='moFF input parameter')
+
+
+	parser.add_argument('--input', dest='name', action='store',help='specify input list of MS2 peptides ', required=True)
+
+	parser.add_argument('--tol', dest='toll',action='store',type= float,help='specify the tollerance  parameter in ppm', required=True)
+
+	parser.add_argument('--rt_w', dest='rt_window', action='store',type= float, default=3,help='specify rt window for xic (minute). Default value is 3 min', required=True)
+
+	parser.add_argument('--rt_p', dest='rt_p_window', action='store',type= float, default=0.1,help='specify the time windows for the peak ( minute). Default value is 0.1 ', required=False)
+
+	parser.add_argument('--rt_p_match', dest='rt_p_window_match', action='store',type= float, default=0.4,help='specify the time windows for the matched peptide peak ( minute). Default value is 0.4 ', required=False)
+
+	parser.add_argument('--raw_repo', dest='raw', action='store',help='specify the raw file repository ', required=True)
+
+	parser.add_argument('--output_folder', dest='loc_out', action='store', default='',help='specify the folder output', required=False)
+
+	args = parser.parse_args()
+	file_name=  args.name
+        tol= args.toll
+        h_rt_w = args.rt_window
+        s_w= args.rt_p_window
+        s_w_match= args.rt_p_window_match
+        loc_raw = args.raw
+        loc_output = args.loc_out
+
+        run_apex(file_name, tol, h_rt_w , s_w, s-w_match, loc_raw,loc_output )
 
