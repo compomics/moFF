@@ -28,9 +28,9 @@ def MahalanobisDist(x, y):
         md.append(np.sqrt(np.dot(np.dot(np.transpose(diff_xy[i]),inv_covariance_xy),diff_xy[i])))
     return md
 # x in dependent variable and Y is independar variable
-def MD_removeOutliers(x, y):
+def MD_removeOutliers(x, y, width):
     MD = MahalanobisDist(x, y)
-    threshold = np.mean(MD) * args.w_filt  # adjust 1.5 accordingly
+    threshold = np.mean(MD) * width  # adjust 1.5 accordingly
     nx, ny, outliers = [], [], []
     for i in range(len(MD)):
         if MD[i] <= threshold:
@@ -40,7 +40,7 @@ def MD_removeOutliers(x, y):
             outliers.append(i) # position of removed pair
     return (np.array(nx), np.array(ny), np.array(outliers))
 
-def combine_model( x,model,err):
+def combine_model( x,model,err,weight_flag):
         x =  x.values
         tot_err = np.sum( np.array(err) [ np.where(~np.isnan(x))])
 
@@ -48,13 +48,13 @@ def combine_model( x,model,err):
         app_sum_2=0
         for ii in range(0,len(x)):
                 if ~  np.isnan(x[ii]):
-                        if int(args.w_comb)==0:
+                        if int(weight_flag)==0:
                                 app_sum = app_sum   +  ( model[ii].predict(x[ii])[0][0] )
                         else :
                                 app_sum_2 = app_sum_2   +  ( model[ii].predict(x[ii])[0][0] *  ( float(err[ii]) / float(tot_err) ) )
 
         #" output weighted mean
-        if int(args.w_comb) == 1 :
+        if int(weight_flag) == 1 :
                 return  float(app_sum_2)
         else :
         # output not weight
@@ -115,7 +115,7 @@ def run_mbr( args):
 
 	## set a list of filed mandatory 
 	#['matched','peptide','mass','mz','charge','prot','rt']
-
+        print 'inside mbr :::',args
 
 	exp_set=exp_subset
 	aa=range(0,len(exp_t))
@@ -162,7 +162,7 @@ def run_mbr( args):
 		    # filtering outlier option
 		    else:
 				if int(args.out_flag)  == 1:
-					filt_x,filt_y , pos_out = MD_removeOutliers(common['rt_y'].values,common['rt_x'].values)
+					filt_x,filt_y , pos_out = MD_removeOutliers(common['rt_y'].values,common['rt_x'].values,args.w_filt)
 					data_B=  filt_x
 					data_A=  filt_y
 					data_B=  np.reshape(data_B,[filt_x.shape[0],1])
@@ -213,7 +213,7 @@ def run_mbr( args):
 	    #test= pd.merge( test,    pre_pep_save[6],on=['peptide','charge','prot','mass','mz'],how='outer',suffixes=['_x6','_y6'])
 	    #test= pd.merge( test,    pre_pep_save[7],on=['peptide','charge','prot','mass','mz'],how='outer',suffixes=['_x7','_y7'])     
 	    
-	    test['rt']= test.ix[:,5:7].apply(  lambda  x: combine_model(x, model_save[(jj*2):((jj+1)*2)],model_err[ (jj*2):((jj+1)*2)]) , axis=1)
+	    test['rt']= test.ix[:,5:7].apply(  lambda  x: combine_model(x, model_save[(jj*2):((jj+1)*2)],model_err[ (jj*2):((jj+1)*2)],args.w_comb) , axis=1)
 	    test['matched']= 1
 	    for field in diff_field.tolist():
 		test[field]= -1
@@ -226,27 +226,32 @@ def run_mbr( args):
 	    exp_out[jj]=pd.concat([exp_t[jj], test ]  , join='outer', axis=0)
 	    logging.info('After MBR %s contains:  %i  peptides', exp_set[jj] ,exp_out[jj].shape[0] )
 	    logging.info('----------------------------------------------')
-	    exp_out[jj].to_csv(path_or_buf= output_dir + '/' + str(exp_set[jj].split('.')[0].split('/')[1]) +'_match.txt',sep='\t',index=False)
+	    exp_out[jj].head(10).to_csv(path_or_buf= output_dir + '/' + str(exp_set[jj].split('.')[0].split('/')[1]) +'_match.txt',sep='\t',index=False)
     
-parser = argparse.ArgumentParser(description='moFF match between run input parameter')
-
-parser.add_argument('--inputF', dest='loc_in', action='store', help='specify the folder of the input MS2 peptide list files ', required=False)
-
-parser.add_argument('--sample', dest='sample', action='store', help='specify witch replicated to use for mbr reg_exp are valid ', required=False)
-
-parser.add_argument('--ext', dest='ext', action='store', default='.txt', help='specify the file extentention of the input like ', required=False)
-
-parser.add_argument('--log_file_name', dest='log_label', action='store', help='a label name to use for the log file', required=False)
-
-parser.add_argument ('--filt_width', dest='w_filt', action='store',default=2,help='width value of the filter  k * mean(Dist_Malahobis)', required=False  )
-
-parser.add_argument('--out_filt', dest='out_flag', action='store',default=1,help='filter outlier in each rt time allignment',  required=False )
-
-parser.add_argument('--weight_comb', dest='w_comb', action='store',default=0,help='weights for model combination combination : 0 for no weight  1 weighted devised by trein err of the model.', required=False )
 
 
-args = parser.parse_args()
+
 
 if __name__ == '__main__':
+        parser = argparse.ArgumentParser(description='moFF match between run input parameter')
+
+	parser.add_argument('--inputF', dest='loc_in', action='store', help='specify the folder of the input MS2 peptide list files ', required=False)
+
+	parser.add_argument('--sample', dest='sample', action='store', help='specify witch replicated to use for mbr reg_exp are valid ', required=False)
+
+	parser.add_argument('--ext', dest='ext', action='store', default='.txt', help='specify the file extentention of the input like ', required=False)
+
+	parser.add_argument('--log_file_name', dest='log_label', action='store', help='a label name to use for the log file', required=False)
+
+	parser.add_argument ('--filt_width', dest='w_filt', action='store',default=2,help='width value of the filter  k * mean(Dist_Malahobis)', required=False  )
+
+	parser.add_argument('--out_filt', dest='out_flag', action='store',default=1,help='filter outlier in each rt time allignment',  required=False )
+
+	parser.add_argument('--weight_comb', dest='w_comb', action='store',default=0,help='weights for model combination combination : 0 for no weight  1 weighted devised by trein err of the model.', required=False )
+
+
+	args = parser.parse_args()
+
+         	
 	run_mbr(args)
  
