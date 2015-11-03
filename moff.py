@@ -47,11 +47,19 @@ def run_apex( file_name, tol, h_rt_w , s_w, s_w_match, loc_raw,loc_output  ):
 			os.makedirs(loc_output )
 		#print 'output log location ',loc_output + '/' +  name +    '__moff.log'
 		outputname=  loc_output + '/'  +  name  +  "_moff_result.txt"
-		logging.basicConfig(filename= loc_output + '/' +  name +    '__moff.log',filemode='w',level=logging.INFO)
+		log = logging.getLogger('moFF paex module') 
+		log.setLevel(logging.INFO)
+		fh = logging.FileHandler(loc_output + '/' +  name +    '__moff.log')
+		log.addHandler(fh)
+		#log.basicConfig(filename= loc_output + '/' +  name +    '__moff.log',filemode='w',level=log.INFO)
 	else:
 
 		outputname = name  +  "_moff_result.txt"
-		logging.basicConfig(filename= name +  '__moff.log',filemode='w',level=logging.INFO)
+		log.basicConfig(filename= name +  '__moff.log',filemode='w',level=log.INFO)
+		log = logging.getLogger('moFF paex module')
+                log.setLevel(logging.INFO)
+                fh = logging.FileHandler( name +    '__moff.log')
+                log.addHandler(fh)
 
 	if loc_raw != None:
 		loc = loc_raw +  name+ '.RAW'
@@ -59,10 +67,9 @@ def run_apex( file_name, tol, h_rt_w , s_w, s_w_match, loc_raw,loc_output  ):
 		loc =   name + '.RAW'
 
 
-	logging.info('moff Input file %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ',file_name,tol,h_rt_w,s_w)
-	logging.info('Output_file in %s', outputname)
-	logging.info('RAW file location %s',loc)
-	exit('test output')
+	log.info('moff Input file %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ',file_name,tol,h_rt_w,s_w)
+	log.info('Output_file in %s', outputname)
+	log.info('RAW file location %s',loc)
 	##read data from file 
 	data_ms2 = pd.read_csv(file_name,sep= "\t" ,header=0)
 
@@ -92,14 +99,15 @@ def run_apex( file_name, tol, h_rt_w , s_w, s_w_match, loc_raw,loc_output  ):
 	##set mbr_flag
 	if 'matched' in data_ms2.columns :
 		mbr_flag=1
+		log.info('Detected mbr peptides ')
 	c=0
 	for index_ms2, row in data_ms2.iterrows():
-		logging.info('line: %i',c)
+		log.info('line: %i',c)
 		mz_opt= "-mz="+str(row['mz'])
 		if mbr_flag==1:
 			s_w = s_w_match
 		if row['rt']==-1:
-			logging.info('rt not found. Wrong matched peptide in the mbr step line: %i',c)
+			log.info('rt not found. Wrong matched peptide in the mbr step line: %i',c)
 			c+=1
 			continue
 			
@@ -115,7 +123,7 @@ def run_apex( file_name, tol, h_rt_w , s_w, s_w_match, loc_raw,loc_output  ):
 		try:
 			data_xic = pd.read_csv(StringIO(output.strip()), sep=' ',names =['rt','intensity'] ,header=0 )
 			ind_v = data_xic.index
-			#logging.info ("XIC shape   %i x 2",  data_xic.shape[0] )
+			#log.info ("XIC shape   %i x 2",  data_xic.shape[0] )
 			if data_xic[(data_xic['rt']> (time_w - s_w)) & ( data_xic['rt']< (time_w + s_w) )].shape[0] >=1:
 				ind_v = data_xic.index
 				pp=data_xic[ data_xic["intensity"]== data_xic[(data_xic['rt']> (time_w - s_w)) & ( data_xic['rt']< (time_w + s_w) )]['intensity'].max()].index
@@ -125,35 +133,35 @@ def run_apex( file_name, tol, h_rt_w , s_w, s_w_match, loc_raw,loc_output  ):
 			#print data_xic[ data_xic["intensity"]== data_xic[(data_xic['rt']> (time_w - )) & ( data_xic['rt']< (time_w + s_w) )]['intensity'].max()]
 			## non serve forzarlo a in
 				pos_p = ind_v[pp]
-				#logging.info ("Pos of the max int",pp.values)
+				#log.info ("Pos of the max int",pp.values)
 				#print pos_p.values.shape[0]
 				if pos_p.values.shape[0] > 1 :
-					logging.info("WARNINGS: Rt gap for the time windows searched. Probably the ppm values is too small %i", c )		
+					log.info("WARNINGS: Rt gap for the time windows searched. Probably the ppm values is too small %i", c )		
 					continue
 				val_max = data_xic.ix[pos_p,1].values 
 			else:
-				logging.info("LW_BOUND window  %4.4f", time_w - s_w )
-				logging.info("UP_BOUND windows %4.4f", time_w + s_w )
-				logging.info(data_xic[(data_xic['rt']> (time_w - (+0.60))) & ( data_xic['rt']< (time_w + (s_w+0.60)) )]   )
-				logging.info("WARNINGS: moff_rtWin_peak is not enough to detect the max peak line : %i", c )
-				logging.info( 'MZ: %4.4f RT: %4.4f Mass: %i',row['mz'] ,row['rt'],index_ms2 )
+				log.info("LW_BOUND window  %4.4f", time_w - s_w )
+				log.info("UP_BOUND windows %4.4f", time_w + s_w )
+				log.info(data_xic[(data_xic['rt']> (time_w - (+0.60))) & ( data_xic['rt']< (time_w + (s_w+0.60)) )]   )
+				log.info("WARNINGS: moff_rtWin_peak is not enough to detect the max peak line : %i", c )
+				log.info( 'MZ: %4.4f RT: %4.4f Mass: %i',row['mz'] ,row['rt'],index_ms2 )
 				c+=1
 				continue
 			pnoise_5 =  np.percentile(data_xic[(data_xic['rt']> (time_w - 1)) & ( data_xic['rt']< (time_w + 1) )]['intensity'],5)
 			pnoise_10 = np.percentile(data_xic[(data_xic['rt']> (time_w - 1)) & ( data_xic['rt']< (time_w + 1) )]['intensity'],10) 
 		except (IndexError,ValueError,TypeError):
-			logging.info("WARNINGS:  size is not enough to detect the max peak line : %i", c )
-			logging.info( 'MZ: %4.4f RT: %4.4f index: %i',row['mz'] ,row['rt'],index_ms2 )
+			log.info("WARNINGS:  size is not enough to detect the max peak line : %i", c )
+			log.info( 'MZ: %4.4f RT: %4.4f index: %i',row['mz'] ,row['rt'],index_ms2 )
 			continue
 			c +=1
 		except pd.parser.CParserError:
-			logging.info( "WARNINGS: XIC not retrived line: %i",c)
-			logging.info( 'MZ: %4.4f RT: %4.4f Mass: %i',row['mz'] ,row['rt'],index_ms2 )
+			log.info( "WARNINGS: XIC not retrived line: %i",c)
+			log.info( 'MZ: %4.4f RT: %4.4f Mass: %i',row['mz'] ,row['rt'],index_ms2 )
 			
 			c +=1
 			continue
 		else:
-			#logging.info("Intensisty at pos_p-1 %4.4f",data_xic.ix[(pos_p-1),1].values )
+			#log.info("Intensisty at pos_p-1 %4.4f",data_xic.ix[(pos_p-1),1].values )
 			log_time = [-1,-1]
 			c_left=0
 			find_5=False
