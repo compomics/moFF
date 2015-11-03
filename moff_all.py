@@ -45,7 +45,6 @@ parser.add_argument('--output_folder', dest='loc_out', action='store', default='
 
 args = parser.parse_args()
 
-print args.w_filt
 
 moff_mbr.run_mbr(args)
 
@@ -53,8 +52,8 @@ moff_mbr.run_mbr(args)
 folder = args.loc_in + 'mbr_output'
 #os.chdir(folder)
 for file in glob.glob(folder+"/*.txt"):
-        file_name =file.split('/')[2]
-	print file_name
+        file_name =file
+	print 'Starting apex ',file_name
 	tol= args.toll
         h_rt_w = args.rt_window
         s_w= args.rt_p_window
@@ -62,7 +61,7 @@ for file in glob.glob(folder+"/*.txt"):
         loc_raw = args.raw
         loc_output = args.loc_out
 	moff.run_apex(  file_name,tol,h_rt_w,s_w,s_w_match,loc_raw,loc_output )
-
+	print 'End apex form ', file_name
 
 
 #moff.run_apex(args)
