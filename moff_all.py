@@ -12,6 +12,9 @@ import re
 import moff_mbr
 import moff
 
+
+
+
 parser = argparse.ArgumentParser(description='moFF match between run and apex module input parameter')
 
 parser.add_argument('--inputF', dest='loc_in', action='store', help='specify the folder of the input MS2 peptide list files ', required=False)
@@ -53,7 +56,7 @@ folder = args.loc_in + 'mbr_output'
 #os.chdir(folder)
 for file in glob.glob(folder+"/*.txt"):
         file_name =file
-	print 'Starting apex ',file_name
+	print 'Starting apex ',file_name,'............',
 	tol= args.toll
         h_rt_w = args.rt_window
         s_w= args.rt_p_window
@@ -61,7 +64,7 @@ for file in glob.glob(folder+"/*.txt"):
         loc_raw = args.raw
         loc_output = args.loc_out
 	moff.run_apex(  file_name,tol,h_rt_w,s_w,s_w_match,loc_raw,loc_output )
-	print 'End apex form ', file_name
+	print 'Ended '
 
 
 #moff.run_apex(args)
