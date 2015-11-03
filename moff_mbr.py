@@ -227,7 +227,8 @@ def run_mbr( args):
 	    logging.info('After MBR %s contains:  %i  peptides', exp_set[jj] ,exp_out[jj].shape[0] )
 	    logging.info('----------------------------------------------')
 	    exp_out[jj].head(10).to_csv(path_or_buf= output_dir + '/' + str(exp_set[jj].split('.')[0].split('/')[1]) +'_match.txt',sep='\t',index=False)
-    
+   	    ## forse logging handeles
+ 	    print logging.removeHandler(logging.handlers[0])
 
 
 
