@@ -8,7 +8,8 @@ import itertools
 import os
 import argparse
 import re
-
+import ConfigParser
+import ast
 
 
 
@@ -60,7 +61,13 @@ def combine_model( x,model,err,weight_flag):
         # output not weight
                 return   float(app_sum)/ float(np.where(~ np.isnan(x)  )[0].shape[0] )
 
-
+def check_columns_name (col_list,col_must_have ):
+	for c_name in col_must_have:
+		if  not (c_name in col_list):
+			# fail
+			return 1
+	# succes 
+	return 0
 ## fixed flag for the outlier dev
 def run_mbr( args):
 	if   not (os.path.isdir(args.loc_in)):
@@ -84,26 +91,32 @@ def run_mbr( args):
 	else:
 		print "Output folder in :",output_dir	
 
+	
+	config = ConfigParser.RawConfigParser()
+        # it s always placed in same folder of moff_mbr.py
+        config.read('moff_setting.properties')
 
 	## read input
 	exp_t=[]
 	exp_out=[]
 	exp_subset=[]
-
+	print args
 	if (args.sample) == None:
-		search =  '*'+args.ext
-	else:
+		search = '.' +  args.ext
+	else:	
+		# sample option is given a more fancy filter is used to retrive the input file
 		search = args.sample
 
-
+	print search
 	for a  in exp_set:
 	     
 	    if re.search(search ,a) :
-		print 'file selected ',a
+		print 'Reading file.... ',a
 		exp_subset.append(a)
 		data_moff = pd.read_csv(a, sep="\t", header=0)
 		list_name= data_moff.columns.values.tolist()
-		
+		if check_columns_name( list_name,  ast.literal_eval( config.get('moFF', 'col_must_have_x'))  ) ==1 :
+			exit ('ERROR minimal field requested are missing or wrong')
 		data_moff['matched']=0
 		data_moff = data_moff.sort('rt')
 		exp_t.append(data_moff)
@@ -115,11 +128,9 @@ def run_mbr( args):
 
 	## set a list of filed mandatory 
 	#['matched','peptide','mass','mz','charge','prot','rt']
-        print 'inside mbr :::',args
 
 	exp_set=exp_subset
 	aa=range(0,len(exp_t))
-	print aa
 	out =list (itertools.product(aa,repeat=2))
 	## just to save all the model
 	model_save=[]
@@ -131,7 +142,7 @@ def run_mbr( args):
 
 	##input of the methods
 
-	logging.basicConfig(filename=   args.log_label + '_' +'log_mat2run.log',filemode='w',level=logging.DEBUG)
+	logging.basicConfig(filename=   args.loc_in +  '/'   +  args.log_label + '_' +'mbr_.log',filemode='w',level=logging.DEBUG)
 	logging.info('Filtering is %s :', args.out_flag )
 	logging.info( 'Pairwise model computation ----')
 	for jj in aa:
@@ -156,7 +167,7 @@ def run_mbr( args):
 		    comB = comB.groupby('peptide',as_index=False).mean()
 		    common =pd.merge(comA, comB , on=['peptide'], how='inner')
 		    if common.shape[0]  <= 30 :
-			 print common.shape
+			 #print common.shape
 			 model_status.append(-1)
 			 continue
 		    # filtering outlier option
@@ -219,7 +230,6 @@ def run_mbr( args):
 		test[field]= -1
 	    test.drop('rt_x1', axis=1, inplace=True)
 	    test.drop('rt_y1', axis=1, inplace=True)
-	    print test.columns
 	    ## print the entire file
 	    #test.(path_or_buf= output_dir + '/' + str(exp_set[jj].split('.')[0].split('/')[1]) +'_match.txt',sep='\t',index=False)
 	    logging.info('Before adding %s contains %i ', exp_set[jj],exp_t[jj].shape[0])
@@ -228,7 +238,6 @@ def run_mbr( args):
 	    logging.info('----------------------------------------------')
 	    exp_out[jj].head(10).to_csv(path_or_buf= output_dir + '/' + str(exp_set[jj].split('.')[0].split('/')[1]) +'_match.txt',sep='\t',index=False)
    	    ## forse logging handeles
- 	    print logging.removeHandler(logging.handlers[0])
 
 
 
@@ -238,21 +247,21 @@ if __name__ == '__main__':
 
 	parser.add_argument('--inputF', dest='loc_in', action='store', help='specify the folder of the input MS2 peptide list files ', required=False)
 
-	parser.add_argument('--sample', dest='sample', action='store', help='specify witch replicated to use for mbr reg_exp are valid ', required=False)
+	parser.add_argument('--sample', dest='sample', action='store', help='specify which replicate is used fot mbr reg_exp are valid ', required=False)
 
-	parser.add_argument('--ext', dest='ext', action='store', default='.txt', help='specify the file extentention of the input like ', required=False)
+	parser.add_argument('--ext', dest='ext', action='store', default='txt', help='specify the exstension of the input file (txt as default value) ', required=False)
 
-	parser.add_argument('--log_file_name', dest='log_label', action='store', help='a label name to use for the log file', required=False)
+	parser.add_argument('--log_file_name', dest='log_label', default='moFF',action='store', help='a label name for the log file (moFF_mbr.log as default log file name) ', required=False)
 
 	parser.add_argument ('--filt_width', dest='w_filt', action='store',default=2,help='width value of the filter  k * mean(Dist_Malahobis)', required=False  )
 
 	parser.add_argument('--out_filt', dest='out_flag', action='store',default=1,help='filter outlier in each rt time allignment',  required=False )
 
-	parser.add_argument('--weight_comb', dest='w_comb', action='store',default=0,help='weights for model combination combination : 0 for no weight  1 weighted devised by trein err of the model.', required=False )
+	parser.add_argument('--weight_comb', dest='w_comb', action='store',default=0,help='weights for model combination combination : 0 for no weight  1 weighted devised by model errors.', required=False )
 
 
 	args = parser.parse_args()
 
-         	
+        	
 	run_mbr(args)
  
