@@ -32,15 +32,20 @@ def run_apex( file_name, tol, h_rt_w , s_w, s_w_match, loc_raw,loc_output  ):
 	#loc_raw = args.raw
 	#loc_output = args.loc_out
 	# flag_for matching
-	#mbr_flag=0
-
-	name =  file_name.split('/')[1].split('.')[0]
-
+   	#mbr_flag=0
+	if  len(file_name.split('/')) == 3 :
+		name =  file_name.split('/')[2].split('.')[0]
+		start = name.find('_match')
+		# extract the name of the file
+		name = name[0:start]
+	else:
+		 # case with just one subfolder .. stil to test
+		 name =  file_name.split('/')[1].split('.')[0]
 	if loc_output != '':
 		if  not (os.path.isdir(loc_output)):
-			#print "created output Dir ",output_dir
+			print "created output Dir ",output_dir
 			os.makedirs(loc_output )
-
+		#print 'output log location ',loc_output + '/' +  name +    '__moff.log'
 		outputname=  loc_output + '/'  +  name  +  "_moff_result.txt"
 		logging.basicConfig(filename= loc_output + '/' +  name +    '__moff.log',filemode='w',level=logging.INFO)
 	else:
@@ -54,10 +59,10 @@ def run_apex( file_name, tol, h_rt_w , s_w, s_w_match, loc_raw,loc_output  ):
 		loc =   name + '.RAW'
 
 
-	loggin.info('moff Input file %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ',file_name,tol,h_rt_w,s_w)
+	logging.info('moff Input file %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ',file_name,tol,h_rt_w,s_w)
 	logging.info('Output_file in %s', outputname)
 	logging.info('RAW file location %s',loc)
-
+	exit('test output')
 	##read data from file 
 	data_ms2 = pd.read_csv(file_name,sep= "\t" ,header=0)
 
