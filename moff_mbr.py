@@ -10,7 +10,7 @@ import argparse
 import re
 import ConfigParser
 import ast
-
+import copy
 
 
 
@@ -74,9 +74,7 @@ def run_mbr( args):
 		exit(str(args.loc_in) + '-->  inputF folder does not exist ! ')
 
 	filt_outlier= args.out_flag
-	paths = [os.path.join(args.loc_in,fn) for fn in next(os.walk(args.loc_in))[2] ]
 
-	exp_set=paths
 	if str(args.loc_in) =='':
 		output_dir= 'mbr_output'
 	else:
@@ -97,20 +95,27 @@ def run_mbr( args):
         config.read('moff_setting.properties')
 
 	## read input
+	exp_set=[]
 	exp_t=[]
 	exp_out=[]
 	exp_subset=[]
-	print args
-	if (args.sample) == None:
-		search = '.' +  args.ext
-	else:	
-		# sample option is given a more fancy filter is used to retrive the input file
-		search = args.sample
-
-	print search
-	for a  in exp_set:
-	     
-	    if re.search(search ,a) :
+	#if (args.sample) == None:
+	for root, dirs, files  in  os.walk(args.loc_in) :
+		for f in files :
+			if f.endswith( '.' +  args.ext):
+				exp_set.append( os.path.join(root, f))
+	#old solutions 	
+ 	#paths = [os.path.join(args.loc_in,fn) for fn in next(os.walk(args.loc_in))[2] ]
+        #exp_set=paths
+	if not ( (args.sample) == None ) :
+		exp_set_app=copy.deepcopy(exp_set)
+		for a  in exp_set: 
+			if (re.search(args.sample ,a) == None ) :
+				exp_set_app.remove(a )
+	exp_set = exp_set_app
+	if exp_set ==[] :
+                exit('ERROR input files not found. check the folder or the extension given in input')
+	for a  in exp_set: 
 		print 'Reading file.... ',a
 		exp_subset.append(a)
 		data_moff = pd.read_csv(a, sep="\t", header=0)
@@ -122,10 +127,11 @@ def run_mbr( args):
 		exp_t.append(data_moff)
 		exp_out.append(data_moff)
 
-
+		
+			
 	print 'Read input --> done '
 	## parameter of the number of query
-
+	exit('test ')
 	## set a list of filed mandatory 
 	#['matched','peptide','mass','mz','charge','prot','rt']
 
