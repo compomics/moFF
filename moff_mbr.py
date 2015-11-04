@@ -71,7 +71,7 @@ def check_columns_name (col_list,col_must_have ):
 ## fixed flag for the outlier dev
 def run_mbr( args):
 	if   not (os.path.isdir(args.loc_in)):
-		exit(str(args.loc_in) + '-->  inputF folder does not exist ! ')
+		exit(str(args.loc_in) + '-->  input folder does not exist ! ')
 
 	filt_outlier= args.out_flag
 
@@ -131,12 +131,12 @@ def run_mbr( args):
 			
 	print 'Read input --> done '
 	## parameter of the number of query
-	exit('test ')
 	## set a list of filed mandatory 
 	#['matched','peptide','mass','mz','charge','prot','rt']
-
+	
+        n_replicates= len(exp_t) 
 	exp_set=exp_subset
-	aa=range(0,len(exp_t))
+	aa=range(0,n_replicates)
 	out =list (itertools.product(aa,repeat=2))
 	## just to save all the model
 	model_save=[]
@@ -201,7 +201,10 @@ def run_mbr( args):
 				model_err.append( mean_absolute_error(data_A, clf_final.predict(data_B)))
 				logging.info(' Mean abs Error on training : %4.4f min', mean_absolute_error(data_A, clf_final.predict(data_B)) )
 				model_status.append(1)
-
+	if np.where(np.array(model_status) == -1)[0].shape[0] >= (len(aa)/2):
+		logging.info( 'MBR aborted :  mbr cannnot be run, not enough shared pepetide among the replicates ')
+		exit('ERROR : mbr cannnot be run, not enough shared pepetide among the replicates')
+	
 	logging.info( 'Combination of the  model  --------')
 	logging.info('Weighted combination  %i : ', int( args.w_comb)  )
 
@@ -221,8 +224,9 @@ def run_mbr( args):
 		    add_pep_frame=add_pep_frame.groupby('code_unique',as_index=False)['peptide','mass','charge','mz','prot', 'rt'].aggregate(max)
 		    add_pep_frame= add_pep_frame[['peptide','mass','mz','charge','prot','rt']]
 		    pre_pep_save.append( add_pep_frame) 
-	    #test = reduce(lambda left,right: pd.merge(left,right,on=['code_unique','peptide','pep_len','prot','mz','mass','charge'],how='outer'), pre_pep_save)
-	    test= pd.merge( pre_pep_save[0] ,    pre_pep_save[1],on=['peptide','charge','prot','mass','mz'],how='outer',suffixes=['_x1','_y1'])
+	    test = reduce(lambda left,right: pd.merge(left,right,on=['peptide','mass','mz','charge','prot'],how='outer'), pre_pep_save)
+	    #test= pd.merge( pre_pep_save[0] ,    pre_pep_save[1],on=['peptide','charge','prot','mass','mz'],how='outer',suffixes=['_x1','_y1'])
+	    
 	    #test= pd.merge( test ,    pre_pep_save[2],on=['peptide','charge','prot','mass','mz'],how='outer',suffixes=['_x2','_y2'])
 	    #test= pd.merge( test,    pre_pep_save[3],on=['peptide','charge','prot','mass','mz'],how='outer',suffixes=['_x3','_y3'])
 	    #test= pd.merge( test,    pre_pep_save[4],on=['peptide','charge','prot','mass','mz'],how='outer',suffixes=['_x4','_y4'])
@@ -230,12 +234,19 @@ def run_mbr( args):
 	    #test= pd.merge( test,    pre_pep_save[6],on=['peptide','charge','prot','mass','mz'],how='outer',suffixes=['_x6','_y6'])
 	    #test= pd.merge( test,    pre_pep_save[7],on=['peptide','charge','prot','mass','mz'],how='outer',suffixes=['_x7','_y7'])     
 	    
-	    test['rt']= test.ix[:,5:7].apply(  lambda  x: combine_model(x, model_save[(jj*2):((jj+1)*2)],model_err[ (jj*2):((jj+1)*2)],args.w_comb) , axis=1)
+	    # (n_replicates-1) == offset thorut model vector 
+	    test['rt']= test.ix[:,5: (5 + (n_replicates-1)) ].apply(  lambda  x: combine_model(x, model_save[(jj* (n_replicates-1)):((jj+1)* (n_replicates-1) )],model_err[ (jj* (n_replicates-1)  ):((jj+1)* (n_replicates-1)  )],args.w_comb) , axis=1)
 	    test['matched']= 1
 	    for field in diff_field.tolist():
 		test[field]= -1
-	    test.drop('rt_x1', axis=1, inplace=True)
-	    test.drop('rt_y1', axis=1, inplace=True)
+            
+	    for col in test.columns.tolist():
+			if not (re.search('[x|y]',col)== None) :
+				 test.drop(col, axis=1, inplace=True) 
+	   
+	    #test.drop('rt_x1', axis=1, inplace=True)
+	    #test.drop('rt_y1', axis=1, inplace=True)
+	    
 	    ## print the entire file
 	    #test.(path_or_buf= output_dir + '/' + str(exp_set[jj].split('.')[0].split('/')[1]) +'_match.txt',sep='\t',index=False)
 	    logging.info('Before adding %s contains %i ', exp_set[jj],exp_t[jj].shape[0])
@@ -251,19 +262,19 @@ def run_mbr( args):
 if __name__ == '__main__':
         parser = argparse.ArgumentParser(description='moFF match between run input parameter')
 
-	parser.add_argument('--inputF', dest='loc_in', action='store', help='specify the folder of the input MS2 peptide list files ', required=False)
+	parser.add_argument('--inputF', dest='loc_in', action='store', help='specify the folder of the input MS2 peptide files  REQUIRED]', required=True)
 
-	parser.add_argument('--sample', dest='sample', action='store', help='specify which replicate is used fot mbr reg_exp are valid ', required=False)
+	parser.add_argument('--sample', dest='sample', action='store', help='specify which replicate files are used fot mbr [regular expr. are valid] ', required=False)
 
 	parser.add_argument('--ext', dest='ext', action='store', default='txt', help='specify the exstension of the input file (txt as default value) ', required=False)
 
 	parser.add_argument('--log_file_name', dest='log_label', default='moFF',action='store', help='a label name for the log file (moFF_mbr.log as default log file name) ', required=False)
 
-	parser.add_argument ('--filt_width', dest='w_filt', action='store',default=2,help='width value of the filter  k * mean(Dist_Malahobis)', required=False  )
+	parser.add_argument ('--filt_width', dest='w_filt', action='store',default=2,help='width value of the filter (k * mean(Dist_Malahobi , k = 2 as default) ', required=False  )
 
-	parser.add_argument('--out_filt', dest='out_flag', action='store',default=1,help='filter outlier in each rt time allignment',  required=False )
+	parser.add_argument('--out_filt', dest='out_flag', action='store',default=1,help='filter outlier in each rt time allignment (active as default)',  required=False )
 
-	parser.add_argument('--weight_comb', dest='w_comb', action='store',default=0,help='weights for model combination combination : 0 for no weight  1 weighted devised by model errors.', required=False )
+	parser.add_argument('--weight_comb', dest='w_comb', action='store',default=0,help='weights for model combination combination : 0 for no weight (default) 1 weighted devised by model errors.', required=False )
 
 
 	args = parser.parse_args()
