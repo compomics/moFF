@@ -112,7 +112,7 @@ def run_mbr( args):
 		for a  in exp_set: 
 			if (re.search(args.sample ,a) == None ) :
 				exp_set_app.remove(a )
-	exp_set = exp_set_app
+		exp_set = exp_set_app
 	if exp_set ==[] :
                 exit('ERROR input files not found. check the folder or the extension given in input')
 	for a  in exp_set: 
