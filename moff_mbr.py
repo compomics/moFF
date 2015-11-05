@@ -15,7 +15,6 @@ import copy
 
 
 ## filtering _outlier
-
 def MahalanobisDist(x, y):
     covariance_xy = np.cov(x,y, rowvar=0)
     inv_covariance_xy = np.linalg.inv(covariance_xy)
@@ -28,7 +27,9 @@ def MahalanobisDist(x, y):
     for i in range(len(diff_xy)):
         md.append(np.sqrt(np.dot(np.dot(np.transpose(diff_xy[i]),inv_covariance_xy),diff_xy[i])))
     return md
-# x in dependent variable and Y is independar variable
+
+
+## remove outlier
 def MD_removeOutliers(x, y, width):
     MD = MahalanobisDist(x, y)
     threshold = np.mean(MD) * width  # adjust 1.5 accordingly
@@ -41,6 +42,8 @@ def MD_removeOutliers(x, y, width):
             outliers.append(i) # position of removed pair
     return (np.array(nx), np.array(ny), np.array(outliers))
 
+
+# combination of rt predicted by each single model
 def combine_model( x,model,err,weight_flag):
         x =  x.values
         tot_err = np.sum( np.array(err) [ np.where(~np.isnan(x))])
@@ -61,6 +64,8 @@ def combine_model( x,model,err,weight_flag):
         # output not weight
                 return   float(app_sum)/ float(np.where(~ np.isnan(x)  )[0].shape[0] )
 
+
+# check columns read  from  a properties file 
 def check_columns_name (col_list,col_must_have ):
 	for c_name in col_must_have:
 		if  not (c_name in col_list):
@@ -68,7 +73,8 @@ def check_columns_name (col_list,col_must_have ):
 			return 1
 	# succes 
 	return 0
-## fixed flag for the outlier dev
+
+## run the mbr in moFF : input  ms2 identified peptide   output csv file with the matched peptides added
 def run_mbr( args):
 	if   not (os.path.isdir(args.loc_in)):
 		exit(str(args.loc_in) + '-->  input folder does not exist ! ')
@@ -95,18 +101,19 @@ def run_mbr( args):
         config.read('moff_setting.properties')
 
 	## read input
+	## comment better 
+	## name of the input file
 	exp_set=[]
+	#list of the input dataframe 
 	exp_t=[]
+	# list of the output dataframe
 	exp_out=[]
+	# lsit of input datafra used as help
 	exp_subset=[]
-	#if (args.sample) == None:
 	for root, dirs, files  in  os.walk(args.loc_in) :
 		for f in files :
 			if f.endswith( '.' +  args.ext):
 				exp_set.append( os.path.join(root, f))
-	#old solutions 	
- 	#paths = [os.path.join(args.loc_in,fn) for fn in next(os.walk(args.loc_in))[2] ]
-        #exp_set=paths
 	if not ( (args.sample) == None ) :
 		exp_set_app=copy.deepcopy(exp_set)
 		for a  in exp_set: 
@@ -139,8 +146,11 @@ def run_mbr( args):
 	aa=range(0,n_replicates)
 	out =list (itertools.product(aa,repeat=2))
 	## just to save all the model
+	# list of the model saved
 	model_save=[]
+	# list of the error in min/or sec
 	model_err=[]
+	# list of the status of the model -1 means model not available for low points in the training set
 	model_status=[]
 	# add matched columns
 	list_name.append('matched')
@@ -149,15 +159,17 @@ def run_mbr( args):
 	##input of the methods
 
 	logging.basicConfig(filename=   args.loc_in +  '/'   +  args.log_label + '_' +'mbr_.log',filemode='w',level=logging.DEBUG)
-	logging.info('Filtering is %s :', args.out_flag )
+	logging.info('Filtering is %s :',   'active' if args.out_flag==1 else 'not atcive'    )
+	logging.info( 'Number of replicates %i,', n_replicates)
 	logging.info( 'Pairwise model computation ----')
+
 	for jj in aa:
 	    sum_values=np.array([0,0,0])
 	    print 'matching  in ', exp_set[jj]
 	    
 	    for i in out:
 		if  i[0] == jj and i[1] != jj:
-		    logging.info( '  matching  %s peptide in   searching in %s ', exp_set[i[0]] ,exp_set[i[1]])
+		    logging.info( '  Matching  %s peptide in   searching in %s ', exp_set[i[0]] ,exp_set[i[1]])
 		    list_pep_repA = exp_t[i[0]]['peptide'].unique()
 		    list_pep_repB =  exp_t[i[1]]['peptide'].unique()
 		    logging.info( '  Peptide unique  %i , %i ',  list_pep_repA.shape[0], list_pep_repB.shape[0])
@@ -172,7 +184,7 @@ def run_mbr( args):
 		    comA = comA.groupby('peptide',as_index=False).mean()
 		    comB = comB.groupby('peptide',as_index=False).mean()
 		    common =pd.merge(comA, comB , on=['peptide'], how='inner')
-		    if common.shape[0]  <= 30 :
+		    if common.shape[0]  <= 50 :
 			 #print common.shape
 			 model_status.append(-1)
 			 continue
@@ -190,7 +202,7 @@ def run_mbr( args):
 					data_A=  common['rt_x'].values
 					data_B=  np.reshape(data_B,[common.shape[0],1])
 					data_A=  np.reshape(data_A,[common.shape[0],1])
-				logging.info(' size trainig shared peptide , %i %i ',data_A.shape[0], data_B.shape[0]) 
+				logging.info(' Size trainig shared peptide , %i %i ',data_A.shape[0], data_B.shape[0]) 
 				clf = linear_model.RidgeCV(alphas=np.power(2,np.linspace(-30,30)),scoring='mean_absolute_error')
 				clf.fit(data_B,data_A)   
 				#logging.info( ' alpha of the CV ridge regression model %4.4f',clf.alpha_)
@@ -199,22 +211,23 @@ def run_mbr( args):
 				## save the model 
 				model_save.append(clf_final)  
 				model_err.append( mean_absolute_error(data_A, clf_final.predict(data_B)))
-				logging.info(' Mean abs Error on training : %4.4f min', mean_absolute_error(data_A, clf_final.predict(data_B)) )
+				logging.info(' Mean absolute error training : %4.4f sec', mean_absolute_error(data_A, clf_final.predict(data_B)) )
 				model_status.append(1)
 	if np.where(np.array(model_status) == -1)[0].shape[0] >= (len(aa)/2):
 		logging.info( 'MBR aborted :  mbr cannnot be run, not enough shared pepetide among the replicates ')
 		exit('ERROR : mbr cannnot be run, not enough shared pepetide among the replicates')
 	
 	logging.info( 'Combination of the  model  --------')
-	logging.info('Weighted combination  %i : ', int( args.w_comb)  )
+	logging.info('Weighted combination  %s : ',  'Weighted' if    int( args.w_comb)==1 else 'Unweighted'   )
 
 	diff_field = np.setdiff1d(exp_t[0].columns , ['matched','peptide','mass','mz','charge','prot','rt']) 
+	
 	for jj in   aa:
 	    pre_pep_save=[]
 	    print 'Predict rt for the exp.  in ', exp_set[jj]
 	    for i in out:
 		if  i[0] == jj and i[1] != jj:
-		    logging.info('matching peptides found  in  %s ',exp_set[i[1]])
+		    logging.info('Matching peptides found  in  %s ',exp_set[i[1]])
 		    list_pep_repA = exp_t[i[0]]['peptide'].unique()
 		    list_pep_repB =  exp_t[i[1]]['peptide'].unique()
 		    set_dif_s_in_1 = np.setdiff1d(list_pep_repB,list_pep_repA)
@@ -224,28 +237,34 @@ def run_mbr( args):
 		    add_pep_frame=add_pep_frame.groupby('code_unique',as_index=False)['peptide','mass','charge','mz','prot', 'rt'].aggregate(max)
 		    add_pep_frame= add_pep_frame[['peptide','mass','mz','charge','prot','rt']]
 		    pre_pep_save.append( add_pep_frame) 
-	    test = reduce(lambda left,right: pd.merge(left,right,on=['peptide','mass','mz','charge','prot'],how='outer'), pre_pep_save)
-	    #test= pd.merge( pre_pep_save[0] ,    pre_pep_save[1],on=['peptide','charge','prot','mass','mz'],how='outer',suffixes=['_x1','_y1'])
+	    #print 'input columns',pre_pep_save[0].columns
+            if n_replicates == 2 :
+	    	test= pre_pep_save[0]
+	    else: 
+	    	test = reduce(lambda left,right: pd.merge(left,right,on=['peptide','mass','mz','charge','prot'],how='outer'), pre_pep_save)
 	    
-	    #test= pd.merge( test ,    pre_pep_save[2],on=['peptide','charge','prot','mass','mz'],how='outer',suffixes=['_x2','_y2'])
-	    #test= pd.merge( test,    pre_pep_save[3],on=['peptide','charge','prot','mass','mz'],how='outer',suffixes=['_x3','_y3'])
-	    #test= pd.merge( test,    pre_pep_save[4],on=['peptide','charge','prot','mass','mz'],how='outer',suffixes=['_x4','_y4'])
-	    #test= pd.merge( test,    pre_pep_save[5],on=['peptide','charge','prot','mass','mz'],how='outer',suffixes=['_x5','_y5'])
-	    #test= pd.merge( test,    pre_pep_save[6],on=['peptide','charge','prot','mass','mz'],how='outer',suffixes=['_x6','_y6'])
-	    #test= pd.merge( test,    pre_pep_save[7],on=['peptide','charge','prot','mass','mz'],how='outer',suffixes=['_x7','_y7'])     
+	    # (n_replicates-1) == offset for the  model vector 
+	    #print test.columns[5:6]
 	    
-	    # (n_replicates-1) == offset thorut model vector 
-	    test['rt']= test.ix[:,5: (5 + (n_replicates-1)) ].apply(  lambda  x: combine_model(x, model_save[(jj* (n_replicates-1)):((jj+1)* (n_replicates-1) )],model_err[ (jj* (n_replicates-1)  ):((jj+1)* (n_replicates-1)  )],args.w_comb) , axis=1)
+	    test['time_pred']= test.ix[:,5: (5 + (n_replicates-1)) ].apply(  lambda  x: combine_model(x, model_save[(jj* (n_replicates-1)):((jj+1)* (n_replicates-1) )],model_err[ (jj* (n_replicates-1)  ):((jj+1)* (n_replicates-1)  )],args.w_comb) , axis=1)
 	    test['matched']= 1
 	    for field in diff_field.tolist():
 		test[field]= -1
-            
-	    for col in test.columns.tolist():
-			if not (re.search('[x|y]',col)== None) :
-				 test.drop(col, axis=1, inplace=True) 
-	   
-	    #test.drop('rt_x1', axis=1, inplace=True)
-	    #test.drop('rt_y1', axis=1, inplace=True)
+            #print test.columns.tolist() 
+	    if n_replicates > 3:
+            	test.drop('rt_x', axis=1, inplace=True)
+            	test.drop('rt_y', axis=1, inplace=True)
+	    	test.drop('rt', axis=1, inplace=True)
+	    else:
+		if  n_replicates == 3:
+			test.drop('rt_x', axis=1, inplace=True)
+            		test.drop('rt_y', axis=1, inplace=True)
+		else:
+			test.drop('rt', axis=1, inplace=True)
+	    list_name = test.columns.tolist()
+	    list_name = [w.replace('time_pred', 'rt') for w in list_name]
+	    test.columns= list_name
+
 	    
 	    ## print the entire file
 	    #test.(path_or_buf= output_dir + '/' + str(exp_set[jj].split('.')[0].split('/')[1]) +'_match.txt',sep='\t',index=False)
@@ -255,8 +274,6 @@ def run_mbr( args):
 	    logging.info('----------------------------------------------')
 	    exp_out[jj].head(10).to_csv(path_or_buf= output_dir + '/' + str(exp_set[jj].split('.')[0].split('/')[1]) +'_match.txt',sep='\t',index=False)
    	    ## forse logging handeles
-
-
 
 
 if __name__ == '__main__':
