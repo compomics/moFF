@@ -120,8 +120,9 @@ def run_mbr( args):
 			if (re.search(args.sample ,a) == None ) :
 				exp_set_app.remove(a )
 		exp_set = exp_set_app
-	if exp_set ==[] :
-                exit('ERROR input files not found. check the folder or the extension given in input')
+	if (exp_set ==[]) or (len(exp_set )==1) :
+                exit('ERROR input files not found or just one input file selected . check the folder or the extension given in input')
+
 	for a  in exp_set: 
 		print 'Reading file.... ',a
 		exp_subset.append(a)
@@ -137,6 +138,7 @@ def run_mbr( args):
 		
 			
 	print 'Read input --> done '
+	
 	## parameter of the number of query
 	## set a list of filed mandatory 
 	#['matched','peptide','mass','mz','charge','prot','rt']
