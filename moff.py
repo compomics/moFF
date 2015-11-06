@@ -1,3 +1,4 @@
+
 import numpy as np
 import glob as glob
 import pandas as pd
@@ -7,6 +8,8 @@ import subprocess
 import shlex 
 import  logging
 import argparse
+import ConfigParser
+import ast
 from StringIO import StringIO
 
 ### input###
@@ -18,6 +21,13 @@ from StringIO import StringIO
 
 
 
+def check_columns_name (col_list,col_must_have ):
+        for c_name in col_must_have:
+                if  not (c_name in col_list):
+                        # fail
+                        return 1
+        # succes
+        return 0
 
 
 
@@ -31,8 +41,13 @@ def run_apex( file_name, tol, h_rt_w , s_w, s_w_match, loc_raw,loc_output  ):
 	#s_w_match= args.rt_p_window_match
 	#loc_raw = args.raw
 	#loc_output = args.loc_out
+	
 	# flag_for matching
-   	#mbr_flag=0
+   	mbr_flag=0
+	config = ConfigParser.RawConfigParser()
+        # it s always placed in same folder of moff.py
+        config.read('moff_setting.properties')
+	# case of moff_all more than one subfolderi
 	if  len(file_name.split('/')) == 3 :
 		name =  file_name.split('/')[2].split('.')[0]
 		start = name.find('_match')
@@ -41,37 +56,55 @@ def run_apex( file_name, tol, h_rt_w , s_w, s_w_match, loc_raw,loc_output  ):
 	else:
 		 # case with just one subfolder .. stil to test
 		 name =  file_name.split('/')[1].split('.')[0]
+        
 	if loc_output != '':
 		if  not (os.path.isdir(loc_output)):
-			print "created output Dir ",output_dir
 			os.makedirs(loc_output )
-		#print 'output log location ',loc_output + '/' +  name +    '__moff.log'
+			print "created output folder", loc_output
+
+		## outputname : name of the output
 		outputname=  loc_output + '/'  +  name  +  "_moff_result.txt"
-		log = logging.getLogger('moFF paex module') 
+		log = logging.getLogger('moFF apex module') 
 		log.setLevel(logging.INFO)
 		fh = logging.FileHandler(loc_output + '/' +  name +    '__moff.log')
+		fh .setLevel(logging.INFO)
 		log.addHandler(fh)
-		#log.basicConfig(filename= loc_output + '/' +  name +    '__moff.log',filemode='w',level=log.INFO)
 	else:
-
 		outputname = name  +  "_moff_result.txt"
-		log.basicConfig(filename= name +  '__moff.log',filemode='w',level=log.INFO)
-		log = logging.getLogger('moFF paex module')
+		log = logging.getLogger('moFF apex module')
                 log.setLevel(logging.INFO)
                 fh = logging.FileHandler( name +    '__moff.log')
-                log.addHandler(fh)
+                fh .setLevel(logging.INFO)
+		log.addHandler(fh)
+		#print " output folder is the folder where the input file is located"
+	
+	#log_print = logging.getLogger('')
+ 	#log_print.setLevel(logging.INFO)
+        #console = logging.StreamHandler()
+	#formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+	#console.setFormatter(formatter)
+        #console.setLevel(logging.INFO)
+        #log_print.addHandler( console)
 
-	if loc_raw != None:
-		loc = loc_raw +  name+ '.RAW'
+	## is none if apex module is run from  moff_all 
+	if not ('/' in loc_raw):
+		 exit ('ERROR:' + loc_raw + ' wrong path  or / must be included')
 	else:
-		loc =   name + '.RAW'
-
-
-	log.info('moff Input file %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ',file_name,tol,h_rt_w,s_w)
-	log.info('Output_file in %s', outputname)
-	log.info('RAW file location %s',loc)
+		if loc_raw != None:
+			loc = loc_raw +  name+ '.RAW'
+		else:
+			loc =   name + '.RAW'
+		## 
+	print 'moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name,tol,h_rt_w,s_w)
+        print 'RAW file  :  %s' %(loc)
+	log.info('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ',file_name,tol,h_rt_w,s_w)
+	log.info('Output_file in :  %s', outputname)
+	log.info('RAW file and its location :  %s',loc)
 	##read data from file 
 	data_ms2 = pd.read_csv(file_name,sep= "\t" ,header=0)
+        if check_columns_name( data_ms2.columns.tolist(),  ast.literal_eval( config.get('moFF', 'col_must_have_x'))  ) ==1 :
+                        exit ('ERROR minimal field requested are missing or wrong')
+	
 
 	index_offset = data_ms2.columns.shape[0]   -1
 
@@ -99,31 +132,32 @@ def run_apex( file_name, tol, h_rt_w , s_w, s_w_match, loc_raw,loc_output  ):
 	##set mbr_flag
 	if 'matched' in data_ms2.columns :
 		mbr_flag=1
-		log.info('Detected mbr peptides ')
+		log.info('Apex module has detected mbr peptides')
 	c=0
+	print 'Starting apex .........',
+        
 	for index_ms2, row in data_ms2.iterrows():
-		log.info('line: %i',c)
+		if c >= 10:
+			break
+		log.info('peptide at line: %i',c)
 		mz_opt= "-mz="+str(row['mz'])
 		if mbr_flag==1:
 			s_w = s_w_match
 		if row['rt']==-1:
-			log.info('rt not found. Wrong matched peptide in the mbr step line: %i',c)
+			log.warning('rt not found. Wrong matched peptide in the mbr step line: %i',c)
 			c+=1
 			continue
 			
 		##convert rt to sec to min
 		time_w= row['rt']/60
-		## original s_W values is 0.40
-		#=0.10 # time of refinement in minutes about 20 sec
 		args = shlex.split("./txic " + mz_opt + " -tol="+ str(tol) + " -t " + str(time_w - h_rt_w) + " -t "+ str(time_w +h_rt_w) +" " + loc   )
 		p= subprocess.Popen(args,stdout=subprocess.PIPE)
 		output, err = p.communicate()
-		#print p
 		
 		try:
 			data_xic = pd.read_csv(StringIO(output.strip()), sep=' ',names =['rt','intensity'] ,header=0 )
 			ind_v = data_xic.index
-			#log.info ("XIC shape   %i x 2",  data_xic.shape[0] )
+			log.info ("XIC shape   %i ",  data_xic.shape[0] )
 			if data_xic[(data_xic['rt']> (time_w - s_w)) & ( data_xic['rt']< (time_w + s_w) )].shape[0] >=1:
 				ind_v = data_xic.index
 				pp=data_xic[ data_xic["intensity"]== data_xic[(data_xic['rt']> (time_w - s_w)) & ( data_xic['rt']< (time_w + s_w) )]['intensity'].max()].index
@@ -133,15 +167,13 @@ def run_apex( file_name, tol, h_rt_w , s_w, s_w_match, loc_raw,loc_output  ):
 			#print data_xic[ data_xic["intensity"]== data_xic[(data_xic['rt']> (time_w - )) & ( data_xic['rt']< (time_w + s_w) )]['intensity'].max()]
 			## non serve forzarlo a in
 				pos_p = ind_v[pp]
-				#log.info ("Pos of the max int",pp.values)
-				#print pos_p.values.shape[0]
 				if pos_p.values.shape[0] > 1 :
-					log.info("WARNINGS: Rt gap for the time windows searched. Probably the ppm values is too small %i", c )		
+					log.warning(" RT gap for the time windows searched. Probably the ppm values is too small %i", c )		
 					continue
 				val_max = data_xic.ix[pos_p,1].values 
 			else:
 				log.info("LW_BOUND window  %4.4f", time_w - s_w )
-				log.info("UP_BOUND windows %4.4f", time_w + s_w )
+				log.info("UP_BOUND window %4.4f", time_w + s_w )
 				log.info(data_xic[(data_xic['rt']> (time_w - (+0.60))) & ( data_xic['rt']< (time_w + (s_w+0.60)) )]   )
 				log.info("WARNINGS: moff_rtWin_peak is not enough to detect the max peak line : %i", c )
 				log.info( 'MZ: %4.4f RT: %4.4f Mass: %i',row['mz'] ,row['rt'],index_ms2 )
@@ -150,13 +182,13 @@ def run_apex( file_name, tol, h_rt_w , s_w, s_w_match, loc_raw,loc_output  ):
 			pnoise_5 =  np.percentile(data_xic[(data_xic['rt']> (time_w - 1)) & ( data_xic['rt']< (time_w + 1) )]['intensity'],5)
 			pnoise_10 = np.percentile(data_xic[(data_xic['rt']> (time_w - 1)) & ( data_xic['rt']< (time_w + 1) )]['intensity'],10) 
 		except (IndexError,ValueError,TypeError):
-			log.info("WARNINGS:  size is not enough to detect the max peak line : %i", c )
+			log.warning(" size is not enough to detect the max peak line : %i", c )
 			log.info( 'MZ: %4.4f RT: %4.4f index: %i',row['mz'] ,row['rt'],index_ms2 )
 			continue
 			c +=1
 		except pd.parser.CParserError:
-			log.info( "WARNINGS: XIC not retrived line: %i",c)
-			log.info( 'MZ: %4.4f RT: %4.4f Mass: %i',row['mz'] ,row['rt'],index_ms2 )
+			log.warning( "WARNINGS: XIC not retrived line: %i",c)
+			log.warning( 'MZ: %4.4f RT: %4.4f Mass: %i',row['mz'] ,row['rt'],index_ms2 )
 			
 			c +=1
 			continue
@@ -205,6 +237,8 @@ def run_apex( file_name, tol, h_rt_w , s_w, s_w_match, loc_raw,loc_output  ):
 
 			c+=1
 	## save  result 
+	print '..............apex terminated'
+	print 'Writing result in %s' %( outputname)
 	data_ms2.to_csv(path_or_buf =outputname ,sep="\t",header=True,index=False )
 
 
@@ -216,11 +250,11 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='moFF input parameter')
 
 
-	parser.add_argument('--input', dest='name', action='store',help='specify input list of MS2 peptides ', required=True)
+	parser.add_argument('--input', dest='name', action='store',help='specify the input file with the  of MS2 peptides', required=True)
 
-	parser.add_argument('--tol', dest='toll',action='store',type= float,help='specify the tollerance  parameter in ppm', required=True)
+	parser.add_argument('--tol', dest='toll',action='store',type= float,help='specify the tollerance parameter in ppm', required=True)
 
-	parser.add_argument('--rt_w', dest='rt_window', action='store',type= float, default=3,help='specify rt window for xic (minute). Default value is 3 min', required=True)
+	parser.add_argument('--rt_w', dest='rt_window', action='store',type= float, default=3,help='specify rt window for xic (minute). Default value is 3 min', required=False)
 
 	parser.add_argument('--rt_p', dest='rt_p_window', action='store',type= float, default=0.1,help='specify the time windows for the peak ( minute). Default value is 0.1 ', required=False)
 
@@ -238,6 +272,7 @@ if __name__ == '__main__':
         s_w_match= args.rt_p_window_match
         loc_raw = args.raw
         loc_output = args.loc_out
-
-        run_apex(file_name, tol, h_rt_w , s_w, s-w_match, loc_raw,loc_output )
+	
+	#" init here the logger
+        run_apex(file_name, tol, h_rt_w , s_w, s_w_match, loc_raw,loc_output )
 
