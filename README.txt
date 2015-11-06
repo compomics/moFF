@@ -1,16 +1,31 @@
 moFF
 ====
 
- A modest Feature Finder (but still robust) to extract feature in MS1 Data
+ A modest Feature Finder (but still robust) to extract apx MS1 itensity directly from Thermo raw
 
-moFF is  written in python and it is based on a Go library that is able to read .RAW file from Thermos machine
+moFF is written in python and it is based on a Go library that is able to read raw file from Thermo machine
 
 Required library :
 
 Python 2.7
 pandas  > 0.14.1
 numpy > 1.9.0
-argparse > 1.2.1 
+argparse > 1.2.1 i
+glob
+sci-learn >
+logging
+itertools
+os
+argparse
+re
+
+moFF is composed by two  stand alone modules : 
+moff_mbr.py to run the matching between run 
+moff.py for the apex intensity
+
+To run both modules moff_all.py is able to launch the mbr and the apex modules for the total  workflow
+
+
 
 moFF uses txic to read the .raw file, the execute txic must be located in the same folder where you have moFF.py file.
 
