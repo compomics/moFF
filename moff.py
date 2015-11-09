@@ -57,6 +57,8 @@ def run_apex( file_name, tol, h_rt_w , s_w, s_w_match, loc_raw,loc_output  ):
 		 # case with just one subfolder .. stil to test
 		 name =  file_name.split('/')[1].split('.')[0]
         
+	log = logging.getLogger('moFF apex module')
+        log.setLevel(logging.INFO)
 	if loc_output != '':
 		if  not (os.path.isdir(loc_output)):
 			os.makedirs(loc_output )
@@ -64,27 +66,14 @@ def run_apex( file_name, tol, h_rt_w , s_w, s_w_match, loc_raw,loc_output  ):
 
 		## outputname : name of the output
 		outputname=  loc_output + '/'  +  name  +  "_moff_result.txt"
-		log = logging.getLogger('moFF apex module') 
-		log.setLevel(logging.INFO)
-		fh = logging.FileHandler(loc_output + '/' +  name +    '__moff.log')
-		fh .setLevel(logging.INFO)
-		log.addHandler(fh)
+		fh = logging.FileHandler(loc_output + '/' +  name +    '__moff.log',mode='w')
 	else:
 		outputname = name  +  "_moff_result.txt"
-		log = logging.getLogger('moFF apex module')
-                log.setLevel(logging.INFO)
-                fh = logging.FileHandler( name +    '__moff.log')
-                fh .setLevel(logging.INFO)
-		log.addHandler(fh)
-		#print " output folder is the folder where the input file is located"
+       		fh = logging.FileHandler(  name +    '__moff.log',mode='w') 
+
+        fh .setLevel(logging.INFO)
+	log.addHandler(fh)
 	
-	#log_print = logging.getLogger('')
- 	#log_print.setLevel(logging.INFO)
-        #console = logging.StreamHandler()
-	#formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-	#console.setFormatter(formatter)
-        #console.setLevel(logging.INFO)
-        #log_print.addHandler( console)
 
 	## is none if apex module is run from  moff_all 
 	if not ('/' in loc_raw):
@@ -157,7 +146,7 @@ def run_apex( file_name, tol, h_rt_w , s_w, s_w_match, loc_raw,loc_output  ):
 		try:
 			data_xic = pd.read_csv(StringIO(output.strip()), sep=' ',names =['rt','intensity'] ,header=0 )
 			ind_v = data_xic.index
-			log.info ("XIC shape   %i ",  data_xic.shape[0] )
+			#log.info ("XIC shape   %i ",  data_xic.shape[0] )
 			if data_xic[(data_xic['rt']> (time_w - s_w)) & ( data_xic['rt']< (time_w + s_w) )].shape[0] >=1:
 				ind_v = data_xic.index
 				pp=data_xic[ data_xic["intensity"]== data_xic[(data_xic['rt']> (time_w - s_w)) & ( data_xic['rt']< (time_w + s_w) )]['intensity'].max()].index
