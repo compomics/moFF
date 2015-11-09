@@ -7,16 +7,11 @@ moFF is written in python and it is based on a Go library that is able to read r
 Required library :
 
 Python 2.7
-pandas  > 0.14.1
+pandas  > 0.17.
 numpy > 1.9.0
-argparse > 1.2.1 i
-glob
-sci-learn >
+argparse > 1.2.1 
+scikit-learn > 0.17
 logging
-itertools
-os
-argparse
-re
 
 moFF is composed by two stand alone modules : 
 	moff_mbr.py :  matching between run 
