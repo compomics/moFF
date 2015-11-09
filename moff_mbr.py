@@ -87,13 +87,13 @@ def run_mbr( args):
 		if '/' in  str(args.loc_in):
 			output_dir=  str(args.loc_in) + 'mbr_output'
 		else:
-			 exit(str(args.loc_in) +' EXIT inputF path not well specified --> / missing ')
+			 exit(str(args.loc_in) +' EXIT input foldet path not well specified --> / missing ')
 
 	if  not (os.path.isdir(output_dir)):
-		#print "Created output folder in ",output_dir
+		print "Created MBR output folder in ",output_dir
 		os.makedirs(output_dir )
 	else:
-		print "Output folder in :",output_dir	
+		print "MBR Output folder in :",output_dir	
 
 	
 	config = ConfigParser.RawConfigParser()
@@ -121,6 +121,7 @@ def run_mbr( args):
 				exp_set_app.remove(a )
 		exp_set = exp_set_app
 	if (exp_set ==[]) or (len(exp_set )==1) :
+		print exp_set
                 exit('ERROR input files not found or just one input file selected . check the folder or the extension given in input')
 
 	for a  in exp_set: 
@@ -131,7 +132,7 @@ def run_mbr( args):
 		if check_columns_name( list_name,  ast.literal_eval( config.get('moFF', 'col_must_have_x'))  ) ==1 :
 			exit ('ERROR minimal field requested are missing or wrong')
 		data_moff['matched']=0
-		data_moff = data_moff.sort('rt')
+		data_moff = data_moff.sort_values(by='rt')
 		exp_t.append(data_moff)
 		exp_out.append(data_moff)
 
@@ -160,10 +161,17 @@ def run_mbr( args):
 
 	##input of the methods
 
-	logging.basicConfig(filename=   args.loc_in +  '/'   +  args.log_label + '_' +'mbr_.log',filemode='w',level=logging.DEBUG)
-	logging.info('Filtering is %s :',   'active' if args.out_flag==1 else 'not atcive'    )
-	logging.info( 'Number of replicates %i,', n_replicates)
-	logging.info( 'Pairwise model computation ----')
+	#logging.basicConfig(filename=   args.loc_in +  '/'   +  args.log_label + '_' +'mbr_.log',filemode='w',level=logging.DEBUG)
+	
+	log_mbr = logging.getLogger('MBR module')
+	log_mbr.setLevel(logging.INFO)
+	w_mbr = logging.FileHandler(args.loc_in +  '/'   +  args.log_label + '_' +'mbr_.log', mode='w')
+	w_mbr .setLevel(logging.INFO)
+	log_mbr.addHandler(w_mbr)
+
+	log_mbr.info('Filtering is %s :',   'active' if args.out_flag==1 else 'not atcive'    )
+	log_mbr.info( 'Number of replicates %i,', n_replicates)
+	log_mbr.info( 'Pairwise model computation ----')
 
 	for jj in aa:
 	    sum_values=np.array([0,0,0])
@@ -171,16 +179,16 @@ def run_mbr( args):
 	    
 	    for i in out:
 		if  i[0] == jj and i[1] != jj:
-		    logging.info( '  Matching  %s peptide in   searching in %s ', exp_set[i[0]] ,exp_set[i[1]])
+		    log_mbr.info( '  Matching  %s peptide in   searching in %s ', exp_set[i[0]] ,exp_set[i[1]])
 		    list_pep_repA = exp_t[i[0]]['peptide'].unique()
 		    list_pep_repB =  exp_t[i[1]]['peptide'].unique()
-		    logging.info( '  Peptide unique  %i , %i ',  list_pep_repA.shape[0], list_pep_repB.shape[0])
+		    log_mbr.info( '  Peptide unique  %i , %i ',  list_pep_repA.shape[0], list_pep_repB.shape[0])
 		    set_dif_s_in_1 = np.setdiff1d(list_pep_repB,list_pep_repA)
 		    add_pep_frame = exp_t[i[1]][exp_t[i[1]]['peptide'].isin(set_dif_s_in_1)].copy()
 		    #print add_pep_frame.columns
 		    pep_shared = np.intersect1d(list_pep_repA,list_pep_repB)
-		    logging.info( '  Peptide to add size  %i ',  add_pep_frame.shape[0])
-		    logging.info( '  Peptide shared  %i ',  pep_shared.shape[0])
+		    log_mbr.info( '  Peptide to add size  %i ',  add_pep_frame.shape[0])
+		    log_mbr.info( '  Peptide shared  %i ',  pep_shared.shape[0])
 		    comA =   exp_t[i[0]][ exp_t[i[0]]['peptide'].isin(pep_shared)][['peptide','prot','rt']]
 		    comB =   exp_t[i[1]][ exp_t[i[1]]['peptide'].isin(pep_shared)][['peptide','prot','rt']]
 		    comA = comA.groupby('peptide',as_index=False).mean()
@@ -198,29 +206,29 @@ def run_mbr( args):
 					data_A=  filt_y
 					data_B=  np.reshape(data_B,[filt_x.shape[0],1])
 					data_A=  np.reshape(data_A,[filt_y.shape[0],1])
-					logging.info( 'Outlier founded %i  w.r.t %i', pos_out.shape[0],common['rt_y'].shape[0] )
+					log_mbr.info( 'Outlier founded %i  w.r.t %i', pos_out.shape[0],common['rt_y'].shape[0] )
 				else:
 					data_B=  common['rt_y'].values
 					data_A=  common['rt_x'].values
 					data_B=  np.reshape(data_B,[common.shape[0],1])
 					data_A=  np.reshape(data_A,[common.shape[0],1])
-				logging.info(' Size trainig shared peptide , %i %i ',data_A.shape[0], data_B.shape[0]) 
+				log_mbr.info(' Size trainig shared peptide , %i %i ',data_A.shape[0], data_B.shape[0]) 
 				clf = linear_model.RidgeCV(alphas=np.power(2,np.linspace(-30,30)),scoring='mean_absolute_error')
 				clf.fit(data_B,data_A)   
-				#logging.info( ' alpha of the CV ridge regression model %4.4f',clf.alpha_)
+				#log_mbr.info( ' alpha of the CV ridge regression model %4.4f',clf.alpha_)
 				clf_final= linear_model.Ridge(alpha=clf.alpha_)
 				clf_final.fit(data_B,data_A)
 				## save the model 
 				model_save.append(clf_final)  
 				model_err.append( mean_absolute_error(data_A, clf_final.predict(data_B)))
-				logging.info(' Mean absolute error training : %4.4f sec', mean_absolute_error(data_A, clf_final.predict(data_B)) )
+				log_mbr.info(' Mean absolute error training : %4.4f sec', mean_absolute_error(data_A, clf_final.predict(data_B)) )
 				model_status.append(1)
 	if np.where(np.array(model_status) == -1)[0].shape[0] >= (len(aa)/2):
-		logging.info( 'MBR aborted :  mbr cannnot be run, not enough shared pepetide among the replicates ')
+		log_mbr.warning( 'MBR aborted :  mbr cannnot be run, not enough shared pepetide among the replicates ')
 		exit('ERROR : mbr cannnot be run, not enough shared pepetide among the replicates')
 	
-	logging.info( 'Combination of the  model  --------')
-	logging.info('Weighted combination  %s : ',  'Weighted' if    int( args.w_comb)==1 else 'Unweighted'   )
+	log_mbr.info( 'Combination of the  model  --------')
+	log_mbr.info('Weighted combination  %s : ',  'Weighted' if    int( args.w_comb)==1 else 'Unweighted'   )
 
 	diff_field = np.setdiff1d(exp_t[0].columns , ['matched','peptide','mass','mz','charge','prot','rt']) 
 	
@@ -229,7 +237,7 @@ def run_mbr( args):
 	    print 'Predict rt for the exp.  in ', exp_set[jj]
 	    for i in out:
 		if  i[0] == jj and i[1] != jj:
-		    logging.info('Matching peptides found  in  %s ',exp_set[i[1]])
+		    log_mbr.info('Matching peptides found  in  %s ',exp_set[i[1]])
 		    list_pep_repA = exp_t[i[0]]['peptide'].unique()
 		    list_pep_repB =  exp_t[i[1]]['peptide'].unique()
 		    set_dif_s_in_1 = np.setdiff1d(list_pep_repB,list_pep_repA)
@@ -270,12 +278,12 @@ def run_mbr( args):
 	    
 	    ## print the entire file
 	    #test.(path_or_buf= output_dir + '/' + str(exp_set[jj].split('.')[0].split('/')[1]) +'_match.txt',sep='\t',index=False)
-	    logging.info('Before adding %s contains %i ', exp_set[jj],exp_t[jj].shape[0])
+	    log_mbr.info('Before adding %s contains %i ', exp_set[jj],exp_t[jj].shape[0])
 	    exp_out[jj]=pd.concat([exp_t[jj], test ]  , join='outer', axis=0)
-	    logging.info('After MBR %s contains:  %i  peptides', exp_set[jj] ,exp_out[jj].shape[0] )
-	    logging.info('----------------------------------------------')
+	    log_mbr.info('After MBR %s contains:  %i  peptides', exp_set[jj] ,exp_out[jj].shape[0] )
+	    log_mbr.info('----------------------------------------------')
 	    exp_out[jj].head(10).to_csv(path_or_buf= output_dir + '/' + str(exp_set[jj].split('.')[0].split('/')[1]) +'_match.txt',sep='\t',index=False)
-   	    ## forse logging handeles
+   	    ## forse log_mbr handeles
 
 
 if __name__ == '__main__':
