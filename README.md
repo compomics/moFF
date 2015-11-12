@@ -3,12 +3,12 @@
 ================================
 
 
-*[Introduction] (# Introduction)
-*[Requirement] (# Requirement)
-*[Run the sample data] (#Run the sample data)
-*[Matching Between Run] (# Matching Between Runs)
-*[Apex intensity] (#Apex Intensity)
-*[Entire workflow] (# Entire Workflow)
+- *[Introduction] (# Introduction)
+- *[Requirement] (# Requirement)
+- *[Run the sample data] (#Run the sample data)
+- *[Matching Between Run] (# Matching Between Runs)
+- *[Apex intensity] (#Apex Intensity)
+- *[Entire workflow] (# Entire Workflow)
 
 
 
@@ -32,11 +32,11 @@ To run  the entire workflow (mbr and apex ) you should  use  moff_all.py.
 
 Required python  library :
 
-Python 2.7
-pandas  > 0.17.
-numpy > 1.10.0
-argparse > 1.2.1 
-scikit-learn > 0.17
+- Python 2.7
+- pandas  > 0.17.
+- numpy > 1.10.0
+- argparse > 1.2.1 
+- scikit-learn > 0.17
 
 moFF uses **txic** to extract the XiC data from the raw files, so  ** txic**  must be located in the same folder where you have all moFF scripts.
 
@@ -62,8 +62,7 @@ The retention time must be specified in second
 # Run the sample data  
 
 In the folder f1_folder you have three input files, that contain the MS2  identified  peptides (sing MASCOT) of three runs (three tecnical replicates ) from  the CPTAC study 6. 
-you can download the relative raw files from https://goo.gl/ukbpCI, in order to run the next examples.
-
+you can download the relative [raw files]( https://goo.gl/ukbpCI), in order to run the next examples.
 
 
 ---
