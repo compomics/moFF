@@ -2,13 +2,12 @@
 #A modest Feature Finder (but still robust) to extract apex MS1 itensity directly from Thermo  raw file 
 ================================
 
-
-- *[Introduction] (# Introduction)
-- *[Requirement] (# Requirement)
-- *[Run the sample data] (#Run the sample data)
-- *[Matching Between Run] (# Matching Between Runs)
-- *[Apex intensity] (#Apex Intensity)
-- *[Entire workflow] (# Entire Workflow)
+ | *[Introduction] (# Introduction)
+ | *[Requirement] (# Requirement)
+ | *[Run the sample data] (#Run the sample data)
+ | *[Matching Between Run] (# Matching Between Runs)
+ | *[Apex intensity] (#Apex Intensity)
+ | *[Entire workflow] (# Entire Workflow)
 
 
 
@@ -19,10 +18,12 @@
 
 moFF is a python tool that quantifies MS1 intensity peak starting from a list of MS2 idenfied peptide 
 moFF works directly and only on Thermo Raw file thanks to a Go library that is able to read the data from Thersmos raw file without any kind of conversion in other formats.
+
 moFF is composed by two stand alone modules :
-- moff_mbr.py :  matching between run
-- moff.py :  apex intensity
-To run  the entire workflow (mbr and apex ) you should  use  moff_all.py.
+- *moff_mbr.py* :  matching between run
+- *moff.py* :  apex intensity
+
+To run  the entire workflow (mbr and apex ) you should  use  *moff_all.py*
 
 
 
@@ -38,30 +39,29 @@ Required python  library :
 - argparse > 1.2.1 
 - scikit-learn > 0.17
 
-moFF uses **txic** to extract the XiC data from the raw files, so  ** txic**  must be located in the same folder where you have all moFF scripts.
+moFF uses *txic* to extract the XiC data from the raw files, so  *txic*  must be located in the same folder where you have all moFF scripts.
 
 The txic program is compatibale with  the raw file of all the Orbitrap and triple quadrupole Thermo machines. 
 For the moment it does not work with the Thermo Fusion machine.
 
-The input files that contain the list of the MS2 identified peptides (you can use any search engines) must contains the information showed in moFF_setting..property for each peptide.
-moFF_setting.property : it specifies the minimun specificic requirements of the input files tha are :
+The input files that contain the list of the MS2 identified peptides (you can use any search engines) must contains the information showed in *moFF_setting.property* for each peptide.
+The minimun specificic requirements of the input files are :
 - tab delimited file
 - the header of the input file should contain the following the fields  and columnns names :  
   - 'peptide' : sequence of the peptide
   - 'prot': protein ID 
-  - 'rt': retention time of peptide  
+  - 'rt': retention time of peptide   ( The retention time must be specified in second )
   - 'mz' : mass over charge
   - 'mass' : mass of the peptide
   - 'charge' : charge of the ionized peptide
 
-see the sample input files in the folder f1_folder.
-The retention time must be specified in second
+see the sample input files in the folder *f1_folder* for more information .
 
 ---
 
 # Run the sample data  
 
-In the folder f1_folder you have three input files, that contain the MS2  identified  peptides (sing MASCOT) of three runs (three tecnical replicates ) from  the CPTAC study 6. 
+In the folder *f1_folder* you have three input files, that contain the MS2 identified  peptides (sing MASCOT) of three runs (three tecnical replicates ) from  the CPTAC study 6. 
 you can download the relative [raw files]( https://goo.gl/ukbpCI), in order to run the next examples.
 
 
@@ -69,8 +69,8 @@ you can download the relative [raw files]( https://goo.gl/ukbpCI), in order to r
 
 #Matching between run module:
 
-use :  python moff_mbr.py -h
-
+use :  `python moff_mbr.py -h`
+```
   --inputF LOC_IN             specify the folder of the input MS2 peptide files [REQUIRED]
   --sample SAMPLE            specify which replicate files are used fot mbr [regular expr. are valid]
   --ext EXT                  specify the exstension of the input file (txt as default value)
@@ -78,9 +78,9 @@ use :  python moff_mbr.py -h
   --filt_width W_FILT        iwidth value of the filter (k * mean(Dist_Malahobis) , k = 2 as default)
   --out_filt OUT_FLAG        filter outlier in each rt time allignment (active as default)
   --weight_comb W_COMB       weights for model combination combination : 0 for no weight (default) 1 weighted devised by model errors.
+```
 
-
-python moff_mbr.py --inputF f1_folder/ 
+`python moff_mbr.py --inputF f1_folder/` 
 
 It runs the mbr modules and save the output files in a subfolder  called 'mbr_output' inside the folder given in input.
 The mbr module will take all the .txt files in your input folder as replicates. (to select specific files or different extension see below))
@@ -89,11 +89,11 @@ The rt field of the matched peptide contains the predicted rt retentioins time.
 
 if your input files inside your working fodler  have another exstension like (.list, etc) you can use :
 
-use : python --inputF f1_folder/ --ext list ( Do not specify '.list' but only 'list')
+use : `python --inputF f1_folder/ --ext list ` ( Do not specify '.list' but only 'list')
 
 if you need to select specific input files from your working folder  ( choose  ) , you can use an regular expression as:
 
-use : python --inputF f1_folder/  --sample *_6A (you can also use --ext option if you need)
+use : `python --inputF f1_folder/  --sample *_6A ` (you can also use --ext option if you need)
 
 the mbr will output a log file (moFF_mbr.log as default log file name) with all the details and it is saved inside the  --inputF given in inout
 
