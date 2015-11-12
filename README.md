@@ -1,12 +1,12 @@
 # moFF 
 ## A modest Feature Finder (but still robust) to extract apex MS1 intensity directly from Thermo raw file ##
 
-| [Introduction](#introduction)
-| [Requirement](#requirement)
-| [Run the sample data](#run_the_sample_data)
-| [Matching Between Runs](#matching_between_runs)
-| [Apex intensity](#apex_intensity)
-| [Entire workflow](#entire_workflow)
+[Introduction](#introduction)
+[Requirement](#requirement)
+[Run the sample data](#sample)
+[Matching Between Runs](#mbr)
+[Apex intensity](#apex-intensity)
+[Entire workflow](#entire-workflow)
 
 
 ---
@@ -39,8 +39,7 @@ moFF uses *txic* to extract the XiC data from the raw files, so  *txic*  must be
 The txic program is compatibale with  the raw file of all the Orbitrap and triple quadrupole Thermo machines. 
 For the moment it does not work with the Thermo Fusion machine.
 
-The input files that contain the list of the MS2 identified peptides (you can use any search engines) must contains the information showed in *moFF_setting.property* for each peptide.
-The minimun specificic requirements of the input files are :
+The input files that contain the list of the MS2 identified peptides (you can use any search engines) must contains the information showed in *moFF_setting.property* for each peptide. The minimun specificic requirements of the input files are :
 - tab delimited file
 - the header of the input file should contain the following the fields  and columnns names :  
   - 'peptide' : sequence of the peptide
@@ -107,7 +106,7 @@ use  `python moff.py -h`
 ```
 `python moff.mbr --input f1_folder/20080311_CPTAC6_07_6A005.txt  --raw_rep f1_folder/ --tol 1O ` 
  
-it run the apex module on the input file , extraxing the apex intesity from the respective raw files in folder specified.
+It run the apex module on the input file , extraxing the apex intesity from the respective raw files in folder specified.
 In the output files moFF just adds the following fields to your origin input file:
 - "intensity" intensity, taking the highest peak in the XIC
 - "rt_peak" rt of the highest peak
