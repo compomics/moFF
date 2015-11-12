@@ -22,7 +22,6 @@ moFF is composed by two stand alone modules :
 
 To run  the entire workflow (mbr and apex ) you should  use  *moff_all.py*
 
-
 ----
 
 ## Requirement ##
@@ -58,8 +57,7 @@ see the sample input files in the folder *f1_folder* for more information .
 ## Run the sample data  ##
 
 In the folder *f1_folder* you have three input files, that contain the MS2 identified  peptides (sing MASCOT) of three runs (three tecnical replicates ) from  the CPTAC study 6. 
-you can download the relative [raw files]( https://goo.gl/ukbpCI), in order to run the next examples.
-
+You can download the relative [raw files]( https://goo.gl/ukbpCI), in order to run the next examples.
 
 ---
 
@@ -80,7 +78,7 @@ use :  `python moff_mbr.py -h`
 
 It runs the mbr modules and save the output files in a subfolder  called 'mbr_output' inside the folder given in input.
 The mbr module will take all the .txt files in your input folder as replicates. (to select specific files or different extension see below))
-In the f1_folder/mbr_output you will find the same number of the input files, but they will have a new field called 'matched' that specifies which peptides are matched  (1) or the not (0)
+In *f1_folder/mbr_output* you will find the same number of the input files, but they will have a new field called 'matched' that specifies which peptides are matched  (1) or the not (0)
 The rt field of the matched peptide contains the predicted rt retentioins time.
 
 if your input files inside your working fodler  have another exstension like (.list, etc) you can use :
@@ -127,8 +125,9 @@ REMARK : the raw file names  MUST be the same of the input file otherwise the sc
 python moff.mbr --input f1_folder/20080311_CPTAC6_07_6A005.txt  --raw_rep f1_folder/ --tol 1O --output_folder output_moff
 It will put the results in the folder output_moff
 
+---
 
-Run the entire workflow (Mbr + Apex ) :
+## Entire workflow ##
 
 use python moff_all.py
 
@@ -151,4 +150,4 @@ python moff_all.py --inputF  f1_folder/   --raw_repo f1_folder/ --output_folder 
 The option are the same of the two modules, the the output mbr files are stores in the folder f1_folder/mbr_output  and the result of the apex module are stored in output_moff
 Also the log files are stored in the respective folders
 
-
+---
