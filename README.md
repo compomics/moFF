@@ -28,8 +28,7 @@ To run  the entire workflow (mbr and apex ) you should  use  *moff_all.py*
 
 ## Requirement ##
 
-Required python  library :
-
+Required python libraries :
 - Python 2.7
 - pandas  > 0.17.
 - numpy > 1.10.0
@@ -41,7 +40,7 @@ moFF uses *txic* to extract the XiC data from the raw files, so  *txic*  must be
 The txic program is compatibale with  the raw file of all the Orbitrap and triple quadrupole Thermo machines. 
 For the moment it does not work with the Thermo Fusion machine.
 
-The input files that contain the list of the MS2 identified peptides (you can use any search engines) must contains the information showed in *moFF_setting.property* for each peptide. The minimun specificic requirements of the input files are :
+The input files that contain the list of the MS2 identified peptides (you can use any search engines) must contains the information showed in *moFF_setting.property* for each peptide. The minimun specificic requirements of the input files are:
 - tab delimited file
 - the header of the input file should contain the following the fields  and columnns names :  
   - 'peptide' : sequence of the peptide
@@ -59,7 +58,7 @@ see the sample input files in the folder *f1_folder* for more information .
 
 ## Sample data  ##
 
-In the folder *f1_folder* you have three input files, that contain the MS2 identified  peptides (sing MASCOT) of three runs (three tecnical replicates ) from  the CPTAC study 6. 
+In the folder *f1_folder* you have three input files, that contain the MS2 identified  peptides founded by MASCOT of three runs (three tecnical replicates) from  the CPTAC study 6. 
 You can download the relative [raw files]( https://goo.gl/ukbpCI), in order to run the next examples.
 
 ---
