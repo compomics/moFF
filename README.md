@@ -21,7 +21,7 @@ moFF is composed by two stand alone modules :
 - *moff.py* :  apex intensity
 
 To run  the entire workflow (mbr and apex ) you should  use  *moff_all.py*
-
+[Go to top of page](#moff)
 ----
 
 ## Requirement ##
