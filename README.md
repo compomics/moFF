@@ -1,50 +1,74 @@
-# moFF : A modest Feature Finder (but still robust) to extract apex MS1 itensity directly from Thermo  raw file 
+### moFF : 
+#A modest Feature Finder (but still robust) to extract apex MS1 itensity directly from Thermo  raw file 
 ================================
 
 
-moFF is written in python and it is based on a Go library that is able to read raw file from Thermo machine
+*[Introduction] (# Introduction)
+*[Requirement] (# Requirement)
+*[Run the sample data] (#Run the sample data)
+*[Matching Between Run] (# Matching Between Runs)
+*[Apex intensity] (#Apex Intensity)
+*[Entire workflow] (# Entire Workflow)
 
-Required library :
 
-Python 2.7
-pandas  > 0.17.
-numpy > 1.9.0
-argparse > 1.2.1 
-scikit-learn > 0.17
 
-moFF is composed by two stand alone modules : 
-	moff_mbr.py :  matching between run 
-	moff.py :  apex intensity
 
+---
+
+#Introduction
+
+moFF is a python tool that quantifies MS1 intensity peak starting from a list of MS2 idenfied peptide 
+moFF works directly and only on Thermo Raw file thanks to a Go library that is able to read the data from Thersmos raw file without any kind of conversion in other formats.
+moFF is composed by two stand alone modules :
+- moff_mbr.py :  matching between run
+- moff.py :  apex intensity
 To run  the entire workflow (mbr and apex ) you should  use  moff_all.py.
 
 
 
-moFF uses txic to extract the XiC data from the raw files, so the execute txic must be located in the same folder where you have all moFF scripts.
+
+----
+# Requirement
+
+Required python  library :
+
+Python 2.7
+pandas  > 0.17.
+numpy > 1.10.0
+argparse > 1.2.1 
+scikit-learn > 0.17
+
+moFF uses **txic** to extract the XiC data from the raw files, so  ** txic**  must be located in the same folder where you have all moFF scripts.
 
 The txic program is compatibale with  the raw file of all the Orbitrap and triple quadrupole Thermo machines. 
 For the moment it does not work with the Thermo Fusion machine.
 
 The input files that contain the list of the MS2 identified peptides (you can use any search engines) must contains the information showed in moFF_setting..property for each peptide.
 moFF_setting.property : it specifies the minimun specificic requirements of the input files tha are :
-	-- tab delimited file
-	-- the header of the infput file should  contains the following the fields  and columnns names  :  
-		'peptide' : sequence of the peptide
-		'prot': protein ID 
-		'rt': retention time of peptide  
-		'mz' : mass over charge
-		'mass' : mass of the peptide
-		'charge' : charge of the ionized peptide
+- tab delimited file
+- the header of the input file should contain the following the fields  and columnns names :  
+  - 'peptide' : sequence of the peptide
+  - 'prot': protein ID 
+  - 'rt': retention time of peptide  
+  - 'mz' : mass over charge
+  - 'mass' : mass of the peptide
+  - 'charge' : charge of the ionized peptide
 
 see the sample input files in the folder f1_folder.
 The retention time must be specified in second
 
+---
+
+# Run the sample data  
 
 In the folder f1_folder you have three input files, that contain the MS2  identified  peptides (sing MASCOT) of three runs (three tecnical replicates ) from  the CPTAC study 6. 
 you can download the relative raw files from https://goo.gl/ukbpCI, in order to run the next examples.
 
 
-Matching between run module:
+
+---
+
+#Matching between run module:
 
 use :  python moff_mbr.py -h
 
