@@ -22,6 +22,8 @@ moFF is composed by two stand alone modules :
 
 To run  the entire workflow (mbr and apex ) you should  use  *moff_all.py*
 
+[Top of page](#moFF)
+
 ----
 
 ## Requirement ##
@@ -128,7 +130,7 @@ It will save the results in the folder output_moff
 
 ## Entire workflow ##
 
-use `python moff_all.py --help`
+use `python moff_all.py -h`
 ```
 	--inputF LOC_IN       specify the folder of the input MS2 peptide list files
   	--sample SAMPLE       specify witch replicated use for mbr reg_exp are valid
