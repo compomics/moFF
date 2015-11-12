@@ -1,10 +1,10 @@
-# moFF 
+# moFF #
 ## A modest Feature Finder (but still robust) to extract apex MS1 intensity directly from Thermo raw file ##
 
 [Introduction](#introduction)
 [Requirement](#requirement)
-[Sample data](#sample)
-[Matching Between Runs](#mbr)
+[Sample data](#sample-data)
+[Matching Between Runs](#matching-between-runs)
 [Apex intensity](#apex-intensity)
 [Entire workflow](#entire-workflow)
 
@@ -22,7 +22,7 @@ moFF is composed by two stand alone modules :
 
 To run  the entire workflow (mbr and apex ) you should  use  *moff_all.py*
 
-[Top of page](#moFF)
+[Top of page](#moff)
 
 ----
 
@@ -52,6 +52,8 @@ The input files that contain the list of the MS2 identified peptides (you can us
   - 'charge' : charge of the ionized peptide
 
 see the sample input files in the folder *f1_folder* for more information .
+
+[Top of page](#moff)
 
 ---
 
@@ -92,6 +94,8 @@ use : `python --inputF f1_folder/  --sample *_6A ` (you can also use --ext optio
 
 the mbr will output a log file (moFF_mbr.log as default log file name) with all the details and it is saved inside the  folder given in inout
 
+[Top of page](#moff)
+
 ---
 
 ## Apex Intensity ##
@@ -126,6 +130,8 @@ WARNING : the raw file names  MUST be the same of the input file otherwise the s
 use `python moff.mbr --input f1_folder/20080311_CPTAC6_07_6A005.txt  --raw_rep f1_folder/ --tol 1O --output_folder output_moff`
 It will save the results in the folder output_moff
 
+[Top of page](#moff)
+
 ---
 
 ## Entire workflow ##
@@ -149,5 +155,7 @@ use `python moff_all.py -h`
 `python moff_all.py --inputF  f1_folder/   --raw_repo f1_folder/ --output_folder output_moff`
 
 The options are the same of the two modules, the the output mbr files are stores in the folder f1_folder/mbr_output  and the result of the apex module are stored in output_moff. Also the log files are stored in the respective folders
+
+[Top of page](#moff)
 
 ---
