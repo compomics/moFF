@@ -1,12 +1,12 @@
 # moFF 
 ## A modest Feature Finder (but still robust) to extract apex MS1 intensity directly from Thermo raw file ##
 
-| * [Introduction](# Introduction)
-| * [Requirement](# Requirement)
-| * [Run the sample data](#Run the sample data)
-| * [Matching Between Run](# Matching Between Runs)
-| * [Apex intensity](#Apex Intensity)
-| * [Entire workflow](# Entire Workflow)
+| [Introduction](# Introduction)
+| [Requirement](# Requirement)
+| [Run the sample data](#Run the sample data)
+| [Matching Between Run](# Matching Between Runs)
+| [Apex intensity](#Apex Intensity)
+| [Entire workflow](# Entire Workflow)
 
 
 ---
@@ -21,7 +21,8 @@ moFF is composed by two stand alone modules :
 - *moff.py* :  apex intensity
 
 To run  the entire workflow (mbr and apex ) you should  use  *moff_all.py*
-[Go to top of page](#moff)
+
+
 ----
 
 ## Requirement ##
