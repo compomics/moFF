@@ -1,4 +1,4 @@
-# moFF # 
+# moFF 
 ## A modest Feature Finder (but still robust) to extract apex MS1 intensity directly from Thermo raw file ##
 
 | * [Introduction](# Introduction)
@@ -11,7 +11,7 @@
 
 ---
 
-#Introduction
+## Introduction ##
 
 moFF is a python tool that quantifies MS1 intensity peak starting from a list of MS2 idenfied peptide 
 moFF works directly and only on Thermo Raw file thanks to a Go library that is able to read the data from Thersmos raw file without any kind of conversion in other formats.
@@ -22,11 +22,9 @@ moFF is composed by two stand alone modules :
 
 To run  the entire workflow (mbr and apex ) you should  use  *moff_all.py*
 
-
-
-
 ----
-# Requirement
+
+## Requirement ##
 
 Required python  library :
 
@@ -56,7 +54,7 @@ see the sample input files in the folder *f1_folder* for more information .
 
 ---
 
-# Run the sample data  
+## Run the sample data  ##
 
 In the folder *f1_folder* you have three input files, that contain the MS2 identified  peptides (sing MASCOT) of three runs (three tecnical replicates ) from  the CPTAC study 6. 
 you can download the relative [raw files]( https://goo.gl/ukbpCI), in order to run the next examples.
@@ -64,7 +62,7 @@ you can download the relative [raw files]( https://goo.gl/ukbpCI), in order to r
 
 ---
 
-#Matching between run module:
+## Matching between run module ##
 
 use :  `python moff_mbr.py -h`
 ```
@@ -92,14 +90,14 @@ if you need to select specific input files from your working folder  ( choose  )
 
 use : `python --inputF f1_folder/  --sample *_6A ` (you can also use --ext option if you need)
 
-the mbr will output a log file (moFF_mbr.log as default log file name) with all the details and it is saved inside the  --inputF given in inout
+the mbr will output a log file (moFF_mbr.log as default log file name) with all the details and it is saved inside the  folder given in inout
 
+---
 
+## Apex module ##
 
-Apex module:
-
-use  python moff.py -h
-
+use  `python moff.py -h`
+````
   --input NAME                        specify the input file with the of MS2 peptides
   --tol TOLL                          specify the tollerance parameter in ppm
   --rt_w RT_WINDOW                    specify rt window for xic (minute). Default value is 3 min
@@ -107,19 +105,18 @@ use  python moff.py -h
   --rt_p_match RT_P_WINDOW_MATCH      specify the time windows for the matched peptide peak ( minute). Default value is 0.4
   --raw_repo RAW                      specify the raw file repository
   --output_folder LOC_OUT             specify the folder output
-
-python moff.mbr --input f1_folder/20080311_CPTAC6_07_6A005.txt  --raw_rep f1_folder/ --tol 1O 
+```
+`python moff.mbr --input f1_folder/20080311_CPTAC6_07_6A005.txt  --raw_rep f1_folder/ --tol 1O ` 
  
-it run the apex module on the input file , extraxing the apex intesity from the respective raw file in folder --raw_repo.
-In the output files, moFF just add the following fields to  your origin input file:
-
-	"intensity" intensity, taking the highest peak in the XIC
-	"rt_peak" rt of the highest peak
-	"lwhm" left width half maximun of the signal in seconds
-	"rwhm" right width half maximun of the signal in seconds
-	"SNR" signal-to-noise
-	"log_L_R" log ratio of lwhm over rwhm (peak shape )
-	"log_int" log 2 of the intesity 
+it run the apex module on the input file , extraxing the apex intesity from the respective raw files in folder specified.
+In the output files moFF just adds the following fields to your origin input file:
+_ "intensity" intensity, taking the highest peak in the XIC
+_ "rt_peak" rt of the highest peak
+_ "lwhm" left width half maximun of the signal in seconds
+_ "rwhm" right width half maximun of the signal in seconds
+_ "SNR" signal-to-noise
+_ "log_L_R" log ratio of lwhm over rwhm (peak shape )
+_ "log_int" log 2 of the intesity 
 
 It generates a .log file (with same name of input file ) that contains  detailesd information for each peak retrieved.
 This module determines automaticaly if the input file contains matched peptides or not.
