@@ -1,4 +1,4 @@
-moFF : A modest Feature Finder (but still robust) to extract apex MS1 itensity directly from Thermo  raw file 
+# moFF : A modest Feature Finder (but still robust) to extract apex MS1 itensity directly from Thermo  raw file 
 ================================
 
 
