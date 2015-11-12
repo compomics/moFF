@@ -1,13 +1,12 @@
-### moFF : 
-#A modest Feature Finder (but still robust) to extract apex MS1 itensity directly from Thermo  raw file 
-================================
+#moFF : 
+##A modest Feature Finder (but still robust) to extract apex MS1 itensity directly from Thermo  raw file 
 
- | * [Introduction] (# Introduction)
- | * [Requirement] (# Requirement)
- | *[ Run the sample data] (#Run the sample data)
- | * [Matching Between Run] (# Matching Between Runs)
- | * [Apex intensity] (#Apex Intensity)
- | * [Entire workflow] (# Entire Workflow)
+| * [Introduction](# Introduction)
+| * [Requirement](# Requirement)
+| * [Run the sample data](#Run the sample data)
+| * [Matching Between Run](# Matching Between Runs)
+| * [Apex intensity](#Apex Intensity)
+| * [Entire workflow](# Entire Workflow)
 
 
 
