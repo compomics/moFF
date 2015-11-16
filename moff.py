@@ -126,8 +126,6 @@ def run_apex( file_name, tol, h_rt_w , s_w, s_w_match, loc_raw,loc_output  ):
 	print 'Starting apex .........',
         
 	for index_ms2, row in data_ms2.iterrows():
-		if c >= 10:
-			break
 		log.info('peptide at line: %i',c)
 		mz_opt= "-mz="+str(row['mz'])
 		if mbr_flag==1:
