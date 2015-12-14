@@ -132,6 +132,7 @@ def run_mbr( args):
 		if check_columns_name( list_name,  ast.literal_eval( config.get('moFF', 'col_must_have_x'))  ) ==1 :
 			exit ('ERROR minimal field requested are missing or wrong')
 		data_moff['matched']=0
+		data_moff['code_unique']= data_moff['peptide'].astype(str) + '_' +  data_moff['mass'].astype(str)
 		data_moff = data_moff.sort_values(by='rt')
 		exp_t.append(data_moff)
 		exp_out.append(data_moff)
@@ -139,7 +140,6 @@ def run_mbr( args):
 		
 			
 	print 'Read input --> done '
-	
 	## parameter of the number of query
 	## set a list of filed mandatory 
 	#['matched','peptide','mass','mz','charge','prot','rt']
@@ -180,20 +180,20 @@ def run_mbr( args):
 	    for i in out:
 		if  i[0] == jj and i[1] != jj:
 		    log_mbr.info( '  Matching  %s peptide in   searching in %s ', exp_set[i[0]] ,exp_set[i[1]])
-		    list_pep_repA = exp_t[i[0]]['peptide'].unique()
-		    list_pep_repB =  exp_t[i[1]]['peptide'].unique()
-		    log_mbr.info( '  Peptide unique  %i , %i ',  list_pep_repA.shape[0], list_pep_repB.shape[0])
+		    list_pep_repA = exp_t[i[0]]['code_unique'].unique()
+		    list_pep_repB =  exp_t[i[1]]['code_unique'].unique()
+		    log_mbr.info( '  Peptide unique (mass + sequence) %i , %i ',  list_pep_repA.shape[0], list_pep_repB.shape[0])
 		    set_dif_s_in_1 = np.setdiff1d(list_pep_repB,list_pep_repA)
 		    add_pep_frame = exp_t[i[1]][exp_t[i[1]]['peptide'].isin(set_dif_s_in_1)].copy()
 		    #print add_pep_frame.columns
 		    pep_shared = np.intersect1d(list_pep_repA,list_pep_repB)
-		    log_mbr.info( '  Peptide to add size  %i ',  add_pep_frame.shape[0])
-		    log_mbr.info( '  Peptide shared  %i ',  pep_shared.shape[0])
-		    comA =   exp_t[i[0]][ exp_t[i[0]]['peptide'].isin(pep_shared)][['peptide','prot','rt']]
-		    comB =   exp_t[i[1]][ exp_t[i[1]]['peptide'].isin(pep_shared)][['peptide','prot','rt']]
-		    comA = comA.groupby('peptide',as_index=False).mean()
-		    comB = comB.groupby('peptide',as_index=False).mean()
-		    common =pd.merge(comA, comB , on=['peptide'], how='inner')
+		    log_mbr.info( '  Peptide (mass + sequence)  added size  %i ',  add_pep_frame.shape[0])
+		    log_mbr.info( '  Peptide (mass + sequence) )shared  %i ',  pep_shared.shape[0])
+		    comA =   exp_t[i[0]][ exp_t[i[0]]['code_unique'].isin(pep_shared)][['code_unique','peptide','prot','rt']]
+		    comB =   exp_t[i[1]][ exp_t[i[1]]['code_unique'].isin(pep_shared)][['code_unique','peptide','prot','rt']]
+		    comA = comA.groupby('code_unique',as_index=False).mean()
+		    comB = comB.groupby('code_unique',as_index=False).mean()
+		    common =pd.merge(comA, comB , on=['code_unique'], how='inner')
 		    if common.shape[0]  <= 50 :
 			 #print common.shape
 			 model_status.append(-1)
@@ -248,7 +248,7 @@ def run_mbr( args):
 		    add_pep_frame=add_pep_frame.groupby('code_unique',as_index=False)['peptide','mass','charge','mz','prot', 'rt'].aggregate(max)
 		    add_pep_frame= add_pep_frame[['peptide','mass','mz','charge','prot','rt']]
 		    list_name = add_pep_frame.columns.tolist()
-            	    list_name = [w.replace('rt', 'rt_'+c_rt ) for w in list_name]
+            	    list_name = [w.replace('rt', 'rt_'+str(c_rt) ) for w in list_name]
             	    add_pep_frame.columns= list_name
 		    pre_pep_save.append( add_pep_frame)
 		    c_rt += 1 
@@ -290,8 +290,9 @@ def run_mbr( args):
 	    exp_out[jj]=pd.concat([exp_t[jj], test ]  , join='outer', axis=0)
 	    log_mbr.info('After MBR %s contains:  %i  peptides', exp_set[jj] ,exp_out[jj].shape[0] )
 	    log_mbr.info('----------------------------------------------')
-	    exp_out[jj].to_csv(path_or_buf= output_dir + '/' + str(exp_set[jj].split('.')[0].split('/')[1]) +'_match.txt',sep='\t',index=False)
+	    exp_out[jj].to_csv(path_or_buf= output_dir + '/' + str( os.path.split(exp_set[jj])[1].split('.')[0]  ) +'_match.txt',sep='\t',index=False)
    	    ## forse log_mbr handeles
+	    #print os.path.split(exp_set[0])[1].split('.')[0] 
 
 
 if __name__ == '__main__':
