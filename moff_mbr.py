@@ -235,6 +235,7 @@ def run_mbr( args):
 	for jj in   aa:
 	    pre_pep_save=[]
 	    print 'Predict rt for the exp.  in ', exp_set[jj]
+	    c_rt =0
 	    for i in out:
 		if  i[0] == jj and i[1] != jj:
 		    log_mbr.info('Matching peptides found  in  %s ',exp_set[i[1]])
@@ -246,7 +247,11 @@ def run_mbr( args):
 		    add_pep_frame['code_unique'] =  add_pep_frame['peptide']+'_'+  add_pep_frame['prot'] + '_' +  add_pep_frame['mass'].astype(str) + '_' +  add_pep_frame['charge'].astype(str)
 		    add_pep_frame=add_pep_frame.groupby('code_unique',as_index=False)['peptide','mass','charge','mz','prot', 'rt'].aggregate(max)
 		    add_pep_frame= add_pep_frame[['peptide','mass','mz','charge','prot','rt']]
-		    pre_pep_save.append( add_pep_frame) 
+		    list_name = add_pep_frame.columns.tolist()
+            	    list_name = [w.replace('rt', 'rt_'+c_rt ) for w in list_name]
+            	    add_pep_frame.columns= list_name
+		    pre_pep_save.append( add_pep_frame)
+		    c_rt += 1 
 	    #print 'input columns',pre_pep_save[0].columns
             if n_replicates == 2 :
 	    	test= pre_pep_save[0]
@@ -261,20 +266,23 @@ def run_mbr( args):
 	    for field in diff_field.tolist():
 		test[field]= -1
             #print test.columns.tolist() 
-	    if n_replicates > 3:
-            	test.drop('rt_x', axis=1, inplace=True)
-            	test.drop('rt_y', axis=1, inplace=True)
-	    	test.drop('rt', axis=1, inplace=True)
-	    else:
-		if  n_replicates == 3:
-			test.drop('rt_x', axis=1, inplace=True)
-            		test.drop('rt_y', axis=1, inplace=True)
-		else:
-			test.drop('rt', axis=1, inplace=True)
+	    #iif n_replicates > 3:
+            #	test.drop('rt_x', axis=1, inplace=True)
+            #	test.drop('rt_y', axis=1, inplace=True)
+	    #	test.drop('rt', axis=1, inplace=True)
+	    #else:
+	    #	if  n_replicates == 3:
+	    #		test.drop('rt_x', axis=1, inplace=True)
+            #		test.drop('rt_y', axis=1, inplace=True)
+	    #	else:
+	    #		test.drop('rt', axis=1, inplace=True)
+	    
 	    list_name = test.columns.tolist()
 	    list_name = [w.replace('time_pred', 'rt') for w in list_name]
 	    test.columns= list_name
-
+            test= test[['peptide','mass','mz','charge','prot','rt']]
+            for field in diff_field.tolist():
+                test[field]= -1
 	    
 	    ## print the entire file
 	    #test.(path_or_buf= output_dir + '/' + str(exp_set[jj].split('.')[0].split('/')[1]) +'_match.txt',sep='\t',index=False)
@@ -282,7 +290,7 @@ def run_mbr( args):
 	    exp_out[jj]=pd.concat([exp_t[jj], test ]  , join='outer', axis=0)
 	    log_mbr.info('After MBR %s contains:  %i  peptides', exp_set[jj] ,exp_out[jj].shape[0] )
 	    log_mbr.info('----------------------------------------------')
-	    exp_out[jj].head(10).to_csv(path_or_buf= output_dir + '/' + str(exp_set[jj].split('.')[0].split('/')[1]) +'_match.txt',sep='\t',index=False)
+	    exp_out[jj].to_csv(path_or_buf= output_dir + '/' + str(exp_set[jj].split('.')[0].split('/')[1]) +'_match.txt',sep='\t',index=False)
    	    ## forse log_mbr handeles
 
 
