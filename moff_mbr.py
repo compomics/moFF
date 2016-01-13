@@ -292,7 +292,7 @@ def run_mbr( args):
 	    log_mbr.info('After MBR %s contains:  %i  peptides', exp_set[jj] ,exp_out[jj].shape[0] )
 	    log_mbr.info('----------------------------------------------')
 	    print 'matched 1',   exp_out[jj][exp_out[jj]['matched']==1].shape,  exp_out[jj][exp_out[jj]['matched']==0].shape
-	    exp_out[jj].tail(50).to_csv(path_or_buf= output_dir + '/' + str( os.path.split(exp_set[jj])[1].split('.')[0]  ) +'_match.txt',sep='\t',index=False)
+	    exp_out[jj].to_csv(path_or_buf= output_dir + '/' + str( os.path.split(exp_set[jj])[1].split('.')[0]  ) +'_match.txt',sep='\t',index=False)
    	    ## forse log_mbr handeles
 	    #print os.path.split(exp_set[0])[1].split('.')[0] 
 
