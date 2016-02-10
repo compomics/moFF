@@ -45,17 +45,19 @@ def run_apex( file_name, tol, h_rt_w , s_w, s_w_match, loc_raw,loc_output  ):
 	# flag_for matching
    	mbr_flag=0
 	config = ConfigParser.RawConfigParser()
-        # it s always placed in same folder of moff.py
-        config.read('moff_setting.properties')
+       
+	# it s always placed in same folder of moff.py
+        config.read(  os.getcwd()+'/moff_setting.properties')
+	#print os.getcwd()
 	# case of moff_all more than one subfolderi
-	if  len(file_name.split('/')) == 3 :
-		name =  file_name.split('/')[2].split('.')[0]
+	name =  os.path.basename(file_name).split('.')[0]
+	if '_match' in name:
+		## in case of mbr , here i dont have evaluate the flag mbr
 		start = name.find('_match')
-		# extract the name of the file
-		name = name[0:start]
-	else:
-		 # case with just one subfolder .. stil to test
-		 name =  file_name.split('/')[1].split('.')[0]
+                # extract the name of the file
+                name = name[0:start]
+
+	
         
 	log = logging.getLogger('moFF apex module')
         log.setLevel(logging.INFO)
@@ -80,10 +82,15 @@ def run_apex( file_name, tol, h_rt_w , s_w, s_w_match, loc_raw,loc_output  ):
 		 exit ('ERROR:' + loc_raw + ' wrong path  or / must be included')
 	else:
 		if loc_raw != None:
-			loc = loc_raw +  name+ '.RAW'
+			print loc_raw
+			loc = loc_raw +  name.upper()+ '.RAW'
 		else:
 			loc =   name + '.RAW'
-		## 
+		##
+	if os.path.isfile(loc) :
+		print 'raw exist' 
+	else:
+		print 'raw not exist'
 	print 'moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name,tol,h_rt_w,s_w)
         print 'RAW file  :  %s' %(loc)
 	log.info('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ',file_name,tol,h_rt_w,s_w)
@@ -94,6 +101,8 @@ def run_apex( file_name, tol, h_rt_w , s_w, s_w_match, loc_raw,loc_output  ):
         if check_columns_name( data_ms2.columns.tolist(),  ast.literal_eval( config.get('moFF', 'col_must_have_x'))  ) ==1 :
                         exit ('ERROR minimal field requested are missing or wrong')
 	
+	### fast debug
+	data_ms2= data_ms2.head(20)
 
 	index_offset = data_ms2.columns.shape[0]   -1
 
@@ -270,6 +279,7 @@ if __name__ == '__main__':
         s_w_match= args.rt_p_window_match
         loc_raw = args.raw
         loc_output = args.loc_out
+
 	
 	#" init here the logger
         run_apex(file_name, tol, h_rt_w , s_w, s_w_match, loc_raw,loc_output )
