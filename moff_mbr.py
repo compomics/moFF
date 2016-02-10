@@ -280,10 +280,12 @@ def run_mbr( args):
 	    list_name = test.columns.tolist()
 	    list_name = [w.replace('time_pred', 'rt') for w in list_name]
 	    test.columns= list_name
+	    if test[test['rt'] <= 0 ].shape[0] >= 1:
+                print  test[test['rt']<=0]
+                #exit(' predicted rt negative :::!! ')
             test= test[['peptide','mass','mz','charge','prot','rt']]
             for field in diff_field.tolist():
                 test[field]= -1
-	    
 	    ## print the entire file
 	    #test.(path_or_buf= output_dir + '/' + str(exp_set[jj].split('.')[0].split('/')[1]) +'_match.txt',sep='\t',index=False)
 	    log_mbr.info('Before adding %s contains %i ', exp_set[jj],exp_t[jj].shape[0])
