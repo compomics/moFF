@@ -132,6 +132,8 @@ def run_mbr( args):
 		if check_columns_name( list_name,  ast.literal_eval( config.get('moFF', 'col_must_have_x'))  ) ==1 :
 			exit ('ERROR minimal field requested are missing or wrong')
 		data_moff['matched']=0
+		data_moff['mass']= data_moff['mass'].map('{:.4f}'.format)
+
 		data_moff['code_unique']= data_moff['peptide'].astype(str) + '_' +  data_moff['mass'].astype(str)
 		data_moff = data_moff.sort_values(by='rt')
 		exp_t.append(data_moff)
@@ -169,7 +171,7 @@ def run_mbr( args):
 	w_mbr .setLevel(logging.INFO)
 	log_mbr.addHandler(w_mbr)
 
-	log_mbr.info('Filtering is %s :',   'active' if args.out_flag==1 else 'not atcive'    )
+	log_mbr.info('Filtering is %s : ',   'active' if args.out_flag==1 else 'not atcive'    )
 	log_mbr.info( 'Number of replicates %i,', n_replicates)
 	log_mbr.info( 'Pairwise model computation ----')
 
@@ -184,8 +186,7 @@ def run_mbr( args):
 		    list_pep_repB =  exp_t[i[1]]['code_unique'].unique()
 		    log_mbr.info( '  Peptide unique (mass + sequence) %i , %i ',  list_pep_repA.shape[0], list_pep_repB.shape[0])
 		    set_dif_s_in_1 = np.setdiff1d(list_pep_repB,list_pep_repA)
-		    add_pep_frame = exp_t[i[1]][exp_t[i[1]]['peptide'].isin(set_dif_s_in_1)].copy()
-		    #print add_pep_frame.columns
+		    add_pep_frame = exp_t[i[1]][exp_t[i[1]]['code_unique'].isin(set_dif_s_in_1)].copy()
 		    pep_shared = np.intersect1d(list_pep_repA,list_pep_repB)
 		    log_mbr.info( '  Peptide (mass + sequence)  added size  %i ',  add_pep_frame.shape[0])
 		    log_mbr.info( '  Peptide (mass + sequence) )shared  %i ',  pep_shared.shape[0])
@@ -263,8 +264,6 @@ def run_mbr( args):
 	    
 	    test['time_pred']= test.ix[:,5: (5 + (n_replicates-1)) ].apply(  lambda  x: combine_model(x, model_save[(jj* (n_replicates-1)):((jj+1)* (n_replicates-1) )],model_err[ (jj* (n_replicates-1)  ):((jj+1)* (n_replicates-1)  )],args.w_comb) , axis=1)
 	    test['matched']= 1
-	    for field in diff_field.tolist():
-		test[field]= -1
             #print test.columns.tolist() 
 	    #iif n_replicates > 3:
             #	test.drop('rt_x', axis=1, inplace=True)
@@ -280,18 +279,21 @@ def run_mbr( args):
 	    list_name = test.columns.tolist()
 	    list_name = [w.replace('time_pred', 'rt') for w in list_name]
 	    test.columns= list_name
-	    if test[test['rt'] <= 0 ].shape[0] >= 1:
-                print  test[test['rt']<=0]
+
                 #exit(' predicted rt negative :::!! ')
-            test= test[['peptide','mass','mz','charge','prot','rt']]
             for field in diff_field.tolist():
-                test[field]= -1
+		test[field]= -1
+	    #test= test[['peptide','mass','mz','charge','prot','rt']]
+            #for field in diff_field.tolist():
+            #    test[field]= -1
+	    
 	    ## print the entire file
 	    #test.(path_or_buf= output_dir + '/' + str(exp_set[jj].split('.')[0].split('/')[1]) +'_match.txt',sep='\t',index=False)
 	    log_mbr.info('Before adding %s contains %i ', exp_set[jj],exp_t[jj].shape[0])
 	    exp_out[jj]=pd.concat([exp_t[jj], test ]  , join='outer', axis=0)
 	    log_mbr.info('After MBR %s contains:  %i  peptides', exp_set[jj] ,exp_out[jj].shape[0] )
 	    log_mbr.info('----------------------------------------------')
+	    print 'matched 1',   exp_out[jj][exp_out[jj]['matched']==1].shape,  exp_out[jj][exp_out[jj]['matched']==0].shape
 	    exp_out[jj].to_csv(path_or_buf= output_dir + '/' + str( os.path.split(exp_set[jj])[1].split('.')[0]  ) +'_match.txt',sep='\t',index=False)
    	    ## forse log_mbr handeles
 	    #print os.path.split(exp_set[0])[1].split('.')[0] 
