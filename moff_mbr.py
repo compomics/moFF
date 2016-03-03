@@ -290,9 +290,9 @@ def run_mbr(args):
         #		test.drop('rt', axis=1, inplace=True)
 
         ## still to check better
-        #if test['time_pred'] <= 0:
-        #    log_mbr.info(' -- Predicted negative RT : those peptide will be deleted')
-        #    test = test[test['time_pred'] > 0]
+        if test[test['time_pred']<= 0].shape[0] < 0:
+            log_mbr.info(' -- Predicted negative RT : those peptide will be deleted')
+            test = test[test['time_pred'] > 0]
 
         list_name = test.columns.tolist()
         list_name = [w.replace('time_pred', 'rt') for w in list_name]
