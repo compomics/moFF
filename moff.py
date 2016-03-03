@@ -41,7 +41,7 @@ def run_apex(file_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
     # loc_output = args.loc_out
     # OS detect
     flag_windows = False
-    if _platform == "linux" or _platform == "linux2":
+    if _platform == "linux" or _platform == "linux2" or _platform =="darwin" :
         flag_windows = False
     else:
         if _platform == "win32":
@@ -86,17 +86,13 @@ def run_apex(file_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
 
 
 
-    #if not ( os.sep in loc_raw):
-    #    exit('ERROR:' + loc_raw + ' wrong path  or / \ must be included')
-    #else:
-    ## is none if apex module is run from  moff_all
     if loc_raw != None:
             print loc_raw
             if flag_windows:
                 loc= os.path.join( loc_raw,name + '.RAW')
             else:
-                ## raw file name must have capitals letters :) this shloud be checked
-                loc = loc_raw + name.upper() + '.RAW'
+                ## no more estension should be .raw
+                loc =  os.path.join( loc_raw,name + '.RAW')  
     else:
             # that must be tested for the windows vers.
             loc = name + '.RAW'
