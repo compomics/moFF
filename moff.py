@@ -41,7 +41,6 @@ def run_apex(file_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
     # loc_output = args.loc_out
     # OS detect
     flag_windows = False
-    if _platform == "linux" or _platform == "linux2" or _platform =="darwin" :
     if _platform == "linux" or _platform == "linux2" or _platform =='darwin' :
         flag_windows = False
     else:

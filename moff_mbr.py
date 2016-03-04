@@ -299,7 +299,7 @@ def run_mbr(args):
         test.columns = list_name
         for field in diff_field.tolist():
             test[field] = -1
-        # test= test[['peptide','mass','mz','charge','prot','rt']]
+        test= test[['peptide','mass','mz','charge','prot','rt']]
         # for field in diff_field.tolist():
         #    test[field]= -1
 
