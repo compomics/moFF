@@ -150,8 +150,10 @@ def run_apex(file_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
         # log.info('peptide at line: %i',c)
         mz_opt = "-mz=" + str(row['mz'])
         if mbr_flag == 0:
+	    log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f ', c, row['mz'], time_w)
             temp_w = s_w
         else:
+	    log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f matched(y/n): %i', c, row['mz'], time_w,row['matched'])
             if row['matched'] == 1:
                 temp_w = s_w_match
             else:
@@ -163,7 +165,6 @@ def run_apex(file_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
 
         ##convert rt to sec to min
         time_w = row['rt']  #/ 60
-        log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f ', c, row['mz'], time_w)
         if flag_windows :
             os.path.join('folder_name', 'file_name')
             args_txic = shlex.split( os.path.join(moff_path ,"txic.exe") +" "+  mz_opt + " -tol=" + str(tol) + " -t " + str(time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc, posix=False)
