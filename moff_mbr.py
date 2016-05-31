@@ -31,7 +31,7 @@ def MahalanobisDist(x, y):
 ## remove outlier
 def MD_removeOutliers(x, y, width):
     MD = MahalanobisDist(x, y)
-    threshold = np.mean(MD) * width  # adjust 1.5 accordingly
+    threshold = np.mean(MD) * float(width)  # adjust 1.5 accordingly
     nx, ny, outliers = [], [], []
     for i in range(len(MD)):
         if MD[i] <= threshold:
