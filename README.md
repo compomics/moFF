@@ -1,14 +1,13 @@
 # moFF #
 
-
- *[Introduction](#introduction)
- *[Requirement](#requirement)
- *[Input Data](#input-data)
- *[Sample data](#sample-data)
- *[Match Between Runs](#match-between-runs)
- *[Apex Intensity](#apex-intensity)
- *[Entire workflow](#entire-workflow)
- *[Output Data](#output-data)
+ * [Introduction](#introduction)
+ * [Requirement](#requirement)
+ * [Input Data](#input-data)
+ * [Sample data](#sample-data)
+ * [Match between runs](#match-between-runs)
+ * [Apex Intensity](#apex-intensity)
+ * [Entire workflow](#entire-workflow)
+ * [Output data](#output-data)
 
 ---
 
@@ -65,12 +64,12 @@ see the sample input files in the folder *f1_folder* for more information .
 
 ## Sample data  ##
 
-In the folder *f1_folder* you have three input files, that contain the MS2 identified  peptides founded by MASCOT of three runs (three tecnical replicates) from  the CPTAC study 6. 
-You can download the relative [raw files]( https://goo.gl/ukbpCI), in order to run the next examples.
+The  *f1_folder* contains as  the input files the MS2 identified  peptides founded by MASCOT  for 3 runs of  the CPTAC study 6 (Paulovich, MCP Proteomics, 2010). 
+You can download the relative [raw files]( https://goo.gl/ukbpCI) in order to run  moFF on the sample data.
 
 ---
 
-## Match Between Runs ##
+## Match between runs ##
 
 use :  `python moff_mbr.py -h`
 ```
@@ -103,7 +102,7 @@ The match between runs will produce a log file  with all the details and it will
 
 ---
 
-## Apex Intensity ##
+## Apex intensity ##
 
 use  `python moff.py -h`
 ````
@@ -152,7 +151,7 @@ The options are the same of the two modules, the the output mbr files are stores
 [Top of page](#moff)
 
 ---
-## moFF Output
+## Output data
 
 The output consists of : 
 
