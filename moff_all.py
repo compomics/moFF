@@ -56,6 +56,10 @@ parser.add_argument('--raw_repo', dest='raw', action='store', help='specify the 
 parser.add_argument('--output_folder', dest='loc_out', action='store', default='', help='specify the folder output',
                     required=False)
 
+parser.add_argument('--rt_feat_file', dest='rt_feat_file', action='store',
+                    help='specify the file that contains the features to use in the match-between-run RT prediction ',
+                    required=False)
+
 args = parser.parse_args()
 
 print 'Matching between run module (mbr)'
