@@ -1,13 +1,13 @@
 # moFF #
 
  * [Introduction](#introduction)
- * [Requirement](#requirement)
+ * [Minimum Requirements](#minimum-requirements)
  * [Input Data](#input-data)
- * [Sample data](#sample-data)
+ * [Sample Data](#sample-data)
  * [Match between runs](#match-between-runs)
  * [Apex Intensity](#apex-intensity)
  * [Entire workflow](#entire-workflow)
- * [Output data](#output-data)
+ * [Output Data](#output-data)
 
 ---
 
@@ -26,7 +26,7 @@ To run  the entire workflow (mbr and apex ) you should  use  *moff_all.py*
 
 ----
 
-## Requirement ##
+## Minimum Requirements ##
 
 Required python libraries :
 - Python 2.7
