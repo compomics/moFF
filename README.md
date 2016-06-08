@@ -3,6 +3,7 @@
 
 *[Introduction](#introduction)
 *[Requirement](#requirement)
+*[Input Data](#input-data)
 *[Sample data](#sample-data)
 *[Match Between Runs](#match-between-runs)
 *[Apex Intensity](#apex-intensity)
@@ -40,12 +41,18 @@ moFF uses *txic* to extract the XiC data from the raw files, so  *txic*  must be
 The txic program is compatibale with  the raw file of all the Orbitrap and triple quadrupole Thermo machines. 
 For the moment it does not work with the Thermo Fusion machine.
 
-The input files that contain the list of the MS2 identified peptides (you can use any search engines) must contains the information showed in *moFF_setting.property* for each peptide. The minimun specificic requirements of the input files are:
-- tab delimited file
-- the header of the input file should contain the following the fields  and columnns names :  
+[Top of page](#moff)
+
+---
+
+
+##Input data 
+
+
+The tab-delimited file that contains the MS2 identified peptides must contain the following information for each peptides:
   - 'peptide' : sequence of the peptide
   - 'prot': protein ID 
-  - 'rt': retention time of peptide   ( The retention time must be specified in second )
+  - 'rt': retention time of peptide   (The retention time must be specified in second)
   - 'mz' : mass over charge
   - 'mass' : mass of the peptide
   - 'charge' : charge of the ionized peptide
