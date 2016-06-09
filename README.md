@@ -192,4 +192,4 @@ Parameter | Meaning
 
 NOTE : The log files and the output files are in the output folder specified by the user. 
 
-[Go to top of page](#moff-gui)
+[Go to top of page](#moff)
