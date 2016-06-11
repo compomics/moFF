@@ -22,6 +22,8 @@ from sys import platform as _platform
    - list of intensities..+
 """
 
+TXIC_PATH = os.environ.get('TXIC_PATH', './')
+
 
 def check_columns_name(col_list, col_must_have):
     for c_name in col_must_have:
@@ -81,7 +83,7 @@ def run_apex(file_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
             loc = os.path.join(loc_raw, name + '.RAW')
         else:
             # raw file name must have capitals letters :) this shloud be checked
-            loc = loc_raw + name.upper() + '.RAW'
+            loc = os.path.join(loc_raw, name.upper() + '.RAW')
     else:
         # that must be tested for the windows vers.
         loc = os.path.join(loc_raw, name + '.RAW')
@@ -156,7 +158,7 @@ def run_apex(file_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
             os.path.join('folder_name', 'file_name')
             args_txic = shlex.split(os.path.join(moff_path, "txic.exe") + " " + mz_opt + " -tol=" + str(tol) + " -t " + str(time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc, posix=False)
         else:
-            args_txic = shlex.split("./txic " + mz_opt + " -tol=" + str(tol) + " -t " + str(time_w - h_rt_w) + " -t " + str(
+            args_txic = shlex.split(TXIC_PATH + "txic " + mz_opt + " -tol=" + str(tol) + " -t " + str(time_w - h_rt_w) + " -t " + str(
                 time_w + h_rt_w) + " " + loc)
         p = subprocess.Popen(args_txic, stdout=subprocess.PIPE)
         output, err = p.communicate()
