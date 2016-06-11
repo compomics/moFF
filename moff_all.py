@@ -66,8 +66,7 @@ if res_state == -1:
     exit('An error is occurred during the writing of the mbr file')
 folder = os.path.join(args.loc_in, 'mbr_output')
 log.info('Apex module ')
-for file in glob.glob(folder + os.sep + "*.txt"):
-    file_name = file
+for file_name in glob.glob(folder + os.sep + "*.txt"):
     tol = args.toll
     h_rt_w = args.rt_window
     s_w = args.rt_p_window
