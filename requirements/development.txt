@@ -1,4 +1,5 @@
 flake8
-pandas
-scikit-learn
 numpy
+scipy
+scikit-learn
+pandas
