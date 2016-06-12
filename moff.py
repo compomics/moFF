@@ -91,7 +91,7 @@ def run_apex(file_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
     if os.path.isfile(loc):
         log.info('raw file exist')
     else:
-        exit('ERROR: %s wrong path or wrong file name must be included' % loc_raw)
+        exit('ERROR: Wrong path or wrong file name included: %s' % loc)
 
     log.info('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
     log.info('RAW file  :  %s' % (loc))
