@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/local/tools/_conda/envs/__package__python-moff@__version__0.1/bin/python
 
 import numpy as np
 import pandas as pd
@@ -6,12 +6,15 @@ import os as os
 import sys
 import subprocess
 import shlex
-import logging
 import argparse
 import ConfigParser
 import ast
 from StringIO import StringIO
 from sys import platform as _platform
+
+import logging
+log = logging.getLogger(__name__)
+
 
 """
  input
@@ -60,8 +63,6 @@ def run_apex(file_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
         # extract the name of the file
         name = name[0:start]
 
-    log = logging.getLogger('moFF apex module')
-    log.setLevel(logging.INFO)
     if loc_output != '':
         if not (os.path.isdir(loc_output)):
             os.makedirs(loc_output)
@@ -73,10 +74,6 @@ def run_apex(file_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
         fh = logging.FileHandler(os.path.join(loc_output, name + '__moff.log'), mode='w')
     else:
         outputname = name + "_moff_result.txt"
-        fh = logging.FileHandler(os.path.join(name + '__moff.log'), mode='w')
-
-    fh.setLevel(logging.INFO)
-    log.addHandler(fh)
 
     if loc_raw is not None:
         if flag_windows:
