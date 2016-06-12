@@ -1,4 +1,4 @@
-#!/usr/local/tools/_conda/envs/__package__python-moff@__version__0.1/bin/python
+#!/usr/bin/env python
 
 import numpy as np
 import pandas as pd
