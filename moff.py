@@ -103,9 +103,6 @@ def run_apex(file_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
     if check_columns_name(data_ms2.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_x'))) == 1:
         exit('ERROR minimal field requested are missing or wrong')
 
-    # fast debug ---
-    data_ms2 = data_ms2.head(100)
-
     index_offset = data_ms2.columns.shape[0] - 1
 
     data_ms2["intensity"] = -1
