@@ -1,16 +1,14 @@
-import pandas as pd
-import numpy as np
-from scipy.interpolate import interp1d
+#!/usr/bin/env python
+
 import glob
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-import logging
-import itertools
 import argparse
-import re
-import os as os
-import sys
+import os
 import moff_mbr
 import moff
+
+import logging
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 parser = argparse.ArgumentParser(description='moFF match between run and apex module input parameter')
 
@@ -62,16 +60,19 @@ parser.add_argument('--rt_feat_file', dest='rt_feat_file', action='store',
 
 args = parser.parse_args()
 
-print 'Matching between run module (mbr)'
+
+ch = logging.StreamHandler()
+ch.setLevel(logging.ERROR)
+log.addHandler(ch)
+
+log.critical('Matching between run module (mbr)')
 
 res_state = moff_mbr.run_mbr(args)
 if res_state == -1:
     exit('An error is occurred during the writing of the mbr file')
-folder = os.path.join(  args.loc_in ,'mbr_output')
-# os.chdir(folder)
-print 'Apex module '
-for file in glob.glob(folder + os.sep + "*.txt"):
-    file_name = file
+folder = os.path.join(args.loc_in, 'mbr_output')
+log.critical('Apex module ')
+for file_name in glob.glob(folder + os.sep + "*.txt"):
     tol = args.toll
     h_rt_w = args.rt_window
     s_w = args.rt_p_window
@@ -79,4 +80,3 @@ for file in glob.glob(folder + os.sep + "*.txt"):
     loc_raw = args.raw
     loc_output = args.loc_out
     moff.run_apex(file_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output)
-print '-------------     -------------'  # moff.run_apex(args)
