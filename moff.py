@@ -14,7 +14,7 @@ from sys import platform as _platform
 
 import logging
 log = logging.getLogger(__name__)
-
+log.setLevel(logging.DEBUG)
 
 """
  input
@@ -62,7 +62,11 @@ def run_apex(file_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
         start = name.find('_match')
         # extract the name of the file
         name = name[0:start]
-
+    
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.ERROR)
+    log.addHandler(ch)
+    
     if loc_output != '':
         if not (os.path.isdir(loc_output)):
             os.makedirs(loc_output)
@@ -74,7 +78,10 @@ def run_apex(file_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
         fh = logging.FileHandler(os.path.join(loc_output, name + '__moff.log'), mode='w')
     else:
         outputname = name + "_moff_result.txt"
+	fh = logging.FileHandler( os.path.join(name + '__moff.log' ), mode='w')
 
+    fh.setLevel(logging.INFO)
+    log.addHandler(fh)
     if loc_raw is not None:
         if flag_windows:
             loc = os.path.join(loc_raw, name + '.RAW')
@@ -89,12 +96,13 @@ def run_apex(file_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
         log.info('raw file exist')
     else:
         exit('ERROR: Wrong path or wrong file name included: %s' % loc)
+    
+    
 
-    log.info('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
-    log.info('RAW file  :  %s' % (loc))
-    log.info('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ', file_name, tol, h_rt_w, s_w)
+    log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
+    log.critical('RAW file  :  %s' % (loc))
     log.info('Output_file in :  %s', outputname)
-    log.info('RAW file and its location :  %s', loc)
+    log.info('RAW file location :  %s', loc)
     # read data from file
     data_ms2 = pd.read_csv(file_name, sep="\t", header=0)
     if check_columns_name(data_ms2.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_x'))) == 1:
@@ -127,8 +135,7 @@ def run_apex(file_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
         log.info('Apex module has detected mbr peptides')
         log.info('moff_rtWin_peak for matched peptide:   %4.4f ', s_w_match)
     c = 0
-    log.info('Starting apex .........')
-
+    log.critical('Starting apex .........')
     for index_ms2, row in data_ms2.iterrows():
         # log.info('peptide at line: %i',c)
         mz_opt = "-mz=" + str(row['mz'])
@@ -169,7 +176,6 @@ def run_apex(file_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
                 # print 'Looking for ..:',row['mz'],time_w
                 # print 'XIC data retrived:',data_xic.shape
                 # print data_xic[ data_xic["intensity"]== data_xic[(data_xic['rt']> (time_w - )) & ( data_xic['rt']< (time_w + temp_w) )]['intensity'].max()]
-                # non serve forzarlo a in
                 pos_p = ind_v[pp]
                 if pos_p.values.shape[0] > 1:
                     log.warning(" RT gap for the time windows searched. Probably the ppm values is too small %i", c)
@@ -248,8 +254,8 @@ def run_apex(file_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
             c += 1
 
     # save  result i
-    log.info('..............apex terminated')
-    log.info('Writing result in %s' % (outputname))
+    log.critical('..............apex terminated')
+    log.critical('Writing result in %s' % (outputname))
     data_ms2.to_csv(path_or_buf=outputname, sep="\t", header=True, index=False)
     fh.close()
     log.removeHandler(fh)
