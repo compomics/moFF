@@ -8,6 +8,7 @@ import moff
 
 import logging
 log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 parser = argparse.ArgumentParser(description='moFF match between run and apex module input parameter')
 
@@ -59,13 +60,18 @@ parser.add_argument('--rt_feat_file', dest='rt_feat_file', action='store',
 
 args = parser.parse_args()
 
-log.info('Matching between run module (mbr)')
+
+ch = logging.StreamHandler()
+ch.setLevel(logging.ERROR)
+log.addHandler(ch)
+
+log.critical('Matching between run module (mbr)')
 
 res_state = moff_mbr.run_mbr(args)
 if res_state == -1:
     exit('An error is occurred during the writing of the mbr file')
 folder = os.path.join(args.loc_in, 'mbr_output')
-log.info('Apex module ')
+log.critical('Apex module ')
 for file_name in glob.glob(folder + os.sep + "*.txt"):
     tol = args.toll
     h_rt_w = args.rt_window
