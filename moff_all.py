@@ -15,6 +15,13 @@ parser = argparse.ArgumentParser(description='moFF match between run and apex mo
 parser.add_argument('--inputF', dest='loc_in', action='store',
                     help='specify the folder of the input MS2 peptide list files ', required=False)
 
+parser.add_argument('--inputtsv', dest='tsv_list', action='store', nargs='*' ,
+                    help='specify the mzid file as a list ', required=False)
+
+
+parser.add_argument('--inputraw', dest='raw_list', action='store',  nargs='*' ,
+                    help='specify the raw file as a list ', required=False)
+
 parser.add_argument('--sample', dest='sample', action='store',
                     help='specify witch replicated to use for mbr reg_exp are valid ', required=False)
 
@@ -49,7 +56,7 @@ parser.add_argument('--rt_p_match', dest='rt_p_window_match', action='store', ty
                     help='specify the time windows for the matched peptide peak ( minute). Default value is 0.4 ',
                     required=False)
 
-parser.add_argument('--raw_repo', dest='raw', action='store', help='specify the raw file repository ', required=True)
+parser.add_argument('--raw_repo', dest='raw', action='store', help='specify the raw file repository ', required=False)
 
 parser.add_argument('--output_folder', dest='loc_out', action='store', default='', help='specify the folder output',
                     required=False)
@@ -59,24 +66,50 @@ parser.add_argument('--rt_feat_file', dest='rt_feat_file', action='store',
                     required=False)
 
 args = parser.parse_args()
-
-
 ch = logging.StreamHandler()
 ch.setLevel(logging.ERROR)
 log.addHandler(ch)
 
+if (args.tsv_list is None) and  (args.loc_in is None) and  (args.raw_list is None) and (args.raw is None) :
+	exit('you must specify the input and raw files ')
+if (args.tsv_list is not None) and  (args.loc_in is not None) and  (args.raw_list is not None) and (args.raw is not None) :
+	 exit('you must specify the input and raw files or unsing: --inputtsv and --rawlist or --inputF and --rawrepo ')
+else:
+	if ((args.tsv_list is None ) and (args.raw_list is not None) ) or ((args.tsv_list is not  None ) and (args.raw_list is  None) ):
+		exit('Missing information: using --inputtsv you be sure also to specify the raw file with --inputraw ')
+	if ((args.loc_in is None ) and (args.raw is not None) ) or ((args.loc_in is not  None ) and (args.raw is  None) ) :
+		exit('Missing information: using --inputF you be sure also to specify the raw file with --raw_repo ')
+
+
 log.critical('Matching between run module (mbr)')
 
-res_state = moff_mbr.run_mbr(args)
+
+
+
+res_state,mbr_list_loc = moff_mbr.run_mbr(args)
 if res_state == -1:
     exit('An error is occurred during the writing of the mbr file')
-folder = os.path.join(args.loc_in, 'mbr_output')
+if args.tsv_list is not None:
+	if len(args.tsv_list) != len(args.raw_list) :
+		exit('Error:  number of the input files is different from the number of raw files' )
+	# in case list of file as input , mbr_output is written in local folder
+	folder = os.path.join('mbr_output')
+else:
+	folder = os.path.join(args.loc_in, 'mbr_output')
+
 log.critical('Apex module ')
-for file_name in glob.glob(folder + os.sep + "*.txt"):
+c=0
+for file_name in mbr_list_loc: 
+	# glob.glob(folder + os.sep + "*.txt"):
     tol = args.toll
     h_rt_w = args.rt_window
     s_w = args.rt_p_window
     s_w_match = args.rt_p_window_match
+    if args.tsv_list is not None:
+    	raw_list = args.raw_list[c]
+    else:
+	raw_list = None
     loc_raw = args.raw
     loc_output = args.loc_out
-    moff.run_apex(file_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output)
+    moff.run_apex(file_name,raw_list ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output)
+    c+=1
