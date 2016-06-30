@@ -37,7 +37,7 @@ def check_columns_name(col_list, col_must_have):
     return 0
 
 
-def run_apex(file_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
+def run_apex(file_name,raw_name ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
     # OS detect
     flag_windows = False
     if _platform in ["linux", "linux2", 'darwin']:
@@ -89,15 +89,15 @@ def run_apex(file_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
             # raw file name must have capitals letters :) this shloud be checked
             loc = os.path.join(loc_raw, name.upper() + '.RAW')
     else:
+        ## I have already the full location
+	loc = raw_name
         # that must be tested for the windows vers.
-        loc = os.path.join(loc_raw, name + '.RAW')
+        #ioc = os.path.join(loc_raw, name + '.RAW')
 
     if os.path.isfile(loc):
         log.info('raw file exist')
     else:
         exit('ERROR: Wrong path or wrong file name included: %s' % loc)
-    
-    
 
     log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
     log.critical('RAW file  :  %s' % (loc))
@@ -265,8 +265,11 @@ def run_apex(file_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='moFF input parameter')
 
-    parser.add_argument('--input', dest='name', action='store', help='specify the input file with the MS2 peptides/features',
+    parser.add_argument('--inputtsv', dest='name', action='store', help='specify the input file with the MS2 peptides/features',
                         required=True)
+    
+    parser.add_argument('--inputraw', dest='raw_list', action='store' ,
+                    help='specify directly raw file', required=False)
 
     parser.add_argument('--tol', dest='toll', action='store', type=float,
                         help='specify the tollerance parameter in ppm', required=True)
@@ -281,20 +284,31 @@ if __name__ == '__main__':
                         help='specify the time windows for the matched  peak ( minute). Default value is 0.4 ',
                         required=False)
 
-    parser.add_argument('--raw_repo', dest='raw', action='store', help='specify the raw file repository ',
-                        required=True)
+    parser.add_argument('--raw_repo', dest='raw', action='store', help='specify the raw file repository folder',
+                        required=False)
 
     parser.add_argument('--output_folder', dest='loc_out', action='store', default='', help='specify the folder output',
                         required=False)
 
     args = parser.parse_args()
+
+    if (args.raw_list is None) and  (args.raw is None)  :
+        exit('you must specify and raw files  with --inputraw (file name) or --raw_repo (folder)')
+    if args.raw_list is not None) and  (args.raw is not  None)  :
+         exit('you must specify raw files using only one options --inputraw (file name) or --raw_repo (folder) ')
+
+
     file_name = args.name
     tol = args.toll
     h_rt_w = args.rt_window
     s_w = args.rt_p_window
     s_w_match = args.rt_p_window_match
+    if args.name is not None:
+        raw_list = args.raw_list
+    else:
+        raw_list = None
     loc_raw = args.raw
     loc_output = args.loc_out
 
     # " init here the logger
-    run_apex(file_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output)
+    run_apex(file_name,raw_list  ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output)
