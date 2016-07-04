@@ -119,7 +119,8 @@ In case of using only specific input files within the provided directory, please
 
 use  `python moff.py -h`
 ````
-  --input NAME        the input file with for MS2 peptides
+  --inputtsv         the input file with for MS2 peptides
+  --inputraw	      specify directly the  raw file
   --tol               the mass tollerance (ppm)
   --rt_w              the rt windows for xic (minutes). Default value is 3  min
   --rt_p     	      the time windows used to get the apex for the ms2 peptide/feature  (minutes). Default value is 0.2
@@ -129,10 +130,17 @@ use  `python moff.py -h`
 ```
 For example :
 
-`python moff.mbr --input f1_folder/20080311_CPTAC6_07_6A005.txt  --raw_rep f1_folder/ --tol 1O --output_folder output_moff`
+`python moff.mbr --inputtsv f1_folder/20080311_CPTAC6_07_6A005.txt  --raw_rep f1_folder/ --tol 1O --output_folder output_moff`
 
 WARNING : the raw file names  MUST be the same of the input file otherwise the script give you an error !
 NOTE: All the parameters related to the the time windows (rt_w,rt_p, rt_p_match) are basicaly the half of the entire time windows where the apex peak is searched or the XiC is retrieved.
+
+You can also specify directly the raw file using: 
+`python moff.mbr --inputtsv f1_folder/20080311_CPTAC6_07_6A005.txt  --inputraw f1_folder/20080311_CPTAC6_07_6A005.raw --tol 1O --output_folder output_moff`
+
+
+
+
 
 [Top of page](#moff)
 
@@ -142,23 +150,32 @@ NOTE: All the parameters related to the the time windows (rt_w,rt_p, rt_p_match)
 
 use `python moff_all.py -h`
 ```
-	--inputF              the folder containing input files 
-  	--sample	      filter based on regular expression to define the considered replicates
-  	--ext                 file extension for the input files
-  	--log_file_name       a label name to use for the log file
-  	--filt_width          width value for  the outlier  filtering 
-  	--out_filt            filtering (on/off) of the outlier in the training set
-  	--weight_comb         combination weighting : 0 for no weight 1 for a weighted schema
-  	--input               the input file for identified MS2 peptides
-  	--tol                 the mass tollerance (ppm)
-  	--rt_w                the rt windows for xic (minutes). Default value is  3  min
-	--rt_p     	      the time windows for the ms2 peptide/feature in apex (minutes). Default value is 0.2
-	--rt_p_match 	      the time windows for the matched features in apex ( minutes). Default value is 0.4
-	--raw_repo            the folder containing the raw files
+	--inputF		the folder containing input files 
+	--inputtsv		specify the input file as a list separated by a space
+	--inputraw		specify the raw file as a list separated by space
+  	--sample		filter based on regular expression to define the considered replicates
+  	--ext			file extension for the input files
+  	--log_file_name		a label name to use for the log file
+  	--filt_width		width value for  the outlier  filtering 
+  	--out_filt		filtering (on/off) of the outlier in the training set
+  	--weight_comb		combination weighting : 0 for no weight 1 for a weighted schema
+  	--tol			the mass tollerance (ppm)
+  	--rt_w			the rt windows for xic (minutes). Default value is  3  min
+	--rt_p			the time windows for the ms2 peptide/feature in apex (minutes). Default value is 0.2
+	--rt_p_match		the time windows for the matched features in apex ( minutes). Default value is 0.4
+	--raw_repo		the folder containing the raw files
 ```
 `python moff_all.py --inputF  f1_folder/   --raw_repo f1_folder/ --output_folder output_moff`
 
-The options are identifcal for both apex and MBR modules. The output for the latter (MBR) is stored in the folder f1_folder/mbr_output, while the former (apex) generates files in the specified output_moff folder. Log files for both algorithms are generated in the respective folders
+The options are identifcal for both apex and MBR modules. The output for the latter (MBR) is stored in the folder f1_folder/mbr_output, while the former (apex) generates files in the specified output_moff folder. Log files for both algorithms are generated in the respective folders.
+
+You can also specify a list of input and raw files using:
+
+`python moff_all.py --inputtsv  f1_folder/input_file1.txt f1_folder/input_file2.txt   --inputraw f1_folder/input_file1.raw f1_folder/input_file2.raw --output_folder output_moff`
+
+Using `--inputtsv | --inputraw`  you can not filterted the input file using `--sample --ext` like in the case with `--inputF | --raw_repo`
+
+
 
 [Top of page](#moff)
 
