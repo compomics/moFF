@@ -294,7 +294,7 @@ if __name__ == '__main__':
 
     if (args.raw_list is None) and  (args.raw is None)  :
         exit('you must specify and raw files  with --inputraw (file name) or --raw_repo (folder)')
-    if args.raw_list is not None) and  (args.raw is not  None)  :
+    if (args.raw_list is not None) and  (args.raw is not  None)  :
          exit('you must specify raw files using only one options --inputraw (file name) or --raw_repo (folder) ')
 
 
@@ -303,12 +303,12 @@ if __name__ == '__main__':
     h_rt_w = args.rt_window
     s_w = args.rt_p_window
     s_w_match = args.rt_p_window_match
-    if args.name is not None:
-        raw_list = args.raw_list
-    else:
-        raw_list = None
+    #if args.raw_list is not None:
+    #    raw_list = args.raw_list
+    #else:
+    #    raw_list = None
     loc_raw = args.raw
     loc_output = args.loc_out
 
     # " init here the logger
-    run_apex(file_name,raw_list  ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output)
+    run_apex(file_name,args.raw_list  ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output)
