@@ -76,9 +76,9 @@ if (args.tsv_list is not None) and  (args.loc_in is not None) and  (args.raw_lis
 	 exit('you must specify the input and raw files or unsing: --inputtsv and --rawlist or --inputF and --rawrepo ')
 else:
 	if ((args.tsv_list is None ) and (args.raw_list is not None) ) or ((args.tsv_list is not  None ) and (args.raw_list is  None) ):
-		exit('Missing information: using --inputtsv you be sure also to specify the raw file with --inputraw ')
+		exit('Missing information: using --inputtsv you must specify the raw file with --inputraw ')
 	if ((args.loc_in is None ) and (args.raw is not None) ) or ((args.loc_in is not  None ) and (args.raw is  None) ) :
-		exit('Missing information: using --inputF you be sure also to specify the raw file with --raw_repo ')
+		exit('Missing information: using --inputF you must specify the raw file with --raw_repo ')
 
 
 log.critical('Matching between run module (mbr)')
