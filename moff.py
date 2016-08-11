@@ -11,8 +11,9 @@ import ConfigParser
 import ast
 from StringIO import StringIO
 from sys import platform as _platform
-
+import pymzml
 import logging
+import time
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
@@ -35,7 +36,45 @@ def check_columns_name(col_list, col_must_have):
             return 1
     # succes
     return 0
-
+ 
+def pyMZML_xic_out(  access,name, ppmPrecision, minRT, maxRT ,MZValue ):
+	#print access
+	run = pymzml.run.Reader(name, MS1_Precision= ppmPrecision , MSn_Precision = ppmPrecision)
+	timeDependentIntensities = []
+	for spectrum in run:
+                #print spectrum['scan start time']
+                #if spectrum['ms level'] == 1 :
+                if spectrum['ms level'] == 1 and spectrum['scan start time'] > minRT and spectrum['scan start time'] < maxRT:
+                        matchList = spectrum.hasPeak(MZValue)
+                        if matchList != []:
+                                for mz,I in matchList:
+                                        timeDependentIntensities.append( [ spectrum['scan start time'], I ])
+                                        #" option you can also get the MZ
+        print '--- freah --- '
+	for rt, i  in timeDependentIntensities:
+                print('{0:5.3f}  {1:13.4f}'.format( rt, i ))
+	print 
+	print '--- stored access ---'
+        timeDependentIntensities = []
+	for spectrum in access:
+                #print spectrum['scan start time']
+                #if spectrum['ms level'] == 1 :
+                if spectrum['ms level'] == 1 and spectrum['scan start time'] > minRT and spectrum['scan start time'] < maxRT:
+                        matchList = spectrum.hasPeak(MZValue)
+                        if matchList != []:
+                                for mz,I in matchList:
+                                        timeDependentIntensities.append( [ spectrum['scan start time'], I ])
+                                        #" option you can also get the MZ
+        for rt, i  in timeDependentIntensities:
+                print('{0:5.3f}  {1:13.4f}'.format( rt, i ))
+	
+	return (None,-1)	
+	"""
+	if len(timeDependentIntensities) > 5 :
+		return (pd.DataFrame( timeDependentIntensities,  columns=['rt', 'intensity']) ,1  )
+        else :
+		return (pd.DataFrame( timeDependentIntensities,  columns=['rt', 'intensity']) ,-1  )
+	"""
 
 def run_apex(file_name,raw_name ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
     # OS detect
@@ -82,6 +121,7 @@ def run_apex(file_name,raw_name ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outpu
 
     fh.setLevel(logging.INFO)
     log.addHandler(fh)
+    flag_mzml= False
     if loc_raw is not None:
         if flag_windows:
             loc = os.path.join(loc_raw, name + '.RAW')
@@ -89,16 +129,19 @@ def run_apex(file_name,raw_name ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outpu
             # raw file name must have capitals letters :) this shloud be checked
             loc = os.path.join(loc_raw, name.upper() + '.RAW')
     else:
+	## only with specific file name I usu mzML file :::///
         ## I have already the full location
 	loc = raw_name
+	if ('mzml' in raw_name)  or ('mzML' in raw_name):
+		flag_mzml=True 
+		#access_mzml=  pymzml.run.Reader( loc, MS1_Precision= tol , MSn_Precision = tol  )
         # that must be tested for the windows vers.
-        #ioc = os.path.join(loc_raw, name + '.RAW')
 
     if os.path.isfile(loc):
         log.info('raw file exist')
     else:
         exit('ERROR: Wrong path or wrong file name included: %s' % loc)
-
+    
     log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
     log.critical('RAW file  :  %s' % (loc))
     log.info('Output_file in :  %s', outputname)
@@ -136,6 +179,9 @@ def run_apex(file_name,raw_name ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outpu
         log.info('moff_rtWin_peak for matched peptide:   %4.4f ', s_w_match)
     c = 0
     log.critical('Starting apex .........')
+    
+    access_mzml=  pymzml.run.Reader( loc, MS1_Precision= tol , MSn_Precision = tol  )
+    start_time = time.time()
     for index_ms2, row in data_ms2.iterrows():
         # log.info('peptide at line: %i',c)
         mz_opt = "-mz=" + str(row['mz'])
@@ -155,16 +201,31 @@ def run_apex(file_name,raw_name ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outpu
             continue
 
         # convert rt to sec to min
-        if flag_windows:
-            os.path.join('folder_name', 'file_name')
-            args_txic = shlex.split(os.path.join(moff_path, "txic.exe") + " " + mz_opt + " -tol=" + str(tol) + " -t " + str(time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc, posix=False)
-        else:
-            args_txic = shlex.split(TXIC_PATH + "txic " + mz_opt + " -tol=" + str(tol) + " -t " + str(time_w - h_rt_w) + " -t " + str(
-                time_w + h_rt_w) + " " + loc)
-        p = subprocess.Popen(args_txic, stdout=subprocess.PIPE)
-        output, err = p.communicate()
+	if flag_mzml:
+		# mzml raw file
+		 
+		data_xic ,status = pyMZML_xic_out( access_mzml, loc, tol,   time_w - h_rt_w , time_w + h_rt_w , row['mz']  )
+					
+		if status==-1:
+			log.warning("WARNINGS: XIC not retrived line: %i", c)
+            		log.warning('MZ: %4.4f RT: %4.4f Mass: %i', row['mz'], row['rt'], index_ms2)
+			#print '---- mzML debug ---'
+            		c += 1
+            		continue	 
+	else:	
+		#  Thermo RAW file
+		if flag_windows:
+		    os.path.join('folder_name', 'file_name')
+		    args_txic = shlex.split(os.path.join(moff_path, "txic.exe") + " " + mz_opt + " -tol=" + str(tol) + " -t " + str(time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc, posix=False)
+		else:
+		    args_txic = shlex.split(TXIC_PATH + "txic " + mz_opt + " -tol=" + str(tol) + " -t " + str(time_w - h_rt_w) + " -t " + str(
+			time_w + h_rt_w) + " " + loc)
+		p = subprocess.Popen(args_txic, stdout=subprocess.PIPE)
+		output, err = p.communicate()
+		data_xic = pd.read_csv(StringIO(output.strip()), sep=' ', names=['rt', 'intensity'], header=0)
         try:
-            data_xic = pd.read_csv(StringIO(output.strip()), sep=' ', names=['rt', 'intensity'], header=0)
+	    ## dataframe creation is not more in the try catch
+            # data_xic = pd.read_csv(StringIO(output.strip()), sep=' ', names=['rt', 'intensity'], header=0)
             ind_v = data_xic.index
             # log.info ("XIC shape   %i ",  data_xic.shape[0] )
             if data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0] >= 1:
@@ -256,9 +317,11 @@ def run_apex(file_name,raw_name ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outpu
     # save  result i
     log.critical('..............apex terminated')
     log.critical('Writing result in %s' % (outputname))
+    log.info("--- Running time (measured when start the loop)  %s seconds ---" % (time.time() - start_time))
     data_ms2.to_csv(path_or_buf=outputname, sep="\t", header=True, index=False)
     fh.close()
     log.removeHandler(fh)
+   
     return
 
 
@@ -270,7 +333,7 @@ if __name__ == '__main__':
     
     parser.add_argument('--inputraw', dest='raw_list', action='store' ,
                     help='specify directly raw file', required=False)
-
+   
     parser.add_argument('--tol', dest='toll', action='store', type=float,
                         help='specify the tollerance parameter in ppm', required=True)
 
