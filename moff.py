@@ -12,6 +12,7 @@ import ast
 from StringIO import StringIO
 from sys import platform as _platform
 import pymzml
+import bisect
 import logging
 import time
 log = logging.getLogger(__name__)
@@ -42,39 +43,22 @@ def pyMZML_xic_out(  access,name, ppmPrecision, minRT, maxRT ,MZValue ):
 	run = pymzml.run.Reader(name, MS1_Precision= ppmPrecision , MSn_Precision = ppmPrecision)
 	timeDependentIntensities = []
 	for spectrum in run:
-                #print spectrum['scan start time']
-                #if spectrum['ms level'] == 1 :
-                if spectrum['ms level'] == 1 and spectrum['scan start time'] > minRT and spectrum['scan start time'] < maxRT:
-                        matchList = spectrum.hasPeak(MZValue)
-                        if matchList != []:
-                                for mz,I in matchList:
-                                        timeDependentIntensities.append( [ spectrum['scan start time'], I ])
-                                        #" option you can also get the MZ
-        print '--- freah --- '
-	for rt, i  in timeDependentIntensities:
-                print('{0:5.3f}  {1:13.4f}'.format( rt, i ))
-	print 
-	print '--- stored access ---'
-        timeDependentIntensities = []
-	for spectrum in access:
-                #print spectrum['scan start time']
-                #if spectrum['ms level'] == 1 :
-                if spectrum['ms level'] == 1 and spectrum['scan start time'] > minRT and spectrum['scan start time'] < maxRT:
-                        matchList = spectrum.hasPeak(MZValue)
-                        if matchList != []:
-                                for mz,I in matchList:
-                                        timeDependentIntensities.append( [ spectrum['scan start time'], I ])
-                                        #" option you can also get the MZ
-        for rt, i  in timeDependentIntensities:
-                print('{0:5.3f}  {1:13.4f}'.format( rt, i ))
+		if  spectrum['ms level'] == 1 and spectrum['scan start time'] > minRT and spectrum['scan start time'] < maxRT:
+                        lower_index = bisect.bisect( spectrum.peaks, (float(MZValue  - ppmPrecision*MZValue  ),None  ))
+                        upper_index = bisect.bisect( spectrum.peaks, (float(MZValue + ppmPrecision*MZValue )  ,None) )
+                #       print lower_index, upper_index, float(MZValue  - 10)
+                        maxI= 0.0
+                        for sp  in spectrum.peaks[ lower_index : upper_index ] :
+                            if sp[1] > maxI:
+                             maxI= sp[1]
+                        if maxI > 0:
+                                timeDependentIntensities.append( [ spectrum['scan start time'], maxI ])	
 	
-	return (None,-1)	
-	"""
 	if len(timeDependentIntensities) > 5 :
 		return (pd.DataFrame( timeDependentIntensities,  columns=['rt', 'intensity']) ,1  )
         else :
 		return (pd.DataFrame( timeDependentIntensities,  columns=['rt', 'intensity']) ,-1  )
-	"""
+	
 
 def run_apex(file_name,raw_name ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
     # OS detect
