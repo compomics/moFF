@@ -186,53 +186,52 @@ def run_apex(file_name,raw_name ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outpu
             continue
 
         # convert rt to sec to min
-	if flag_mzml:
+	try:
+		if flag_mzml:
 		# mzml raw file
 		 
-		data_xic ,status = pyMZML_xic_out(  loc, tol,   time_w - h_rt_w , time_w + h_rt_w , row['mz']  )
+			data_xic ,status = pyMZML_xic_out(  loc, tol,   time_w - h_rt_w , time_w + h_rt_w , row['mz']  )
 					
-		if status==-1:
-			log.warning("WARNINGS: XIC not retrived line: %i", c)
-            		log.warning('MZ: %4.4f RT: %4.4f Mass: %i', row['mz'], row['rt'], index_ms2)
-            		c += 1
-            		continue	 
-	else:	
-		#  Thermo RAW file
-		if flag_windows:
-		    os.path.join('folder_name', 'file_name')
-		    args_txic = shlex.split(os.path.join(moff_path, "txic.exe") + " " + mz_opt + " -tol=" + str(tol) + " -t " + str(time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc, posix=False)
-		else:
-		    args_txic = shlex.split(TXIC_PATH + "txic " + mz_opt + " -tol=" + str(tol) + " -t " + str(time_w - h_rt_w) + " -t " + str(
+			if status==-1:
+				log.warning("WARNINGS: XIC not retrived line: %i", c)
+				log.warning('MZ: %4.4f RT: %4.4f Mass: %i', row['mz'], row['rt'], index_ms2)
+				c += 1
+				continue	 
+		else:	
+			#  Thermo RAW file
+			if flag_windows:
+			    os.path.join('folder_name', 'file_name')
+			    args_txic = shlex.split(os.path.join(moff_path, "txic.exe") + " " + mz_opt + " -tol=" + str(tol) + " -t " + str(time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc, posix=False)
+			else:
+			    args_txic = shlex.split(TXIC_PATH + "txic " + mz_opt + " -tol=" + str(tol) + " -t " + str(time_w - h_rt_w) + " -t " + str(
 			time_w + h_rt_w) + " " + loc)
-		p = subprocess.Popen(args_txic, stdout=subprocess.PIPE)
-		output, err = p.communicate()
-        try:
-            data_xic = pd.read_csv(StringIO(output.strip()), sep=' ', names=['rt', 'intensity'], header=0)
-            ind_v = data_xic.index
+			p = subprocess.Popen(args_txic, stdout=subprocess.PIPE)
+			output, err = p.communicate()
+			data_xic = pd.read_csv(StringIO(output.strip()), sep=' ', names=['rt', 'intensity'], header=0)
+        #try:
+            #data_xic = pd.read_csv(StringIO(output.strip()), sep=' ', names=['rt', 'intensity'], header=0)
+            	ind_v = data_xic.index
             # log.info ("XIC shape   %i ",  data_xic.shape[0] )
-            if data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0] >= 1:
-                ind_v = data_xic.index
-                pp = data_xic[data_xic["intensity"] ==
-                              data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))][
+            	if data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0] >= 1:
+                	ind_v = data_xic.index
+                	pp = data_xic[data_xic["intensity"] == data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))][
                                   'intensity'].max()].index
-                pos_p = ind_v[pp]
-                if pos_p.values.shape[0] > 1:
-                    log.warning(" RT gap for the time windows searched. Probably the ppm values is too small %i", c)
-                    continue
-                val_max = data_xic.ix[pos_p, 1].values
-            else:
-                log.info("LW_BOUND window  %4.4f", time_w - temp_w)
-                log.info("UP_BOUND window %4.4f", time_w + temp_w)
-                log.info(data_xic[(data_xic['rt'] > (time_w - +0.60)) & (data_xic['rt'] < (time_w + 0.60))])
-                log.info("WARNINGS: moff_rtWin_peak is not enough to detect the max peak line : %i", c)
-                log.info('MZ: %4.4f RT: %4.4f Mass: %i', row['mz'], row['rt'], index_ms2)
-                c += 1
-                continue
-            pnoise_5 = np.percentile(
-                data_xic[(data_xic['rt'] > (time_w - (h_rt_w / 2))) & (data_xic['rt'] < (time_w + (h_rt_w / 2)))][
+                	pos_p = ind_v[pp]
+                	if pos_p.values.shape[0] > 1:
+                    		log.warning(" RT gap for the time windows searched. Probably the ppm values is too small %i", c)
+                    		continue
+                	val_max = data_xic.ix[pos_p, 1].values
+            	else:
+                	log.info("LW_BOUND window  %4.4f", time_w - temp_w)
+                	log.info("UP_BOUND window %4.4f", time_w + temp_w)
+			log.info(data_xic[(data_xic['rt'] > (time_w - +0.60)) & (data_xic['rt'] < (time_w + 0.60))])
+			log.info("WARNINGS: moff_rtWin_peak is not enough to detect the max peak line : %i", c)
+			log.info('MZ: %4.4f RT: %4.4f Mass: %i', row['mz'], row['rt'], index_ms2)
+			c += 1
+			continue
+            	pnoise_5 = np.percentile(  data_xic[(data_xic['rt'] > (time_w - (h_rt_w / 2))) & (data_xic['rt'] < (time_w + (h_rt_w / 2)))][
                     'intensity'], 5)
-            pnoise_10 = np.percentile(
-                data_xic[(data_xic['rt'] > (time_w - (h_rt_w / 2))) & (data_xic['rt'] < (time_w + (h_rt_w / 2)))][
+            	pnoise_10 = np.percentile(data_xic[(data_xic['rt'] > (time_w - (h_rt_w / 2))) & (data_xic['rt'] < (time_w + (h_rt_w / 2)))][
                     'intensity'], 10)
         except (IndexError, ValueError, TypeError):
             log.warning(" size is not enough to detect the max peak line : %i", c)
@@ -345,4 +344,4 @@ if __name__ == '__main__':
     loc_output = args.loc_out
 
     # " init here the logger
-    run_apex(file_name,args.raw_list  ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output)
+    run_apex(file_name,args.raw_list ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output)
