@@ -83,18 +83,28 @@ def run_mbr(args):
     ch = logging.StreamHandler()
     ch.setLevel(logging.ERROR)
     log.addHandler(ch)
-
-    if not (os.path.isdir(args.loc_in)):
-        exit(str(args.loc_in) + '-->  input folder does not exist ! ')
-
-    if str(args.loc_in) == '':
-        output_dir = 'mbr_output'
-    else:
-        if os.path.exists(os.path.join(args.loc_in)):
+    
+    if args.loc_in is None:
+	output_dir = os.path.join( 'mbr_output')
+    else: 
+       if os.path.exists(os.path.join(args.loc_in)):
             # if '/' in  str(args.loc_in):
             output_dir = os.path.join(args.loc_in, 'mbr_output')
-        else:
-            exit(os.path.join(args.loc_in) + ' EXIT input folder path not well specified --> / missing ')
+       else:
+	    exit(os.path.join(args.loc_in) + ' EXIT input folder path not well specified --> / missing ')
+
+
+    #if not (os.path.isdir(args.loc_in)):
+     #   exit(str(args.loc_in) + '-->  input folder does not exist ! ')
+
+    #if str(args.loc_in) == '':
+    #    output_dir = 'mbr_output'
+    #else:
+    #    if os.path.exists(os.path.join(args.loc_in)):
+            # if '/' in  str(args.loc_in):
+    #        output_dir = os.path.join(args.loc_in, 'mbr_output')
+    #    else:
+    #        exit(os.path.join(args.loc_in) + ' EXIT input folder path not well specified --> / missing ')
 
     if not (os.path.isdir(output_dir)):
         log.critical("Created MBR output folder in : %s ", output_dir)
@@ -122,12 +132,21 @@ def run_mbr(args):
     exp_out = []
     # lsit of input datafra used as help
     exp_subset = []
-    for root, dirs, files in os.walk(args.loc_in):
-        for f in files:
-            if f.endswith('.' + args.ext):
-                exp_set.append(os.path.join(root, f))
+    # list of the name of the mbr output
+    exp_out_name=[]
 
-    if args.sample is not None:
+    
+    if args.loc_in is None: 
+	for id_name in args.tsv_list:
+		exp_set.append(id_name) 
+    else:
+	for root, dirs, files in os.walk(args.loc_in):
+		for f in files:
+			if f.endswith('.' + args.ext):
+				exp_set.append(os.path.join(root, f))
+
+	## sample optiion is valid only if  folder iin option is valid 
+    if (args.sample is not None)  and  (args.loc_in is not None)  :
         exp_set_app = copy.deepcopy(exp_set)
         for a in exp_set:
             if re.search(args.sample, a) is None:
@@ -326,7 +345,7 @@ def run_mbr(args):
         log.critical('matched features   %i  MS2 features  %i ',  exp_out[jj][exp_out[jj]['matched'] == 1].shape[0], exp_out[jj][exp_out[jj]['matched'] == 0].shape[0])
         exp_out[jj].to_csv(
             path_or_buf=os.path.join(output_dir, os.path.split(exp_set[jj])[1].split('.')[0] + '_match.txt'), sep='\t', index=False)
-
+	exp_out_name.append(os.path.join(output_dir, os.path.split(exp_set[jj])[1].split('.')[0] + '_match.txt'))
         if exp_out[jj].shape[0] > 0:
             out_flag = 1 * out_flag
         else:
@@ -334,7 +353,7 @@ def run_mbr(args):
         
     w_mbr.close()
     log.removeHandler(w_mbr)
-    return out_flag
+    return out_flag,exp_out_name
 
 
 if __name__ == '__main__':
