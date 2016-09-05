@@ -39,8 +39,7 @@ def check_columns_name(col_list, col_must_have):
     # succes
     return 0
  
-def pyMZML_xic_out(  access,name, ppmPrecision, minRT, maxRT ,MZValue ):
-	#print access
+def pyMZML_xic_out(  name, ppmPrecision, minRT, maxRT ,MZValue ):
 	run = pymzml.run.Reader(name, MS1_Precision= ppmPrecision , MSn_Precision = ppmPrecision)
 	timeDependentIntensities = []
 	for spectrum in run:
@@ -117,9 +116,9 @@ def run_apex(file_name,raw_name ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outpu
 	## only with specific file name I usu mzML file :::///
         ## I have already the full location
 	loc = raw_name
-	if ('mzml' in raw_name)  or ('mzML' in raw_name):
+	if ('MZML' in raw_name.upper()):
 		flag_mzml=True 
-		#access_mzml=  pymzml.run.Reader( loc, MS1_Precision= tol , MSn_Precision = tol  )
+		#=  pymzml.run.Reader( loc, MS1_Precision= tol , MSn_Precision = tol  )
         # that must be tested for the windows vers.
     if os.path.isfile(loc):
         log.info('raw file exist')
@@ -191,7 +190,7 @@ def run_apex(file_name,raw_name ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outpu
 	if flag_mzml:
 		# mzml raw file
 		 
-		data_xic ,status = pyMZML_xic_out( access_mzml, loc, tol,   time_w - h_rt_w , time_w + h_rt_w , row['mz']  )
+		data_xic ,status = pyMZML_xic_out(  loc, tol,   time_w - h_rt_w , time_w + h_rt_w , row['mz']  )
 					
 		if status==-1:
 			log.warning("WARNINGS: XIC not retrived line: %i", c)
