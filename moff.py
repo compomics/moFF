@@ -33,7 +33,8 @@ TXIC_PATH = os.environ.get('TXIC_PATH', './')
 def check_columns_name(col_list, col_must_have):
     for c_name in col_must_have:
         if not (c_name in col_list):
-            # fail
+ 	    # fail
+	    print 'The following filed name is missing or wrong: ', c_name
             return 1
     # succes
     return 0
@@ -120,7 +121,6 @@ def run_apex(file_name,raw_name ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outpu
 		flag_mzml=True 
 		#access_mzml=  pymzml.run.Reader( loc, MS1_Precision= tol , MSn_Precision = tol  )
         # that must be tested for the windows vers.
-
     if os.path.isfile(loc):
         log.info('raw file exist')
     else:
@@ -136,6 +136,7 @@ def run_apex(file_name,raw_name ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outpu
         exit('ERROR minimal field requested are missing or wrong')
 
     index_offset = data_ms2.columns.shape[0] - 1
+
 
     data_ms2["intensity"] = -1
     data_ms2["rt_peak"] = -1
@@ -164,12 +165,14 @@ def run_apex(file_name,raw_name ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outpu
     c = 0
     log.critical('Starting apex .........')
     
-    access_mzml=  pymzml.run.Reader( loc, MS1_Precision= tol , MSn_Precision = tol  )
     start_time = time.time()
     for index_ms2, row in data_ms2.iterrows():
         # log.info('peptide at line: %i',c)
         mz_opt = "-mz=" + str(row['mz'])
-        time_w = row['rt'] / 60  # / 60
+        
+	#### PAY ATTENTION HERE , we assume that input RT is in minutes
+	#### if it is not the case change the following line
+	time_w = row['rt']  / 60
         if mbr_flag == 0:
             log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f ', c, row['mz'], time_w)
             temp_w = s_w
@@ -193,7 +196,6 @@ def run_apex(file_name,raw_name ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outpu
 		if status==-1:
 			log.warning("WARNINGS: XIC not retrived line: %i", c)
             		log.warning('MZ: %4.4f RT: %4.4f Mass: %i', row['mz'], row['rt'], index_ms2)
-			#print '---- mzML debug ---'
             		c += 1
             		continue	 
 	else:	
@@ -206,10 +208,8 @@ def run_apex(file_name,raw_name ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outpu
 			time_w + h_rt_w) + " " + loc)
 		p = subprocess.Popen(args_txic, stdout=subprocess.PIPE)
 		output, err = p.communicate()
-		data_xic = pd.read_csv(StringIO(output.strip()), sep=' ', names=['rt', 'intensity'], header=0)
         try:
-	    ## dataframe creation is not more in the try catch
-            # data_xic = pd.read_csv(StringIO(output.strip()), sep=' ', names=['rt', 'intensity'], header=0)
+            data_xic = pd.read_csv(StringIO(output.strip()), sep=' ', names=['rt', 'intensity'], header=0)
             ind_v = data_xic.index
             # log.info ("XIC shape   %i ",  data_xic.shape[0] )
             if data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0] >= 1:
@@ -217,16 +217,11 @@ def run_apex(file_name,raw_name ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outpu
                 pp = data_xic[data_xic["intensity"] ==
                               data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))][
                                   'intensity'].max()].index
-                # print 'pp index',pp
-                # print 'Looking for ..:',row['mz'],time_w
-                # print 'XIC data retrived:',data_xic.shape
-                # print data_xic[ data_xic["intensity"]== data_xic[(data_xic['rt']> (time_w - )) & ( data_xic['rt']< (time_w + temp_w) )]['intensity'].max()]
                 pos_p = ind_v[pp]
                 if pos_p.values.shape[0] > 1:
                     log.warning(" RT gap for the time windows searched. Probably the ppm values is too small %i", c)
                     continue
                 val_max = data_xic.ix[pos_p, 1].values
-            # log.info(data_xic[(data_xic['rt']>   (time_w -1)   ) & ( data_xic['rt']<  ( time_w + 1   )    )]   )
             else:
                 log.info("LW_BOUND window  %4.4f", time_w - temp_w)
                 log.info("UP_BOUND window %4.4f", time_w + temp_w)
@@ -253,18 +248,14 @@ def run_apex(file_name,raw_name ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outpu
             c += 1
             continue
         else:
-            # log.info("Intensisty at pos_p-1 %4.4f",data_xic.ix[(pos_p-1),1].values )
             log_time = [-1, -1]
             c_left = 0
             find_5 = False
             stop = False
             while c_left < (pos_p - 1) and not stop:
-                # print c_left
 
                 if not find_5 and (data_xic.ix[(pos_p - 1) - c_left, 1].values <= (0.5 * val_max)):
                     find_5 = True
-                    # print "LWHM",c_left,data_xic.ix[(pos_p-1)-c_left,1]
-                    # log_point[0] = np.log2(val_max)/np.log2(data_xic.ix[(pos_p-1)-c_left,1])
                     log_time[0] = data_xic.ix[(pos_p - 1) - c_left, 0].values * 60
                     stop = True
                 c_left += 1
@@ -274,8 +265,6 @@ def run_apex(file_name,raw_name ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outpu
             while ((pos_p + 1) + r_left < len(data_xic)) and not stop:
                 if not find_5 and data_xic.ix[(pos_p + 1) + r_left, 1].values <= (0.50 * val_max):
                     find_5 = True
-                    # print "RWHM",r_left,data_xic.ix[(pos_p+1)+r_left,1]
-                    # log_point[2] = np.log2(val_max) /np.log2(data_xic.ix[(pos_p+1)+r_left,1])
                     log_time[1] = data_xic.ix[(pos_p + 1) + r_left, 0].values * 60
                     stop = True
                 r_left += 1
@@ -295,10 +284,10 @@ def run_apex(file_name,raw_name ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outpu
             data_ms2.ix[index_ms2, (index_offset + 8)] = np.log2(
                 abs(data_ms2.ix[index_ms2, index_offset + 2] - log_time[0]) / abs(
                     data_ms2.ix[index_ms2, index_offset + 2] - log_time[1]))
-            data_ms2.ix[index_ms2, (index_offset + 9)] = np.log2(val_max)
+	    data_ms2.ix[index_ms2, (index_offset + 9)] = np.log2(val_max)
             c += 1
 
-    # save  result i
+    # save  result 
     log.critical('..............apex terminated')
     log.critical('Writing result in %s' % (outputname))
     log.info("--- Running time (measured when start the loop)  %s seconds ---" % (time.time() - start_time))
