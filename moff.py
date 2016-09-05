@@ -118,8 +118,7 @@ def run_apex(file_name,raw_name ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outpu
 	loc = raw_name
 	if ('MZML' in raw_name.upper()):
 		flag_mzml=True 
-		#=  pymzml.run.Reader( loc, MS1_Precision= tol , MSn_Precision = tol  )
-        # that must be tested for the windows vers.
+    
     if os.path.isfile(loc):
         log.info('raw file exist')
     else:
