@@ -90,6 +90,7 @@ res_state,mbr_list_loc = moff_mbr.run_mbr(args)
 if res_state == -1:
     exit('An error is occurred during the writing of the mbr file')
 if args.tsv_list is not None:
+	# input list of raw and tsv file
 	if len(args.tsv_list) != len(args.raw_list) :
 		exit('Error:  number of the input files is different from the number of raw files' )
 	# in case list of file as input , mbr_output is written in local folder
@@ -106,6 +107,7 @@ for file_name in mbr_list_loc:
     s_w = args.rt_p_window
     s_w_match = args.rt_p_window_match
     if args.tsv_list is not None:
+	## list of the raw file and their path
     	raw_list = args.raw_list[c]
     else:
 	raw_list = None
