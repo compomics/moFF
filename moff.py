@@ -46,7 +46,7 @@ def pyMZML_xic_out(  name, ppmPrecision, minRT, maxRT ,MZValue ):
 		if  spectrum['ms level'] == 1 and spectrum['scan start time'] > minRT and spectrum['scan start time'] < maxRT:
                         lower_index = bisect.bisect( spectrum.peaks, (float(MZValue  - ppmPrecision*MZValue  ),None  ))
                         upper_index = bisect.bisect( spectrum.peaks, (float(MZValue + ppmPrecision*MZValue )  ,None) )
-                #       print lower_index, upper_index, float(MZValue  - 10)
+                        print lower_index, upper_index
                         maxI= 0.0
                         for sp  in spectrum.peaks[ lower_index : upper_index ] :
                             if sp[1] > maxI:
@@ -189,7 +189,6 @@ def run_apex(file_name,raw_name ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outpu
 	try:
 		if flag_mzml:
 		# mzml raw file
-		 
 			data_xic ,status = pyMZML_xic_out(  loc, tol,   time_w - h_rt_w , time_w + h_rt_w , row['mz']  )
 					
 			if status==-1:
@@ -208,10 +207,7 @@ def run_apex(file_name,raw_name ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outpu
 			p = subprocess.Popen(args_txic, stdout=subprocess.PIPE)
 			output, err = p.communicate()
 			data_xic = pd.read_csv(StringIO(output.strip()), sep=' ', names=['rt', 'intensity'], header=0)
-        #try:
-            #data_xic = pd.read_csv(StringIO(output.strip()), sep=' ', names=['rt', 'intensity'], header=0)
-            	ind_v = data_xic.index
-            # log.info ("XIC shape   %i ",  data_xic.shape[0] )
+            
             	if data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0] >= 1:
                 	ind_v = data_xic.index
                 	pp = data_xic[data_xic["intensity"] == data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))][
