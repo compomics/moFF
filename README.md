@@ -13,7 +13,7 @@
 
 ## Introduction ##
 
-moFF is an OS independent tool designed to extract apex MS1 intensity using a set of identified MS2 peptides. It currently uses a Go library to directly extract data from Thermo Raw spectrum files, eliminating the need for conversions from other formats.
+moFF is an OS independent tool designed to extract apex MS1 intensity using a set of identified MS2 peptides. It currently uses a Go library to directly extract data from Thermo Raw spectrum files, eliminating the need for conversions from other formats. Moreover, moFF also allows to work directly with mzML files.
 
 moFF is built up from two standalone modules :
 - *moff_mbr.py* :  match between run (mbr)
@@ -38,6 +38,7 @@ Required python libraries :
 - numpy > 1.10.0
 - argparse > 1.2.1 
 - scikit-learn > 0.17
+- pymzML > 0.7.7
 
 Optional requirements :
 -When using PeptideShaker results as a source, a PeptideShaker installation (<http://compomics.github.io/projects/peptide-shaker.html>) needs to be availabe.
@@ -46,6 +47,7 @@ Optional requirements :
 During processing, moFF makes use of a third party algorithm (txic or txic.exe) which allows for the parsing of the Thermo RAW data. 
 Txic is compatible with the raw outputfiles originating from any Orbitrap or triple quadrupole Thermo machine. However, Thermo Fusion instruments are currently not supported.
 
+
 [Top of page](#moff)
 
 ---
@@ -53,8 +55,8 @@ Txic is compatible with the raw outputfiles originating from any Orbitrap or tri
 
 ##Input Data
 
-moFF-GUI requires two types of input for the quantification procedure :
- - Thermo RAW file 
+moFF requires two types of input for the quantification procedure :
+ - Thermo RAW file or mzML file
  - MS2 identified peptide information
 
 The MS2 identified peptides can be presented as a tab-delimited file containing mimimal (mandatory) annotation for each peptide (a)
@@ -138,6 +140,8 @@ NOTE: All the parameters related to the the time windows (rt_w,rt_p, rt_p_match)
 You can also specify directly the raw file using: 
 `python moff.mbr --inputtsv f1_folder/20080311_CPTAC6_07_6A005.txt  --inputraw f1_folder/20080311_CPTAC6_07_6A005.raw --tol 1O --output_folder output_moff`
 
+WARNING: if the user need to use Thermo RAW file can specify them using   `--inputraw` or  `--raw_rep`. In case of **mzML** file the user can ONLY specify them using   `--inputraw`
+
 
 
 
@@ -175,7 +179,7 @@ You can also specify a list of input and raw files using:
 
 Using `--inputtsv | --inputraw`  you can not filterted the input file using `--sample --ext` like in the case with `--inputF | --raw_repo`
 
-
+ mzML raw file  MUST be specified  using `--inputtsv | --inputraw`. The `--raw_repo` option is not available for mzML files.
 
 [Top of page](#moff)
 
