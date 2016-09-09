@@ -189,7 +189,8 @@ def run_apex(file_name,raw_name ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outpu
 	try:
 		if flag_mzml:
 		# mzml raw file
-			data_xic ,status = pyMZML_xic_out(  loc, tol,   time_w - h_rt_w , time_w + h_rt_w , row['mz']  )
+                        # transform the tollerance in ppm
+			data_xic ,status = pyMZML_xic_out(  loc, float(tol / (10 ** 6)) ,   time_w - h_rt_w , time_w + h_rt_w , row['mz']  )
 					
 			if status==-1:
 				log.warning("WARNINGS: XIC not retrived line: %i", c)
