@@ -62,16 +62,17 @@ moFF requires two types of input for the quantification procedure :
 The MS2 identified peptides can be presented as a tab-delimited file containing mimimal (mandatory) annotation for each peptide (a)
 
 (a) The tab-delimited file must contain the following information for all the peptides:
-  - 'peptide' : sequence of the peptide
+  - 'peptide' : peptide-spectrum-match  sequence
   - 'prot': protein ID 
-  - 'rt': peptide retention time  ( The retention time must be specified in second )
+  - 'rt': peptide-spectrum-match retention time  (i.e the retention time contained in the mgf file; The retention time must be specified in second)
   - 'mz' : mass over charge
   - 'mass' : mass of the peptide
   - 'charge' : charge of the ionized peptide
  
-NOTE 1 : In case the tab-delimited file provided by the user contains fields that are not mentioned here (i.e modifications,petides length) the algorithm will retain these in the final output.
+NOTE 1 : In case the tab-delimited file provided by the user contains fields that are not mentioned here (i.e modifications,petides length) the algorithm will retain these in the final output. The peptide-spectrum-match sequence and the protein id  informations are used only in the match-between-run module.
 
 NOTE 2 : Users can also provide PeptideShaker output as source material for moFF. Please refer to the [moff-GUI](https://github.com/compomics/moff-gui) manual for more information on how to do this.
+
 
 [Top of page](#moff)
 
@@ -101,6 +102,7 @@ use :  `python moff_mbr.py -h`
 This command runs the MBR modules. The output will be stored in a subfolder ('mbr_output') inside the specified input folder.
 The MBR module will consider all the .txt files present in the specified input folder as replicates (to select specific files or different extension, please refer to the example below).
 The files in *f1_folder/mbr_output* will be identical to the input files, but they will have an additional field ('matched') that specifies which peptides have match (1) or not (0). The MBR algorithm also produces a log file in the provided input directory.
+
 
 ### Customizing Match between runs ###
 
@@ -134,7 +136,7 @@ For example :
 
 `python moff.mbr --inputtsv f1_folder/20080311_CPTAC6_07_6A005.txt  --raw_rep f1_folder/ --tol 1O --output_folder output_moff`
 
-WARNING : the raw file names  MUST be the same of the input file otherwise the script give you an error !
+WARNING : the raw file names MUST be the same of the input file otherwise the script give you an error !
 NOTE: All the parameters related to the the time windows (rt_w,rt_p, rt_p_match) are basicaly the half of the entire time windows where the apex peak is searched or the XiC is retrieved.
 
 You can also specify directly the raw file using: 
