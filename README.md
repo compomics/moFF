@@ -27,6 +27,12 @@ The version presented here is a commandline tool that can easily be adapted to a
 
 ----
 
+## moFF Publication:
+  * [Argentini et al. Nature Methods. 2016 12(13):964–966](http://www.nature.com/nmeth/journal/v13/n12/full/nmeth.4075.html).
+  * If you use moFF as part of a publication, please include this reference.
+
+---
+
 ## Minimum Requirements ##
 
 Required java version :
