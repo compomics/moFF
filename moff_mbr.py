@@ -1,21 +1,48 @@
 #!/usr/bin/env python
 
-import pandas as pd
-import numpy as np
-from sklearn import linear_model
-from sklearn.metrics import mean_absolute_error
-import itertools
-import os
-import argparse
-import re
 import ConfigParser
+import argparse
 import ast
 import copy
+import itertools
+import logging
+import os
+import re
 import sys
 
-import logging
+import numpy as np
+import pandas as pd
+from sklearn import linear_model
+from sklearn.metrics import mean_absolute_error
+
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
+
+
+def map_ps2moff(data):
+    data.drop(data.columns[[0]], axis=1, inplace=True)
+    data.columns = data.columns.str.lower()
+    data.rename(
+        columns={'sequence': 'peptide', 'measured charge': 'charge', 'theoretical mass': 'mass', 'protein(s)': 'prot',
+                 'm/z': 'mz'}, inplace=True)
+    return data, data.columns.values.tolist()
+
+
+'''
+input list of columns
+list of column names from PS default template loaded from .properties
+'''
+
+
+def check_ps_input_data(input_column_name, list_col_ps_default):
+    res = [i for e in list_col_ps_default for i in input_column_name if e in i]
+    if len(res) == len(input_column_name):
+        # detected a default PS input file
+        return 1
+    else:
+        # not detected a default PS input file
+        return 0
+
 
 # filtering _outlier
 def MahalanobisDist(x, y):
@@ -60,7 +87,7 @@ def combine_model(x, model, err, weight_flag):
             else:
                 app_sum_2 = app_sum_2 + (model[ii].predict(x[ii])[0][0] * (float(err[ii]) / float(tot_err)))
 
-            # " output weighted mean
+                # " output weighted mean
     if int(weight_flag) == 1:
         return float(app_sum_2)
     else:
@@ -83,26 +110,29 @@ def run_mbr(args):
     ch = logging.StreamHandler()
     ch.setLevel(logging.ERROR)
     log.addHandler(ch)
-    
+
     if args.loc_in is None:
-	output_dir = os.path.join( 'mbr_output')
-    else: 
-       if os.path.exists(os.path.join(args.loc_in)):
+        # output mbr_folder will be in the specified folder
+        output_dir = os.path.join('mbr_output')
+        #print output_dir
+
+    else:
+        if os.path.exists(os.path.join(args.loc_in)):
             # if '/' in  str(args.loc_in):
             output_dir = os.path.join(args.loc_in, 'mbr_output')
-       else:
-	    exit(os.path.join(args.loc_in) + ' EXIT input folder path not well specified --> / missing ')
+        else:
+            exit(os.path.join(args.loc_in) + ' EXIT input folder path not well specified --> / missing ')
 
 
-    #if not (os.path.isdir(args.loc_in)):
-     #   exit(str(args.loc_in) + '-->  input folder does not exist ! ')
+            # if not (os.path.isdir(args.loc_in)):
+            #   exit(str(args.loc_in) + '-->  input folder does not exist ! ')
 
-    #if str(args.loc_in) == '':
-    #    output_dir = 'mbr_output'
-    #else:
-    #    if os.path.exists(os.path.join(args.loc_in)):
+            # if str(args.loc_in) == '':
+            #    output_dir = 'mbr_output'
+            # else:
+            #    if os.path.exists(os.path.join(args.loc_in)):
             # if '/' in  str(args.loc_in):
-    #        output_dir = os.path.join(args.loc_in, 'mbr_output')
+    # output_dir = os.path.join(args.loc_in, 'mbr_output')
     #    else:
     #        exit(os.path.join(args.loc_in) + ' EXIT input folder path not well specified --> / missing ')
 
@@ -111,12 +141,12 @@ def run_mbr(args):
         os.makedirs(output_dir)
     else:
         log.critical("MBR Output folder in : %s ", output_dir)
-    #log.setLevel(logging.DEBUG)
+    # log.setLevel(logging.DEBUG)
     # set log to file
-    w_mbr = logging.FileHandler(  os.path.join( output_dir ,args.log_label +  '_mbr_.log'), mode='w') 
+    w_mbr = logging.FileHandler(os.path.join(output_dir, args.log_label + '_mbr_.log'), mode='w')
     w_mbr.setLevel(logging.INFO)
     log.addHandler(w_mbr)
-    
+
     moff_path = os.path.dirname(sys.argv[0])
     config = ConfigParser.RawConfigParser()
     config.read(os.path.join(moff_path, 'moff_setting.properties'))
@@ -133,20 +163,19 @@ def run_mbr(args):
     # lsit of input datafra used as help
     exp_subset = []
     # list of the name of the mbr output
-    exp_out_name=[]
+    exp_out_name = []
 
-    
-    if args.loc_in is None: 
-	for id_name in args.tsv_list:
-		exp_set.append(id_name) 
+    if args.loc_in is None:
+        for id_name in args.tsv_list:
+            exp_set.append(id_name)
     else:
-	for root, dirs, files in os.walk(args.loc_in):
-		for f in files:
-			if f.endswith('.' + args.ext):
-				exp_set.append(os.path.join(root, f))
+        for root, dirs, files in os.walk(args.loc_in):
+            for f in files:
+                if f.endswith('.' + args.ext):
+                    exp_set.append(os.path.join(root, f))
 
-	## sample optiion is valid only if  folder iin option is valid 
-    if (args.sample is not None)  and  (args.loc_in is not None)  :
+                ## sample optiion is valid only if  folder iin option is valid
+    if (args.sample is not None) and (args.loc_in is not None):
         exp_set_app = copy.deepcopy(exp_set)
         for a in exp_set:
             if re.search(args.sample, a) is None:
@@ -154,13 +183,23 @@ def run_mbr(args):
         exp_set = exp_set_app
 
     if (exp_set == []) or (len(exp_set) == 1):
-        exit('ERROR input files not found or just one input file selected . check the folder or the extension given in input')
+        exit(
+            'ERROR input files not found or just one input file selected . check the folder or the extension given in input')
 
     for a in exp_set:
         log.critical('Reading file: %s ', a)
         exp_subset.append(a)
         data_moff = pd.read_csv(a, sep="\t", header=0)
         list_name = data_moff.columns.values.tolist()
+        # get the lists of PS  defaultcolumns from properties file
+        list_ps_def = ast.literal_eval(config.get('moFF', 'ps_default_export'))
+        # here it controls if the input file is a PS export; if yes it maps the input in right moFF name
+        if check_ps_input_data(list_name, list_ps_def) == 1:
+            log.critical('Detected input file from PeptideShaker export..: %s ', a)
+            # map  the columns name according to moFF input requirements
+            data_moff, list_name = map_ps2moff(data_moff)
+            log.critical('Mapping columns names into the  the moFF requested column name..: %s ', a)
+            # print data_moff.columns
         if not check_columns_name(list_name, ast.literal_eval(config.get('moFF', 'col_must_have_x'))):
             exit('ERROR minimal field requested are missing or wrong')
         data_moff['matched'] = 0
@@ -175,7 +214,6 @@ def run_mbr(args):
     # parameter of the number of query
     # set a list of filed mandatory
     # ['matched','peptide','mass','mz','charge','prot','rt']
-
     n_replicates = len(exp_t)
     exp_set = exp_subset
     aa = range(0, n_replicates)
@@ -198,8 +236,8 @@ def run_mbr(args):
     log.info('Pairwise model computation ----')
 
     if args.rt_feat_file is not None:
-	log.critical('Custom list of peptide used  provided by the user in %s', args.rt_feat_file)
-        #log.info('Custom list of peptide used  provided by the user in %s', args.rt_feat_file)
+        log.critical('Custom list of peptide used  provided by the user in %s', args.rt_feat_file)
+        # log.info('Custom list of peptide used  provided by the user in %s', args.rt_feat_file)
         shared_pep_list = pd.read_csv(args.rt_feat_file, sep='\t')
         shared_pep_list['mass'] = shared_pep_list['mass'].map('{:.4f}'.format)
         shared_pep_list['code'] = shared_pep_list['peptide'].astype(str) + '_' + shared_pep_list['mass'].astype(str)
@@ -213,8 +251,10 @@ def run_mbr(args):
             if i[0] == jj and i[1] != jj:
                 if args.rt_feat_file is not None:
                     # use of custom peptide
-                    comA = exp_t[i[0]][exp_t[i[0]]['code_unique'].isin(list_shared_pep)][['code_unique', 'peptide', 'prot', 'rt']]
-                    comB = exp_t[i[1]][exp_t[i[1]]['code_unique'].isin(list_shared_pep)][['code_unique', 'peptide', 'prot', 'rt']]
+                    comA = exp_t[i[0]][exp_t[i[0]]['code_unique'].isin(list_shared_pep)][
+                        ['code_unique', 'peptide', 'prot', 'rt']]
+                    comB = exp_t[i[1]][exp_t[i[1]]['code_unique'].isin(list_shared_pep)][
+                        ['code_unique', 'peptide', 'prot', 'rt']]
                     comA = comA.groupby('code_unique', as_index=False).mean()
                     comB = comB.groupby('code_unique', as_index=False).mean()
                     common = pd.merge(comA, comB, on=['code_unique'], how='inner')
@@ -257,7 +297,7 @@ def run_mbr(args):
                         data_B = np.reshape(data_B, [common.shape[0], 1])
                         data_A = np.reshape(data_A, [common.shape[0], 1])
                     log.info(' Size trainig shared peptide , %i %i ', data_A.shape[0], data_B.shape[0])
-                    clf = linear_model.RidgeCV(alphas=np.power(2, np.linspace(-30, 30)), scoring='mean_absolute_error')
+                    clf = linear_model.RidgeCV(alphas=np.power(2, np.linspace(-30, 30)), scoring='neg_mean_absolute_error')
                     clf.fit(data_B, data_A)
                     clf_final = linear_model.Ridge(alpha=clf.alpha_)
                     clf_final.fit(data_B, data_A)
@@ -288,16 +328,19 @@ def run_mbr(args):
                 set_dif_s_in_1 = np.setdiff1d(list_pep_repB, list_pep_repA)
                 add_pep_frame = exp_t[i[1]][exp_t[i[1]]['peptide'].isin(set_dif_s_in_1)].copy()
                 add_pep_frame = add_pep_frame[['peptide', 'mass', 'mz', 'charge', 'prot', 'rt']]
-                #add_pep_frame['code_unique'] = '_'.join([add_pep_frame['peptide'], add_pep_frame['prot'], add_pep_frame['mass'].astype(str), add_pep_frame['charge'].astype(str)])
-                add_pep_frame['code_unique'] = add_pep_frame['peptide'] + '_' + add_pep_frame['prot'] + '_' + add_pep_frame['mass'].astype(str) + '_' + add_pep_frame['charge'].astype(str)
-		add_pep_frame = add_pep_frame.groupby('code_unique', as_index=False)['peptide', 'mass', 'charge', 'mz', 'prot', 'rt'].aggregate(max)
+                # add_pep_frame['code_unique'] = '_'.join([add_pep_frame['peptide'], add_pep_frame['prot'], add_pep_frame['mass'].astype(str), add_pep_frame['charge'].astype(str)])
+                add_pep_frame['code_unique'] = add_pep_frame['peptide'] + '_' + add_pep_frame['prot'] + '_' + \
+                                               add_pep_frame['mass'].astype(str) + '_' + add_pep_frame['charge'].astype(
+                    str)
+                add_pep_frame = add_pep_frame.groupby('code_unique', as_index=False)[
+                    'peptide', 'mass', 'charge', 'mz', 'prot', 'rt'].aggregate(max)
                 add_pep_frame = add_pep_frame[['peptide', 'mass', 'mz', 'charge', 'prot', 'rt']]
                 list_name = add_pep_frame.columns.tolist()
                 list_name = [w.replace('rt', 'rt_' + str(c_rt)) for w in list_name]
                 add_pep_frame.columns = list_name
                 pre_pep_save.append(add_pep_frame)
                 c_rt += 1
-            # print 'input columns',pre_pep_save[0].columns
+                # print 'input columns',pre_pep_save[0].columns
         if n_replicates == 2:
             test = pre_pep_save[0]
         else:
@@ -342,18 +385,20 @@ def run_mbr(args):
         log.info('Before adding %s contains %i ', exp_set[jj], exp_t[jj].shape[0])
         exp_out[jj] = pd.concat([exp_t[jj], test], join='outer', axis=0)
         log.info('After MBR %s contains:  %i  peptides', exp_set[jj], exp_out[jj].shape[0])
-        log.critical('matched features   %i  MS2 features  %i ',  exp_out[jj][exp_out[jj]['matched'] == 1].shape[0], exp_out[jj][exp_out[jj]['matched'] == 0].shape[0])
+        log.critical('matched features   %i  MS2 features  %i ', exp_out[jj][exp_out[jj]['matched'] == 1].shape[0],
+                     exp_out[jj][exp_out[jj]['matched'] == 0].shape[0])
         exp_out[jj].to_csv(
-            path_or_buf=os.path.join(output_dir, os.path.split(exp_set[jj])[1].split('.')[0] + '_match.txt'), sep='\t', index=False)
-	exp_out_name.append(os.path.join(output_dir, os.path.split(exp_set[jj])[1].split('.')[0] + '_match.txt'))
+            path_or_buf=os.path.join(output_dir, os.path.split(exp_set[jj])[1].split('.')[0] + '_match.txt'), sep='\t',
+            index=False)
+        exp_out_name.append(os.path.join(output_dir, os.path.split(exp_set[jj])[1].split('.')[0] + '_match.txt'))
         if exp_out[jj].shape[0] > 0:
             out_flag = 1 * out_flag
         else:
             out_flag = -1 * out_flag
-        
+
     w_mbr.close()
     log.removeHandler(w_mbr)
-    return out_flag,exp_out_name
+    return out_flag, exp_out_name
 
 
 if __name__ == '__main__':
@@ -387,6 +432,5 @@ if __name__ == '__main__':
                         required=False)
 
     args = parser.parse_args()
-
 
     run_mbr(args)
