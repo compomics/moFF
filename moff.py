@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import ConfigParser
+import StringIO
 import argparse
 import ast
 import bisect
@@ -157,7 +158,6 @@ def run_apex(file_name, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outp
 
     # read data from file
     data_ms2 = pd.read_csv(file_name, sep="\t", header=0)
-
     if not 'matched' in data_ms2.columns:
         # check if it is a PS file ,
         list_name = data_ms2.columns.values.tolist()
@@ -204,9 +204,10 @@ def run_apex(file_name, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outp
         # log.info('peptide at line: %i',c)
         mz_opt = "-mz=" + str(row['mz'])
 
-        #### PAY ATTENTION HERE , we assume that input RT is in minutes
+        #### PAY ATTENTION HERE , we assume that input RT is in second
+        ## RT in Thermo file is in minutes
         #### if it is not the case change the following line
-        time_w = row['rt']  / 60
+        time_w = row['rt'] / 60
         if mbr_flag == 0:
             log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f ', c, row['mz'], time_w)
             temp_w = s_w
@@ -249,9 +250,7 @@ def run_apex(file_name, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outp
 
                 p = subprocess.Popen(args_txic, stdout=subprocess.PIPE)
                 output, err = p.communicate()
-                data_xic= pd.DataFrame ({'rt':[0,0,0,0],'intensity':[0,0,0,0]} )
-                #data_xic = pd.read_csv(StringIO(output.strip()), sep=' ', names=['rt', 'intensity'], header=0)
-
+                data_xic = pd.read_csv(StringIO.StringIO(output.strip()), sep=' ', names=['rt', 'intensity'], header=0)
             if data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0] >= 1:
                 ind_v = data_xic.index
                 pp = data_xic[data_xic["intensity"] ==
