@@ -203,7 +203,6 @@ def run_apex(file_name, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outp
     for index_ms2, row in data_ms2.iterrows():
         # log.info('peptide at line: %i',c)
         mz_opt = "-mz=" + str(row['mz'])
-
         #### PAY ATTENTION HERE , we assume that input RT is in second
         ## RT in Thermo file is in minutes
         #### if it is not the case change the following line
