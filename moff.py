@@ -19,6 +19,7 @@ import pandas as pd
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
+
 """
  input
    - MS2 ID file
@@ -87,7 +88,7 @@ def pyMZML_xic_out(name, ppmPrecision, minRT, maxRT, MZValue):
         return (pd.DataFrame(timeDependentIntensities, columns=['rt', 'intensity']), -1)
 
 
-def run_apex(file_name, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
+def run_apex(file_name, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,log):
     # OS detect
     flag_windows = False
     if _platform in ["linux", "linux2", 'darwin']:
@@ -113,9 +114,6 @@ def run_apex(file_name, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outp
         # extract the name of the file
         name = name[0:start]
 
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.ERROR)
-    log.addHandler(ch)
 
     if loc_output != '':
         if not (os.path.isdir(loc_output)):
@@ -158,6 +156,7 @@ def run_apex(file_name, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outp
 
     # read data from file
     data_ms2 = pd.read_csv(file_name, sep="\t", header=0)
+
     if not 'matched' in data_ms2.columns:
         # check if it is a PS file ,
         list_name = data_ms2.columns.values.tolist()
@@ -221,8 +220,6 @@ def run_apex(file_name, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outp
             log.warning('rt not found. Wrong matched peptide in the mbr step line: %i', c)
             c += 1
             continue
-
-        # convert rt to sec to min
         try:
             if flag_mzml:
                 # mzml raw file
@@ -378,11 +375,11 @@ if __name__ == '__main__':
     h_rt_w = args.rt_window
     s_w = args.rt_p_window
     s_w_match = args.rt_p_window_match
-    # if args.raw_list is not None:
-    #    raw_list = args.raw_list
-    # else:
-    #    raw_list = None
+
     loc_raw = args.raw
     loc_output = args.loc_out
-    # " init here the logger
-    run_apex(file_name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output)
+    # set stream option for logger
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.ERROR)
+    log.addHandler(ch)
+    run_apex(file_name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,log)

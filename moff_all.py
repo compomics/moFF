@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
-import glob
 import argparse
-import os
-import moff_mbr
-import moff
-
 import logging
+import os
+
+import moff
+import moff_mbr
+
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
@@ -100,8 +100,7 @@ else:
 
 log.critical('Apex module ')
 c=0
-for file_name in mbr_list_loc: 
-	# glob.glob(folder + os.sep + "*.txt"):
+for file_name in mbr_list_loc:
     tol = args.toll
     h_rt_w = args.rt_window
     s_w = args.rt_p_window
@@ -113,5 +112,5 @@ for file_name in mbr_list_loc:
 	raw_list = None
     loc_raw = args.raw
     loc_output = args.loc_out
-    moff.run_apex(file_name,raw_list ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output)
+    moff.run_apex(file_name,raw_list ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,log)
     c+=1

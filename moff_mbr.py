@@ -112,17 +112,22 @@ def run_mbr(args):
     log.addHandler(ch)
 
     if args.loc_in is None:
-        # output mbr_folder will be in the specified folder
-        output_dir = os.path.join('mbr_output')
-        #print output_dir
+        ## the user uses --inputtsv option
+        if  not (args.loc_out is None):
+            # if the user use --output_folder the mbr folder will be created there
+            output_dir = os.path.join(args.loc_out,'mbr_output')
+        else:
+             #  if the user does not use  --output_folder the mbr folder will be created on moFF path location
+            output_dir = os.path.join('mbr_output')
+            print os.path.abspath(output_dir)
 
     else:
+        ## the user use the --inputF option
         if os.path.exists(os.path.join(args.loc_in)):
             # if '/' in  str(args.loc_in):
             output_dir = os.path.join(args.loc_in, 'mbr_output')
         else:
-            exit(os.path.join(args.loc_in) + ' EXIT input folder path not well specified --> / missing ')
-
+            exit(os.path.join(args.loc_in) + ' EXIT input folder path is not well specified --> / missing or wrong path')
 
             # if not (os.path.isdir(args.loc_in)):
             #   exit(str(args.loc_in) + '-->  input folder does not exist ! ')
@@ -137,11 +142,10 @@ def run_mbr(args):
     #        exit(os.path.join(args.loc_in) + ' EXIT input folder path not well specified --> / missing ')
 
     if not (os.path.isdir(output_dir)):
-        log.critical("Created MBR output folder in : %s ", output_dir)
+        log.critical("Created MBR output folder in : %s ", os.path.abspath(output_dir))
         os.makedirs(output_dir)
     else:
-        log.critical("MBR Output folder in : %s ", output_dir)
-    # log.setLevel(logging.DEBUG)
+        log.critical("MBR Output folder in : %s ", os.path.abspath(output_dir))
     # set log to file
     w_mbr = logging.FileHandler(os.path.join(output_dir, args.log_label + '_mbr_.log'), mode='w')
     w_mbr.setLevel(logging.INFO)
