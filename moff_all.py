@@ -1,14 +1,30 @@
 #!/usr/bin/env python
-
+import numpy as np
+import pandas as pd
 import argparse
 import logging
 import os
+import multiprocessing
 
 import moff
 import moff_mbr
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
+
+
+def save_moff_result (list_df, result, folder_output, name  ):
+    xx=[]
+    for df_index in range(0,len(list_df)):
+        xx.append( result[df_index].get())
+        
+    final_res = pd.concat(xx)
+    final_res.to_csv( os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt"),sep="\t",index=False )    
+        
+
+    return (1)
+
+
 
 parser = argparse.ArgumentParser(description='moFF match between run and apex module input parameter')
 
@@ -83,7 +99,9 @@ else:
 
 log.critical('Matching between run module (mbr)')
 
-
+# fixed variable number of split and also number of CPU presence in the macine
+# change this variable  with repset to the machine setting of the user
+num_CPU=12
 
 
 res_state,mbr_list_loc = moff_mbr.run_mbr(args)
@@ -112,5 +130,29 @@ for file_name in mbr_list_loc:
 	raw_list = None
     loc_raw = args.raw
     loc_output = args.loc_out
-    moff.run_apex(file_name,raw_list ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,log)
+    ## add multi thredign option
+    df = pd.read_csv(file_name,sep="\t")
+    df= df.ix[0:20,:]
+    
+    ll= np.array_split(df, num_CPU)
+    
+    #print 'Original size',df.shape
+    ## split the file 
+    
+    myPool = multiprocessing.Pool(num_CPU)
+
+    result = {}
+    for df_index in range(0,len(ll)):
+        result[df_index] = myPool.apply_async(moff.test01_mth,args = (ll[df_index],raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,  ))
+        
+    myPool.close()
+    myPool.join()
+    save_moff_result (ll, result, loc_output, file_name  )
+
+
     c+=1
+    #exit('--- Debug --')
+    '''
+    moff.run_apex(file_name,raw_list ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,log)
+    '''
+    
