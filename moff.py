@@ -88,7 +88,200 @@ def pyMZML_xic_out(name, ppmPrecision, minRT, maxRT, MZValue):
         return (pd.DataFrame(timeDependentIntensities, columns=['rt', 'intensity']), -1)
 
 
-def run_apex(file_name, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,log):
+def test_mth(x):
+    print 'From moFF module : length data_frame',x.shape,'\n'
+    #print  x.ix[:,10].head(1)
+    return x.ix[:,10].head(1)
+
+
+def test01_mth(data_ms2, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
+    # get the  running path of moff
+    moff_path = os.path.dirname(sys.argv[0])
+    flag_mzml = False
+    flag_windows = False
+    if _platform in ["linux", "linux2", 'darwin']:
+        flag_windows = False
+    elif _platform == "win32":
+        flag_windows = True
+    mbr_flag = 0
+
+    if ('MZML' in raw_name.upper()):
+        flag_mzml = True
+    ## 
+    loc =raw_name
+
+
+    config = ConfigParser.RawConfigParser()
+    config.read(os.path.join(moff_path, 'moff_setting.properties'))
+ 
+    #print data_ms2.columns
+    if check_columns_name(data_ms2.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_x'))) == 1:
+        exit('ERROR minimal field requested are missing or wrong')
+    
+    index_offset = data_ms2.columns.shape[0] - 1
+
+    data_ms2["intensity"] = -1
+    data_ms2["rt_peak"] = -1
+    data_ms2["lwhm"] = -1
+    data_ms2["rwhm"] = -1
+    data_ms2["5p_noise"] = -1
+    data_ms2["10p_noise"] = -1
+    data_ms2["SNR"] = -1
+    data_ms2["log_L_R"] = -1
+    data_ms2["log_int"] = -1
+    data_ms2["rt_peak"] = data_ms2["rt_peak"].astype('float64')
+    data_ms2['intensity'] = data_ms2['intensity'].astype('float64')
+    data_ms2['lwhm'] = data_ms2['lwhm'].astype('float64')
+    data_ms2["rwhm"] = data_ms2['rwhm'].astype('float64')
+    data_ms2["5p_noise"] = data_ms2['5p_noise'].astype('float64')
+    data_ms2["10p_noise"] = data_ms2['10p_noise'].astype('float64')
+    data_ms2["SNR"] = data_ms2['SNR'].astype('float64')
+    data_ms2["log_L_R"] = data_ms2['log_L_R'].astype('float64')
+    data_ms2["log_int"] = data_ms2['log_int'].astype('float64')
+
+    start_time = time.time()
+
+    #print  data_ms2.shape
+    c =0
+    for index_ms2, row in data_ms2.iterrows():
+        # log.info('peptide at line: %i',c)
+        mz_opt = "-mz=" + str(row['mz'])
+        #### PAY ATTENTION HERE , we assume that input RT is in second
+        ## RT in Thermo file is in minutes
+        #### if it is not the case change the following line
+        
+        time_w = row['rt'] / 60
+        
+        if mbr_flag == 0:
+            #log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f ', c, row['mz'], time_w)
+            temp_w = s_w
+        else:
+            #log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f matched(y/n): %i', c, row['mz'], time_w,
+                    # row['matched'])
+            if row['matched'] == 1:
+                temp_w = s_w_match
+            else:
+                temp_w = s_w
+        if row['rt'] == -1:
+            #log.warning('rt not found. Wrong matched peptide in the mbr step line: %i', c)
+            c += 1
+            continue
+
+        #print shlex.split(TXIC_PATH + "txic " + mz_opt + " -tol=" + str(tol) + " -t " + str(time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc )
+        try:
+            if flag_mzml:
+                # mzml raw file
+                # transform the tollerance in ppm
+                data_xic, status = pyMZML_xic_out(loc, float(tol / (10 ** 6)), time_w - h_rt_w, time_w + h_rt_w,row['mz'])
+
+                if status == -1:
+                    #log.warning("WARNINGS: XIC not retrived line: %i", c)
+                    #log.warning('MZ: %4.4f RT: %4.4f Mass: %i', row['mz'], row['rt'], index_ms2)
+                    c += 1
+                    continue
+            else:
+                #  Thermo RAW file
+                if flag_windows:
+                    os.path.join('folder_name', 'file_name')
+                    args_txic = shlex.split(os.path.join(moff_path, "txic.exe") + " " + mz_opt + " -tol=" + str(tol) + " -t " + str( time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc, posix=False)
+                else:
+                    args_txic = shlex.split(TXIC_PATH + "txic " + mz_opt + " -tol=" + str(tol) + " -t " + str(time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc )
+                
+                p = subprocess.Popen(args_txic, stdout=subprocess.PIPE)
+                output, err = p.communicate()
+
+                data_xic = pd.read_csv(StringIO.StringIO(output.strip()), sep=' ', names=['rt', 'intensity'], header=0)
+            if data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0] >= 1:
+                ind_v = data_xic.index
+                pp = data_xic[data_xic["intensity"] ==
+                              data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))][
+                                  'intensity'].max()].index
+                pos_p = ind_v[pp]
+                if pos_p.values.shape[0] > 1:
+                    #log.warning(" RT gap for the time windows searched. Probably the ppm values is too small %i", c)
+                    continue
+                val_max = data_xic.ix[pos_p, 1].values
+            else:
+                log.info("LW_BOUND window  %4.4f", time_w - temp_w)
+                log.info("UP_BOUND window %4.4f", time_w + temp_w)
+                log.info(data_xic[(data_xic['rt'] > (time_w - +0.60)) & (data_xic['rt'] < (time_w + 0.60))])
+                log.info("WARNINGS: moff_rtWin_peak is not enough to detect the max peak line : %i", c)
+                log.info('MZ: %4.4f RT: %4.4f Mass: %i', row['mz'], row['rt'], index_ms2)
+                c += 1
+                continue
+            pnoise_5 = np.percentile(
+                data_xic[(data_xic['rt'] > (time_w - (h_rt_w / 2))) & (data_xic['rt'] < (time_w + (h_rt_w / 2)))][
+                    'intensity'], 5)
+            pnoise_10 = np.percentile(
+                data_xic[(data_xic['rt'] > (time_w - (h_rt_w / 2))) & (data_xic['rt'] < (time_w + (h_rt_w / 2)))][
+                    'intensity'], 10)
+        except (IndexError, ValueError, TypeError):
+            print 'Error Execption Arised'
+            print shlex.split(TXIC_PATH + "txic " + mz_opt + " -tol=" + str(tol) + " -t " + str(time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc )
+            #log.warning(" size is not enough to detect the max peak line : %i", c)
+            #log.info('MZ: %4.4f RT: %4.4f index: %i', row['mz'], row['rt'], index_ms2)
+            continue
+            c += 1
+        except pd.parser.CParserError:
+            print 'Error Execption Arised CParser'
+            #log.warning("WARNINGS: XIC not retrived line: %i", c)
+            #log.warning('MZ: %4.4f RT: %4.4f Mass: %i', row['mz'], row['rt'], index_ms2)
+
+            c += 1
+            continue
+        else:
+            log_time = [-1, -1]
+            c_left = 0
+            find_5 = False
+            stop = False
+            while c_left < (pos_p - 1) and not stop:
+
+                if not find_5 and (data_xic.ix[(pos_p - 1) - c_left, 1].values <= (0.5 * val_max)):
+                    find_5 = True
+                    log_time[0] = data_xic.ix[(pos_p - 1) - c_left, 0].values * 60
+                    stop = True
+                c_left += 1
+            find_5 = False
+            stop = False
+            r_left = 0
+            while ((pos_p + 1) + r_left < len(data_xic)) and not stop:
+                if not find_5 and data_xic.ix[(pos_p + 1) + r_left, 1].values <= (0.50 * val_max):
+                    find_5 = True
+                    log_time[1] = data_xic.ix[(pos_p + 1) + r_left, 0].values * 60
+                    stop = True
+                r_left += 1
+
+            data_ms2.ix[index_ms2, (index_offset + 1)] = val_max
+            data_ms2.ix[index_ms2, (index_offset + 2)] = data_xic.ix[pos_p, 0].values * 60
+            data_ms2.ix[index_ms2, (index_offset + 3)] = log_time[0]
+            data_ms2.ix[index_ms2, (index_offset + 4)] = log_time[1]
+            data_ms2.ix[index_ms2, (index_offset + 5)] = pnoise_5
+            data_ms2.ix[index_ms2, (index_offset + 6)] = pnoise_10
+            # conpute log_L_R SNR and log intensities
+            if (pnoise_5 == 0 and pnoise_10 > 0):
+                data_ms2.ix[index_ms2, (index_offset + 7)] = 20 * np.log10(data_xic.ix[pos_p, 1].values / pnoise_10)
+            else:
+                data_ms2.ix[index_ms2, (index_offset + 7)] = 20 * np.log10(data_xic.ix[pos_p, 1].values / pnoise_5)
+            # WARNING  time - log_time 0 / time -log_time 1
+            data_ms2.ix[index_ms2, (index_offset + 8)] = np.log2(
+                abs(data_ms2.ix[index_ms2, index_offset + 2] - log_time[0]) / abs(
+                    data_ms2.ix[index_ms2, index_offset + 2] - log_time[1]))
+            data_ms2.ix[index_ms2, (index_offset + 9)] = np.log2(val_max)
+            c += 1
+
+    # save  result
+    #log.critical('..............apex terminated')
+    #log.critical('Writing result in %s' % (outputname))
+    #log.info("--- Running time (measured when start the loop)  %s seconds ---" % (time.time() - start_time))
+    
+    # print time.time() - start_time
+    #data_ms2.to_csv(path_or_buf=outputname, sep="\t", header=True, index=False)
+    
+    print '.... '
+    return  data_ms2
+
+
+def run_apex(file_name, raw_name, tol, h_rt_w, s_w, s_w_match, _raw, loc_output,log):
     # OS detect
     flag_windows = False
     if _platform in ["linux", "linux2", 'darwin']:
@@ -115,15 +308,15 @@ def run_apex(file_name, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outp
         name = name[0:start]
 
 
-    if loc_output != '':
-        if not (os.path.isdir(loc_output)):
-            os.makedirs(loc_output)
-            log.info("created output folder: ", loc_output)
+    if _output != '':
+        if not (os.path.isdir(_output)):
+            os.makedirs(_output)
+            log.info("created output folder: ", _output)
 
         # outputname : name of the output
         # it should be ok also in linux
-        outputname = os.path.join(loc_output, name + "_moff_result.txt")
-        fh = logging.FileHandler(os.path.join(loc_output, name + '__moff.log'), mode='w')
+        outputname = os.path.join(_output, name + "_moff_result.txt")
+        fh = logging.FileHandler(os.path.join(_output, name + '__moff.log'), mode='w')
     else:
         outputname = name + "_moff_result.txt"
         fh = logging.FileHandler(os.path.join(name + '__moff.log'), mode='w')
@@ -133,26 +326,27 @@ def run_apex(file_name, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outp
     flag_mzml = False
     if loc_raw is not None:
         if flag_windows:
-            loc = os.path.join(loc_raw, name + '.RAW')
+           loc  = os.path.join(loc_raw, name + '.RAW')
+
         else:
             # raw file name must have capitals letters :) this shloud be checked
-            loc = os.path.join(loc_raw, name.upper() + '.RAW')
+            loc  = os.path.join(loc_raw, name.upper() + '.RAW')
     else:
         ## only with specific file name I usu mzML file :::///
-        ## I have already the full location
-        loc = raw_name
+        ## I have already the full ation
+        loc  = raw_name
         if ('MZML' in raw_name.upper()):
             flag_mzml = True
 
-    if os.path.isfile(loc):
+    if os.path.isfile():
         log.info('raw file exist')
     else:
-        exit('ERROR: Wrong path or wrong file name included: %s' % loc)
+        exit('ERROR: Wrong path or wrong file name included: %s' % loc  )
 
     log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
-    log.critical('RAW file  :  %s' % (loc))
+    log.critical('RAW file  :  %s' % ())
     log.info('Output_file in :  %s', outputname)
-    log.info('RAW file location :  %s', loc)
+    log.info('RAW file ation :  %s', loc)
 
     # read data from file
     data_ms2 = pd.read_csv(file_name, sep="\t", header=0)
@@ -238,11 +432,11 @@ def run_apex(file_name, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outp
                     os.path.join('folder_name', 'file_name')
                     args_txic = shlex.split(
                         os.path.join(moff_path, "txic.exe") + " " + mz_opt + " -tol=" + str(tol) + " -t " + str(
-                            time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc, posix=False)
+                            time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc , posix=False)
                 else:
                     args_txic = shlex.split(TXIC_PATH + "txic " + mz_opt + " -tol=" + str(tol) + " -t " + str(
                         time_w - h_rt_w) + " -t " + str(
-                        time_w + h_rt_w) + " " + loc)
+                        time_w + h_rt_w) + " " + loc  )
 
                 p = subprocess.Popen(args_txic, stdout=subprocess.PIPE)
                 output, err = p.communicate()
@@ -360,7 +554,7 @@ if __name__ == '__main__':
     parser.add_argument('--raw_repo', dest='raw', action='store', help='specify the raw file repository folder',
                         required=False)
 
-    parser.add_argument('--output_folder', dest='loc_out', action='store', default='', help='specify the folder output',
+    parser.add_argument('--output_folder', dest='_out', action='store', default='', help='specify the folder output',
                         required=False)
 
     args = parser.parse_args()
@@ -376,10 +570,10 @@ if __name__ == '__main__':
     s_w = args.rt_p_window
     s_w_match = args.rt_p_window_match
 
-    loc_raw = args.raw
-    loc_output = args.loc_out
+    _raw = args.raw
+    _output = args.loc_out
     # set stream option for logger
     ch = logging.StreamHandler()
     ch.setLevel(logging.ERROR)
     log.addHandler(ch)
-    run_apex(file_name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,log)
+    run_apex(file_name, args.raw_list, tol, h_rt_w, s_w, s_w_match, _raw, loc_output,log)
