@@ -12,12 +12,15 @@ import subprocess
 import sys
 import time
 from sys import platform as _platform
+import multithreadlogs
+
+
 
 import numpy as np
 import pandas as pd
 
-log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
+#log = logging.getLogger(__name__)
+#log.setLevel(logging.DEBUG)
 
 
 """
@@ -88,13 +91,19 @@ def pyMZML_xic_out(name, ppmPrecision, minRT, maxRT, MZValue):
         return (pd.DataFrame(timeDependentIntensities, columns=['rt', 'intensity']), -1)
 
 
-def test_mth(x):
+def test_mth_base(x):
     print 'From moFF module : length data_frame',x.shape,'\n'
+    logging.debug('Hi from myfunc')
+
+    #sys.stdout.flush()
     #print  x.ix[:,10].head(1)
     return x.ix[:,10].head(1)
 
 
-def test01_mth(data_ms2, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output):
+def test01_mth(data_ms2, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset_index,log):
+
+
+
     # get the  running path of moff
     moff_path = os.path.dirname(sys.argv[0])
     flag_mzml = False
@@ -153,6 +162,9 @@ def test01_mth(data_ms2, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_out
         time_w = row['rt'] / 60
         
         if mbr_flag == 0:
+            #'peptide at line {:d} -->  MZ: {:04.4f} RT: {:04.4f} '.format{ c, row['mz'], time_w}
+            multithreadlogs.WriteLog_critical('peptide at line {:d} -->  MZ: {:04.4f} RT: {:04.4f}'.format(c, row['mz'], time_w))
+            #multithreadlogs.WriteLog_info( 'peptide at line {:d} -->  MZ: {:04.4f} RT: {:04.4f}'.format( c, row['mz'], time_w) )
             #log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f ', c, row['mz'], time_w)
             temp_w = s_w
         else:
@@ -281,7 +293,7 @@ def test01_mth(data_ms2, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_out
     return  data_ms2
 
 
-def run_apex(file_name, raw_name, tol, h_rt_w, s_w, s_w_match, _raw, loc_output,log):
+def run_apex(file_name, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,log):
     # OS detect
     flag_windows = False
     if _platform in ["linux", "linux2", 'darwin']:
@@ -308,15 +320,15 @@ def run_apex(file_name, raw_name, tol, h_rt_w, s_w, s_w_match, _raw, loc_output,
         name = name[0:start]
 
 
-    if _output != '':
-        if not (os.path.isdir(_output)):
-            os.makedirs(_output)
-            log.info("created output folder: ", _output)
+    if loc_output != '':
+        if not (os.path.isdir(loc_output)):
+            os.makedirs(loc_output)
+            log.info("created output folder: ", loc_output)
 
         # outputname : name of the output
         # it should be ok also in linux
-        outputname = os.path.join(_output, name + "_moff_result.txt")
-        fh = logging.FileHandler(os.path.join(_output, name + '__moff.log'), mode='w')
+        outputname = os.path.join(loc_output, name + "_moff_result.txt")
+        fh = logging.FileHandler(os.path.join(loc_output, name + '__moff.log'), mode='w')
     else:
         outputname = name + "_moff_result.txt"
         fh = logging.FileHandler(os.path.join(name + '__moff.log'), mode='w')
