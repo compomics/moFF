@@ -16,13 +16,17 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 
+
+
+
 def save_moff_result (list_df, result, folder_output, name  ):
     xx=[]
     for df_index in range(0,len(list_df)):
         xx.append( result[df_index].get())
-        
+
     final_res = pd.concat(xx)
-    print os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt")
+    print final_res.shape
+    #print os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt")
     final_res.to_csv( os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt"),sep="\t",index=False )    
         
 
@@ -114,7 +118,7 @@ if __name__ == '__main__':
 
     # fixed variable number of split and also number of CPU presence in the macine
     # change this variable  with repset to the machine setting of the user
-    num_CPU=12
+    num_CPU=4
 
     print __name__
     res_state,mbr_list_loc = moff_mbr.run_mbr(args)
@@ -151,7 +155,7 @@ if __name__ == '__main__':
         df= df.ix[0:20,:]
 
         ll= np.array_split(df, num_CPU)
-        #print 'Original size',df.shape
+        print 'Original input size',df.shape
         ## split the file
 
         ## logging low elevr for debugging
@@ -165,14 +169,19 @@ if __name__ == '__main__':
         offset = 0
         for df_index in range(0,len(ll)):
 
-            result[df_index] = myPool.apply_async(moff.test01_mth,args = (ll[df_index],raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,log ))
-            #result[df_index] = myPool.apply_async(moff.test_mth_base, args=(ll[df_index], offset))
+            #result[df_index] = myPool.apply_async(moff.test01_mth,args = (ll[df_index],raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,log ))
+            result[df_index] = myPool.apply_async(moff.test_mth_base, args=(ll[df_index],offset))
+            ## the callback does not work
+            #myPool.apply_async(moff.test_mth_base, args=(ll[df_index], offset,), callback=log_result)
+
+
             #print df_index,offset
             offset += len(ll[df_index])
 
 
         myPool.close()
         myPool.join()
+
         save_moff_result (ll, result, loc_output, file_name  )
 
 

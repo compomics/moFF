@@ -12,15 +12,15 @@ import subprocess
 import sys
 import time
 from sys import platform as _platform
-import multithreadlogs
+import multiprocessing
 
 
 
 import numpy as np
 import pandas as pd
 
-#log = logging.getLogger(__name__)
-#log.setLevel(logging.DEBUG)
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 
 """
@@ -91,18 +91,21 @@ def pyMZML_xic_out(name, ppmPrecision, minRT, maxRT, MZValue):
         return (pd.DataFrame(timeDependentIntensities, columns=['rt', 'intensity']), -1)
 
 
-def test_mth_base(x):
-    print 'From moFF module : length data_frame',x.shape,'\n'
-    logging.debug('Hi from myfunc')
-
+def test_mth_base(x,line):
+    log.critical('jjj')
+    #print 'From moFF module : data_frame',x.shape,line, '\n'
+    created = multiprocessing.Process()
+    current = multiprocessing.current_process()
+    print 'running:', current.name, current._identity
+    print 'created:', created.name, created._identity
     #sys.stdout.flush()
     #print  x.ix[:,10].head(1)
-    return x.ix[:,10].head(1)
+    return x.ix[:,10]
 
 
 def test01_mth(data_ms2, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset_index,log):
 
-
+    print  ' Hi from ',os.getpgid()
 
     # get the  running path of moff
     moff_path = os.path.dirname(sys.argv[0])
@@ -163,7 +166,7 @@ def test01_mth(data_ms2, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_out
         
         if mbr_flag == 0:
             #'peptide at line {:d} -->  MZ: {:04.4f} RT: {:04.4f} '.format{ c, row['mz'], time_w}
-            multithreadlogs.WriteLog_critical('peptide at line {:d} -->  MZ: {:04.4f} RT: {:04.4f}'.format(c, row['mz'], time_w))
+            #multithreadlogs.WriteLog_critical('peptide at line {:d} -->  MZ: {:04.4f} RT: {:04.4f}'.format(c, row['mz'], time_w))
             #multithreadlogs.WriteLog_info( 'peptide at line {:d} -->  MZ: {:04.4f} RT: {:04.4f}'.format( c, row['mz'], time_w) )
             #log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f ', c, row['mz'], time_w)
             temp_w = s_w
@@ -566,7 +569,7 @@ if __name__ == '__main__':
     parser.add_argument('--raw_repo', dest='raw', action='store', help='specify the raw file repository folder',
                         required=False)
 
-    parser.add_argument('--output_folder', dest='_out', action='store', default='', help='specify the folder output',
+    parser.add_argument('--output_folder', dest='loc_out', action='store', default='', help='specify the folder output',
                         required=False)
 
     args = parser.parse_args()
@@ -582,10 +585,10 @@ if __name__ == '__main__':
     s_w = args.rt_p_window
     s_w_match = args.rt_p_window_match
 
-    _raw = args.raw
-    _output = args.loc_out
+    loc_raw = args.raw
+    loc_output = args.loc_out
     # set stream option for logger
     ch = logging.StreamHandler()
     ch.setLevel(logging.ERROR)
     log.addHandler(ch)
-    run_apex(file_name, args.raw_list, tol, h_rt_w, s_w, s_w_match, _raw, loc_output,log)
+    run_apex(file_name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,log)
