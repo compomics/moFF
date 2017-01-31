@@ -28,7 +28,6 @@ def save_moff_result (list_df, result, folder_output, name  ):
     print final_res.shape
     #print os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt")
     final_res.to_csv( os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt"),sep="\t",index=False )    
-        
 
     return (1)
 
@@ -118,7 +117,7 @@ if __name__ == '__main__':
 
     # fixed variable number of split and also number of CPU presence in the macine
     # change this variable  with repset to the machine setting of the user
-    num_CPU=4
+    num_CPU=multiprocessing.cpu_count()
 
     print __name__
     res_state,mbr_list_loc = moff_mbr.run_mbr(args)
@@ -133,7 +132,7 @@ if __name__ == '__main__':
     else:
         folder = os.path.join(args.loc_in, 'mbr_output')
 
-    log.critical('Apex module ')
+    log.critical('Apex module... ')
     c=0
     for file_name in mbr_list_loc:
         tol = args.toll
@@ -151,47 +150,41 @@ if __name__ == '__main__':
 
         ## add multi thredign option
         df = pd.read_csv(file_name,sep="\t")
-        ## for debug only
-        df= df.ix[0:20,:]
 
-        ll= np.array_split(df, num_CPU)
-        print 'Original input size',df.shape
-        ## split the file
+        data_split= np.array_split(df, num_CPU)
 
-        ## logging low elevr for debugging
-        #print log.name
-        #name = os.path.basename(file_name).split('.')[0]
+
+        log.critical('Starting Apex for %s ...',file_name)
+        log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
+        log.critical('RAW file  :  %s' % args.raw_list)
+        log.critical('Output file in :  %s', loc_output)
+        print 'Original input size', df.shape
+        name = os.path.basename(file_name).split('.')[0]
         #multithreadlogs.LoggingInit_apex(os.path.join(loc_output, name + '__moff.log'))
+
+        moff.check_log_existence(os.path.join(loc_output, name + '__moff.log'))
 
         myPool = multiprocessing.Pool(num_CPU)
 
         result = {}
         offset = 0
-        for df_index in range(0,len(ll)):
+        for df_index in range(0,len(data_split)):
 
-            #result[df_index] = myPool.apply_async(moff.test01_mth,args = (ll[df_index],raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,log ))
-            result[df_index] = myPool.apply_async(moff.test_mth_base, args=(ll[df_index],offset))
-            ## the callback does not work
-            #myPool.apply_async(moff.test_mth_base, args=(ll[df_index], offset,), callback=log_result)
-
-
-            #print df_index,offset
-            offset += len(ll[df_index])
+            result[df_index] = myPool.apply_async(moff.test01_mth,args = (data_split[df_index],name,raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset ))
+            offset += len(data_split[df_index])
 
 
         myPool.close()
         myPool.join()
 
-        save_moff_result (ll, result, loc_output, file_name  )
-
-
-        #multithreadlogs.WriteLog_critical("test")
+        log.critical('...apex terminated')
+        save_moff_result (data_split, result, loc_output, file_name  )
 
 
         c+=1
 
-        exit('--- Debug --')
+        #exit('--- Debug --')
         '''
-        moff.run_apex(file_name,raw_list ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,log)
+        #moff.run_apex(file_name,raw_list ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,log)
         '''
     

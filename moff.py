@@ -35,6 +35,21 @@ log.setLevel(logging.DEBUG)
 TXIC_PATH = os.environ.get('TXIC_PATH', './')
 
 
+def save_moff_apex_result(list_df, result, folder_output, name):
+    xx = []
+    for df_index in range(0, len(list_df)):
+        xx.append(result[df_index].get())
+
+    final_res = pd.concat(xx)
+    print final_res.shape
+    # print os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt")
+    final_res.to_csv(os.path.join(folder_output, os.path.basename(name).split('.')[0] + "_moff_result.txt"), sep="\t",
+                     index=False)
+
+    return (1)
+
+
+
 def map_ps2moff(data):
     data.drop(data.columns[[0]], axis=1, inplace=True)
     data.columns = data.columns.str.lower()
@@ -90,12 +105,27 @@ def pyMZML_xic_out(name, ppmPrecision, minRT, maxRT, MZValue):
     else:
         return (pd.DataFrame(timeDependentIntensities, columns=['rt', 'intensity']), -1)
 
+def check_log_existence(file_to_check):
+    if os.path.isfile(file_to_check):
+        os.remove(file_to_check)
+
+
 
 def test_mth_base(x,line):
-    log.critical('jjj')
+    #log.critical('jjj')
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.ERROR)
+    log.addHandler(ch)
+
+    fh = logging.FileHandler(os.path.join('pippo' + '__moff.log'), mode='w')
+    fh.setLevel(logging.INFO)
+    log.addHandler(fh)
+    #log.critical('jjj')
+
     #print 'From moFF module : data_frame',x.shape,line, '\n'
     created = multiprocessing.Process()
     current = multiprocessing.current_process()
+    log.info(current.name)
     print 'running:', current.name, current._identity
     print 'created:', created.name, created._identity
     #sys.stdout.flush()
@@ -103,33 +133,36 @@ def test_mth_base(x,line):
     return x.ix[:,10]
 
 
-def test01_mth(data_ms2, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset_index,log):
+def test01_mth(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset_index):
 
-    print  ' Hi from ',os.getpgid()
+    #setting logger for multiprocess
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.ERROR)
+    log.addHandler(ch)
 
-    # get the  running path of moff
+
+
+    fh = logging.FileHandler(os.path.join(loc_output,name_file + '__moff.log'), mode='a')
+    fh.setLevel(logging.INFO)
+    log.addHandler(fh)
+
+    #setting flag and ptah
     moff_path = os.path.dirname(sys.argv[0])
     flag_mzml = False
     flag_windows = False
+    mbr_flag = 0
+
+    # set platform
     if _platform in ["linux", "linux2", 'darwin']:
         flag_windows = False
     elif _platform == "win32":
         flag_windows = True
-    mbr_flag = 0
-
+    #set MZML
     if ('MZML' in raw_name.upper()):
         flag_mzml = True
-    ## 
+
     loc =raw_name
 
-
-    config = ConfigParser.RawConfigParser()
-    config.read(os.path.join(moff_path, 'moff_setting.properties'))
- 
-    #print data_ms2.columns
-    if check_columns_name(data_ms2.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_x'))) == 1:
-        exit('ERROR minimal field requested are missing or wrong')
-    
     index_offset = data_ms2.columns.shape[0] - 1
 
     data_ms2["intensity"] = -1
@@ -153,36 +186,34 @@ def test01_mth(data_ms2, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_out
 
     start_time = time.time()
 
-    #print  data_ms2.shape
+    if 'matched' in data_ms2.columns:
+        mbr_flag = 1
+        log.critical('Apex module has detected mbr peptides')
+        #log.info('moff_rtWin_peak for matched peptide:   %4.4f ', s_w_match)
+
     c =0
     for index_ms2, row in data_ms2.iterrows():
-        # log.info('peptide at line: %i',c)
+
         mz_opt = "-mz=" + str(row['mz'])
         #### PAY ATTENTION HERE , we assume that input RT is in second
         ## RT in Thermo file is in minutes
         #### if it is not the case change the following line
-        
         time_w = row['rt'] / 60
-        
         if mbr_flag == 0:
-            #'peptide at line {:d} -->  MZ: {:04.4f} RT: {:04.4f} '.format{ c, row['mz'], time_w}
-            #multithreadlogs.WriteLog_critical('peptide at line {:d} -->  MZ: {:04.4f} RT: {:04.4f}'.format(c, row['mz'], time_w))
-            #multithreadlogs.WriteLog_info( 'peptide at line {:d} -->  MZ: {:04.4f} RT: {:04.4f}'.format( c, row['mz'], time_w) )
-            #log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f ', c, row['mz'], time_w)
+            #print 'xx here mbr_flag == 0'
+            log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f',(offset_index +c +2), row['mz'], time_w)
             temp_w = s_w
         else:
-            #log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f matched(y/n): %i', c, row['mz'], time_w,
+            log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f matched (y/n): %i',(offset_index +c +2), row['mz'], time_w,mbr_flag)
                     # row['matched'])
             if row['matched'] == 1:
                 temp_w = s_w_match
             else:
                 temp_w = s_w
         if row['rt'] == -1:
-            #log.warning('rt not found. Wrong matched peptide in the mbr step line: %i', c)
+            log.warning('rt not found. Wrong matched peptide in the mbr step line: %i', (offset_index +c +2))
             c += 1
             continue
-
-        #print shlex.split(TXIC_PATH + "txic " + mz_opt + " -tol=" + str(tol) + " -t " + str(time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc )
         try:
             if flag_mzml:
                 # mzml raw file
@@ -190,8 +221,8 @@ def test01_mth(data_ms2, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_out
                 data_xic, status = pyMZML_xic_out(loc, float(tol / (10 ** 6)), time_w - h_rt_w, time_w + h_rt_w,row['mz'])
 
                 if status == -1:
-                    #log.warning("WARNINGS: XIC not retrived line: %i", c)
-                    #log.warning('MZ: %4.4f RT: %4.4f Mass: %i', row['mz'], row['rt'], index_ms2)
+                    log.warning("WARNINGS: XIC not retrived line: %i", c)
+                    log.warning('MZ: %4.4f RT: %4.4f Mass: %i', row['mz'], row['rt'], index_ms2)
                     c += 1
                     continue
             else:
@@ -213,15 +244,14 @@ def test01_mth(data_ms2, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_out
                                   'intensity'].max()].index
                 pos_p = ind_v[pp]
                 if pos_p.values.shape[0] > 1:
-                    #log.warning(" RT gap for the time windows searched. Probably the ppm values is too small %i", c)
                     continue
                 val_max = data_xic.ix[pos_p, 1].values
             else:
-                log.info("LW_BOUND window  %4.4f", time_w - temp_w)
-                log.info("UP_BOUND window %4.4f", time_w + temp_w)
-                log.info(data_xic[(data_xic['rt'] > (time_w - +0.60)) & (data_xic['rt'] < (time_w + 0.60))])
-                log.info("WARNINGS: moff_rtWin_peak is not enough to detect the max peak line : %i", c)
-                log.info('MZ: %4.4f RT: %4.4f Mass: %i', row['mz'], row['rt'], index_ms2)
+                log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f ', (offset_index +c +2), row['mz'], time_w)
+                log.info("\t LW_BOUND window  %4.4f", time_w - temp_w)
+                log.info("\t UP_BOUND window %4.4f", time_w + temp_w)
+                #cosche log.info(data_xic[(data_xic['rt'] > (time_w - +0.60)) & (data_xic['rt'] < (time_w + 0.60))])
+                log.info("\t WARNINGS: moff_rtWin_peak is not enough to detect the max peak line : %i", c)
                 c += 1
                 continue
             pnoise_5 = np.percentile(
@@ -231,15 +261,13 @@ def test01_mth(data_ms2, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_out
                 data_xic[(data_xic['rt'] > (time_w - (h_rt_w / 2))) & (data_xic['rt'] < (time_w + (h_rt_w / 2)))][
                     'intensity'], 10)
         except (IndexError, ValueError, TypeError):
-            print 'Error Execption Arised'
-            print shlex.split(TXIC_PATH + "txic " + mz_opt + " -tol=" + str(tol) + " -t " + str(time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc )
-            #log.warning(" size is not enough to detect the max peak line : %i", c)
-            #log.info('MZ: %4.4f RT: %4.4f index: %i', row['mz'], row['rt'], index_ms2)
+            log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f ', (offset_index +c +2), row['mz'], time_w)
+            log.warning("\t size is not enough to detect the max peak line : %i", c)
             continue
             c += 1
         except pd.parser.CParserError:
-            print 'Error Execption Arised CParser'
-            #log.warning("WARNINGS: XIC not retrived line: %i", c)
+            log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f ', (offset_index +c +2),  row['mz'], time_w)
+            log.warning("\t WARNINGS: XIC not retrived line:")
             #log.warning('MZ: %4.4f RT: %4.4f Mass: %i', row['mz'], row['rt'], index_ms2)
 
             c += 1
@@ -276,7 +304,11 @@ def test01_mth(data_ms2, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_out
             if (pnoise_5 == 0 and pnoise_10 > 0):
                 data_ms2.ix[index_ms2, (index_offset + 7)] = 20 * np.log10(data_xic.ix[pos_p, 1].values / pnoise_10)
             else:
-                data_ms2.ix[index_ms2, (index_offset + 7)] = 20 * np.log10(data_xic.ix[pos_p, 1].values / pnoise_5)
+                if pnoise_5 != 0:
+                    data_ms2.ix[index_ms2, (index_offset + 7)] = 20 * np.log10(data_xic.ix[pos_p, 1].values / pnoise_5)
+                else:
+                    log.info('\t 5 percentile is %4.4f (added 0.5)', pnoise_5)
+                    data_ms2.ix[index_ms2, (index_offset + 7)] = 20 * np.log10(data_xic.ix[pos_p, 1].values / (pnoise_5 +0.5))
             # WARNING  time - log_time 0 / time -log_time 1
             data_ms2.ix[index_ms2, (index_offset + 8)] = np.log2(
                 abs(data_ms2.ix[index_ms2, index_offset + 2] - log_time[0]) / abs(
@@ -284,15 +316,8 @@ def test01_mth(data_ms2, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_out
             data_ms2.ix[index_ms2, (index_offset + 9)] = np.log2(val_max)
             c += 1
 
-    # save  result
-    #log.critical('..............apex terminated')
-    #log.critical('Writing result in %s' % (outputname))
-    #log.info("--- Running time (measured when start the loop)  %s seconds ---" % (time.time() - start_time))
-    
-    # print time.time() - start_time
-    #data_ms2.to_csv(path_or_buf=outputname, sep="\t", header=True, index=False)
-    
-    print '.... '
+    print time.time() - start_time
+
     return  data_ms2
 
 
@@ -375,6 +400,7 @@ def run_apex(file_name, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outp
         if check_ps_input_data(list_name, list) == 1:
             # map  the columns name according to moFF input requirements
             data_ms2, list_name = map_ps2moff(data_ms2)
+
     if check_columns_name(data_ms2.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_x'))) == 1:
         exit('ERROR minimal field requested are missing or wrong')
 
@@ -416,7 +442,8 @@ def run_apex(file_name, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outp
         #### if it is not the case change the following line
         time_w = row['rt'] / 60
         if mbr_flag == 0:
-            log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f ', c, row['mz'], time_w)
+            print 'xx'
+            log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f', c, row['mz'], time_w)
             temp_w = s_w
         else:
             log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f matched(y/n): %i', c, row['mz'], time_w,
@@ -534,7 +561,7 @@ def run_apex(file_name, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outp
     # save  result 
     log.critical('..............apex terminated')
     log.critical('Writing result in %s' % (outputname))
-    log.info("--- Running time (measured when start the loop)  %s seconds ---" % (time.time() - start_time))
+    log.info("--- Running time (measured when start the loop) %s seconds ---" % (time.time() - start_time))
     # print time.time() - start_time
     data_ms2.to_csv(path_or_buf=outputname, sep="\t", header=True, index=False)
     fh.close()
@@ -542,8 +569,7 @@ def run_apex(file_name, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outp
 
     return
 
-
-if __name__ == '__main__':
+def main_apex_alone():
     parser = argparse.ArgumentParser(description='moFF input parameter')
 
     parser.add_argument('--inputtsv', dest='name', action='store',
@@ -591,4 +617,54 @@ if __name__ == '__main__':
     ch = logging.StreamHandler()
     ch.setLevel(logging.ERROR)
     log.addHandler(ch)
-    run_apex(file_name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,log)
+
+    config = ConfigParser.RawConfigParser()
+    config.read(os.path.join(os.path.dirname(sys.argv[0]), 'moff_setting.properties'))
+
+    df = pd.read_csv(file_name, sep="\t")
+    ## check and eventually tranf for PS template
+    if not 'matched' in df.columns:
+        # check if it is a PS file ,
+        list_name = df.columns.values.tolist()
+        # get the lists of PS  defaultcolumns from properties file
+        list = ast.literal_eval(config.get('moFF', 'ps_default_export'))
+        # here it controls if the input file is a PS export; if yes it maps the input in right moFF name
+        if check_ps_input_data(list_name, list) == 1:
+            # map  the columns name according to moFF input requirements
+            data_ms2, list_name = map_ps2moff(df)
+    ## check if the field names are good
+    if check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_x'))) == 1:
+        exit('ERROR minimal field requested are missing or wrong')
+
+    log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
+    log.critical('RAW file  :  %s' % args.raw_list)
+    log.critical('Output file in :  %s', loc_output)
+
+    data_split = np.array_split(df, multiprocessing.cpu_count())
+
+    log.critical('Starting Apex for .....')
+    print 'Original input size', df.shape
+    name = os.path.basename(file_name).split('.')[0]
+
+    ##check the existencce of the log file before to go to multiprocess
+    check_log_existence(os.path.join(loc_output, name + '__moff.log'))
+
+    myPool = multiprocessing.Pool(multiprocessing.cpu_count())
+
+    result = {}
+    offset = 0
+    for df_index in range(0, len(data_split)):
+        result[df_index] = myPool.apply_async(test01_mth, args=(
+        data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset))
+        offset += len(data_split[df_index])
+
+    myPool.close()
+    myPool.join()
+
+    log.critical('...apex terminated')
+    save_moff_apex_result(data_split, result, loc_output, file_name)
+
+
+
+if __name__ == '__main__':
+    main_apex_alone()
