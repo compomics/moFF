@@ -5,7 +5,6 @@ import argparse
 import logging
 import os
 import multiprocessing
-import multithreadlogs
 
 import moff
 import moff_mbr
@@ -119,7 +118,6 @@ if __name__ == '__main__':
     # change this variable  with repset to the machine setting of the user
     num_CPU=multiprocessing.cpu_count()
 
-    print __name__
     res_state,mbr_list_loc = moff_mbr.run_mbr(args)
     if res_state == -1:
         exit('An error is occurred during the writing of the mbr file')
@@ -144,6 +142,7 @@ if __name__ == '__main__':
             raw_list = args.raw_list[c]
         else:
             raw_list = None
+
         loc_raw = args.raw
         loc_output = args.loc_out
 
@@ -153,11 +152,13 @@ if __name__ == '__main__':
 
         data_split= np.array_split(df, num_CPU)
 
-
         log.critical('Starting Apex for %s ...',file_name)
         log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
         log.critical('RAW file  :  %s' % args.raw_list)
         log.critical('Output file in :  %s', loc_output)
+        if 'matched' in df.columns:
+            log.critical('Apex module has detected mbr peptides')
+
         print 'Original input size', df.shape
         name = os.path.basename(file_name).split('.')[0]
         #multithreadlogs.LoggingInit_apex(os.path.join(loc_output, name + '__moff.log'))
@@ -180,11 +181,5 @@ if __name__ == '__main__':
         log.critical('...apex terminated')
         save_moff_result (data_split, result, loc_output, file_name  )
 
-
         c+=1
 
-        #exit('--- Debug --')
-        '''
-        #moff.run_apex(file_name,raw_list ,tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,log)
-        '''
-    

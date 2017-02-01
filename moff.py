@@ -142,9 +142,9 @@ def test01_mth(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_ra
 
 
 
-    fh = logging.FileHandler(os.path.join(loc_output,name_file + '__moff.log'), mode='a')
-    fh.setLevel(logging.INFO)
-    log.addHandler(fh)
+
+
+
 
     #setting flag and ptah
     moff_path = os.path.dirname(sys.argv[0])
@@ -157,11 +157,45 @@ def test01_mth(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_ra
         flag_windows = False
     elif _platform == "win32":
         flag_windows = True
-    #set MZML
-    if ('MZML' in raw_name.upper()):
-        flag_mzml = True
 
-    loc =raw_name
+    #check mbr input file
+    if '_match' in name_file:
+        # in case of mbr , here i dont have evaluate the flag mbr
+        start = name_file.find('_match')
+        # extract the name of the file
+        name = name_file[0:start]
+
+    # check output log file in right location
+    if loc_output != '':
+        if not (os.path.isdir(loc_output)):
+            os.makedirs(loc_output)
+            log.info("created output folder: ", loc_output)
+
+    # to be checked if it is works ffor both caseses
+    fh = logging.FileHandler(os.path.join(loc_output, name_file + '__moff.log'), mode='a')
+
+    fh.setLevel(logging.INFO)
+    log.addHandler(fh)
+
+    if loc_raw is not None:
+        if flag_windows:
+           loc  = os.path.join(loc_raw, name_file.upper() + '.RAW')
+
+        else:
+            # raw file name must have capitals letters :) this shloud be checked
+            loc  = os.path.join(loc_raw, name_file.upper() + '.RAW')
+    else:
+        #mzML work only with --inputraw option
+        loc  = raw_name
+        if ('MZML' in raw_name.upper()):
+            flag_mzml = True
+
+    if os.path.isfile(loc):
+        log.info('raw file exist')
+    else:
+        exit('ERROR: Wrong path or wrong file name included: %s' % loc  )
+
+
 
     index_offset = data_ms2.columns.shape[0] - 1
 
@@ -186,9 +220,10 @@ def test01_mth(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_ra
 
     start_time = time.time()
 
+    # set mbr_flag
     if 'matched' in data_ms2.columns:
         mbr_flag = 1
-        log.critical('Apex module has detected mbr peptides')
+        #log.critical('Apex module has detected mbr peptides')
         #log.info('moff_rtWin_peak for matched peptide:   %4.4f ', s_w_match)
 
     c =0
@@ -378,7 +413,7 @@ def run_apex(file_name, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outp
         if ('MZML' in raw_name.upper()):
             flag_mzml = True
 
-    if os.path.isfile():
+    if os.path.isfile(loc):
         log.info('raw file exist')
     else:
         exit('ERROR: Wrong path or wrong file name included: %s' % loc  )
