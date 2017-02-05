@@ -24,7 +24,7 @@ def save_moff_result (list_df, result, folder_output, name  ):
         xx.append( result[df_index].get())
 
     final_res = pd.concat(xx)
-    print final_res.shape
+    #print final_res.shape
     #print os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt")
     final_res.to_csv( os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt"),sep="\t",index=False )    
 
@@ -154,7 +154,10 @@ if __name__ == '__main__':
 
         log.critical('Starting Apex for %s ...',file_name)
         log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
-        log.critical('RAW file  :  %s' % args.raw_list)
+        if args.raw_list is None:
+            log.critical('RAW file from folder :  %s' % loc_raw)
+        else:
+            log.critical('RAW file  :  %s' % args.raw_list)
         log.critical('Output file in :  %s', loc_output)
         if 'matched' in df.columns:
             log.critical('Apex module has detected mbr peptides')
@@ -171,7 +174,7 @@ if __name__ == '__main__':
         offset = 0
         for df_index in range(0,len(data_split)):
 
-            result[df_index] = myPool.apply_async(moff.test01_mth,args = (data_split[df_index],name,raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset ))
+            result[df_index] = myPool.apply_async(moff.apex_multithr,args = (data_split[df_index],name,raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset ))
             offset += len(data_split[df_index])
 
 
