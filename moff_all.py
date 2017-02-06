@@ -162,7 +162,7 @@ if __name__ == '__main__':
         if 'matched' in df.columns:
             log.critical('Apex module has detected mbr peptides')
 
-        print 'Original input size', df.shape
+        #print 'Original input size', df.shape
         name = os.path.basename(file_name).split('.')[0]
         #multithreadlogs.LoggingInit_apex(os.path.join(loc_output, name + '__moff.log'))
 
@@ -170,6 +170,7 @@ if __name__ == '__main__':
 
         myPool = multiprocessing.Pool(num_CPU)
 
+        start_time= time.time()
         result = {}
         offset = 0
         for df_index in range(0,len(data_split)):
@@ -180,7 +181,7 @@ if __name__ == '__main__':
 
         myPool.close()
         myPool.join()
-
+        print 'multi thre. terminated', time.time() - start_time
         log.critical('...apex terminated')
         save_moff_result (data_split, result, loc_output, file_name  )
 
