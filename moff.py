@@ -225,7 +225,7 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
             log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f',(offset_index +c +2), row['mz'], time_w)
             temp_w = s_w
         else:
-            log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f matched (y/n): %i',(offset_index +c +2), row['mz'], time_w,mbr_flag)
+            log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f matched (yes=1/no=0): %i',(offset_index +c +2), row['mz'], time_w,row['matched'])
                     # row['matched'])
             if row['matched'] == 1:
                 temp_w = s_w_match
