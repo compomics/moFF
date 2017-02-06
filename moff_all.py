@@ -5,7 +5,7 @@ import argparse
 import logging
 import os
 import multiprocessing
-
+import time
 import moff
 import moff_mbr
 
@@ -21,7 +21,10 @@ log.setLevel(logging.DEBUG)
 def save_moff_result (list_df, result, folder_output, name  ):
     xx=[]
     for df_index in range(0,len(list_df)):
-        xx.append( result[df_index].get())
+        if result[df_index].get()[1] == -1:
+            exit ('Raw file not retrieved: wrong path or upper/low case mismatch')
+        else:
+            xx.append( result[df_index].get()[0])
 
     final_res = pd.concat(xx)
     #print final_res.shape
