@@ -37,11 +37,14 @@ TXIC_PATH = os.environ.get('TXIC_PATH', './')
 
 def save_moff_apex_result(list_df, result, folder_output, name):
     xx = []
-    for df_index in range(0, len(list_df)):
-        xx.append(result[df_index].get())
-
+    for df_index in range(0,len(list_df)):
+        if result[df_index].get()[1] == -1:
+            exit ('Raw file not retrieved: wrong path or upper/low case mismatch')
+        else:
+            xx.append( result[df_index].get()[0] )
+    
     final_res = pd.concat(xx)
-    print final_res.shape
+    #print final_res.shape
     # print os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt")
     final_res.to_csv(os.path.join(folder_output, os.path.basename(name).split('.')[0] + "_moff_result.txt"), sep="\t",
                      index=False)
@@ -157,17 +160,26 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 
         else:
             # raw file name must have capitals letters :) this shloud be checked
-            loc  = os.path.join(loc_raw, name_file.upper() + '.RAW')
+            # this should be done in moe elegant way
+            
+            loc  = os.path.normcase(os.path.join(loc_raw, name_file + '.RAW'))
+            
+            if not (os.path.isfile(loc)):
+                loc  = os.path.join(loc_raw, name_file + '.raw')
+
     else:
         #mzML work only with --inputraw option
         loc  = raw_name
         if ('MZML' in raw_name.upper()):
             flag_mzml = True
 
+    #print loc 
     if os.path.isfile(loc):
         log.info('raw file exist')
     else:
-        exit('ERROR: Wrong path or wrong raw file name included: %s' % loc  )
+        #exit('ERROR: Wrong path or wrong raw file name included: %s' % loc  )
+        log.info('ERROR: Wrong path or wrong raw file name included: %s' % loc  )
+        return (None,-1)
 
 
 
@@ -326,7 +338,7 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
             c += 1
 
 
-    return  data_ms2
+    return  (data_ms2,1)
 
 
 def main_apex_alone():
