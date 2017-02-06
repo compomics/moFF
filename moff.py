@@ -192,7 +192,7 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
     data_ms2["log_L_R"] = data_ms2['log_L_R'].astype('float64')
     data_ms2["log_int"] = data_ms2['log_int'].astype('float64')
 
-    start_time = time.time()
+    
 
     # set mbr_flag
     if 'matched' in data_ms2.columns:
@@ -325,7 +325,6 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
             data_ms2.ix[index_ms2, (index_offset + 9)] = np.log2(val_max)
             c += 1
 
-    print time.time() - start_time
 
     return  data_ms2
 
@@ -408,7 +407,7 @@ def main_apex_alone():
     data_split = np.array_split(df, multiprocessing.cpu_count())
 
     log.critical('Starting Apex for .....')
-    print 'Original input size', df.shape
+    #print 'Original input size', df.shape
     name = os.path.basename(file_name).split('.')[0]
 
     ##check the existencce of the log file before to go to multiprocess
@@ -418,6 +417,7 @@ def main_apex_alone():
 
     result = {}
     offset = 0
+    start_time = time.time()
     for df_index in range(0, len(data_split)):
         result[df_index] = myPool.apply_async(apex_multithr, args=(
         data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset))
@@ -427,8 +427,10 @@ def main_apex_alone():
     myPool.join()
 
     log.critical('...apex terminated')
+    print 'Time no result collect',  time.time() -start_time
+    start_time_2 = time.time()
     save_moff_apex_result(data_split, result, loc_output, file_name)
-
+    #print 'Time no result collect 2',  time.time() -start_time_2
 
 
 if __name__ == '__main__':
