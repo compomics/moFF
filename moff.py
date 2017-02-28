@@ -156,7 +156,6 @@ def run_apex(file_name, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_outp
 
     # read data from file
     data_ms2 = pd.read_csv(file_name, sep="\t", header=0)
-
     if not 'matched' in data_ms2.columns:
         # check if it is a PS file ,
         list_name = data_ms2.columns.values.tolist()
