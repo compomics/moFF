@@ -1,0 +1,10 @@
+FROM continuumio/anaconda
+
+RUN apt-get update
+RUN conda install numpy pandas scikit-learn 
+RUN pip install argparse pymzML
+RUN apt-get install git
+RUN echo "deb http://download.mono-project.com/repo/debian wheezy-apache24-compat main" | tee -a /etc/apt/sources.list.d/mono-xamarin.list
+RUN yes | apt-get install mono-complete
+RUN git clone  -b multipr_rawfilereader  --single-branch https://github.com/compomics/moff /moFF
+WORKDIR /moFF
