@@ -438,10 +438,8 @@ def main_apex_alone():
     myPool.join()
 
     log.critical('...apex terminated')
-    print 'Time no result collect',  time.time() -start_time
-    start_time_2 = time.time()
+    log.critical('Time no result collect',  time.time() -start_time)
     save_moff_apex_result(data_split, result, loc_output, file_name)
-    #print 'Time no result collect 2',  time.time() -start_time_2
 
 
 if __name__ == '__main__':
