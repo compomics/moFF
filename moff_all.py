@@ -184,9 +184,9 @@ if __name__ == '__main__':
 
         myPool.close()
         myPool.join()
-        print 'multi thre. terminated', time.time() - start_time
         log.critical('...apex terminated')
-        save_moff_result (data_split, result, loc_output, file_name  )
+        log.critical('...Apex module execution times %4.4f' % time.time() - start_time)
+	save_moff_result (data_split, result, loc_output, file_name  )
 
         c+=1
 
