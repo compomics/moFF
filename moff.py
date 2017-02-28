@@ -215,7 +215,7 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
     c =0
     for index_ms2, row in data_ms2.iterrows():
 
-        mz_opt = "-mz=" + str(row['mz'])
+        mz_opt = "-mz " + str(row['mz'])
         #### PAY ATTENTION HERE , we assume that input RT is in second
         ## RT in Thermo file is in minutes
         #### if it is not the case change the following line
@@ -252,11 +252,12 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
                     os.path.join('folder_name', 'file_name')
                     args_txic = shlex.split(os.path.join(moff_path, "txic.exe") + " " + mz_opt + " -tol=" + str(tol) + " -t " + str( time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc, posix=False)
                 else:
-                    args_txic = shlex.split(TXIC_PATH + "txic " + mz_opt + " -tol=" + str(tol) + " -t " + str(time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc )
-                
-                p = subprocess.Popen(args_txic, stdout=subprocess.PIPE)
+                    #args_txic = shlex.split(TXIC_PATH + "txic " + mz_opt + " -tol=" + str(tol) + " -t " + str(time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc )
+                    args_txic = shlex.split( "mono txic_thermo_fixed.exe " + mz_opt + " -tol " + str(tol) + " -ts " + str(time_w - h_rt_w) + " -te " + str(time_w + h_rt_w) + " -f " + loc )
+		#print args_txic	
+		p = subprocess.Popen(args_txic, stdout=subprocess.PIPE)
                 output, err = p.communicate()
-
+		
                 data_xic = pd.read_csv(StringIO.StringIO(output.strip()), sep=' ', names=['rt', 'intensity'], header=0)
             if data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0] >= 1:
                 ind_v = data_xic.index
@@ -394,6 +395,7 @@ def main_apex_alone():
     config.read(os.path.join(os.path.dirname(sys.argv[0]), 'moff_setting.properties'))
 
     df = pd.read_csv(file_name, sep="\t")
+    #df = df.ix[9600:9801,:]
     ## check and eventually tranf for PS template
     if not 'matched' in df.columns:
         # check if it is a PS file ,
@@ -439,6 +441,7 @@ def main_apex_alone():
     myPool.join()
 
     log.critical('...apex terminated')
+    log.critical( 'Computational time (sec):  %4.4f ' % (time.time() -start_time))
     print 'Time no result collect',  time.time() -start_time
     start_time_2 = time.time()
     save_moff_apex_result(data_split, result, loc_output, file_name)
