@@ -107,6 +107,8 @@ def check_columns_name(col_list, col_must_have):
 
 # run the mbr in moFF : input  ms2 identified peptide   output csv file with the matched peptides added
 def run_mbr(args):
+    print __name__
+
     ch = logging.StreamHandler()
     ch.setLevel(logging.ERROR)
     log.addHandler(ch)
@@ -142,6 +144,7 @@ def run_mbr(args):
     #        exit(os.path.join(args.loc_in) + ' EXIT input folder path not well specified --> / missing ')
 
     if not (os.path.isdir(output_dir)):
+
         log.critical("Created MBR output folder in : %s ", os.path.abspath(output_dir))
         os.makedirs(output_dir)
     else:
