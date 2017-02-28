@@ -250,7 +250,7 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
                 #  Thermo RAW file
                 if flag_windows:
                     os.path.join('folder_name', 'file_name')
-                    args_txic = shlex.split(os.path.join(moff_path, "txic.exe") + " " + mz_opt + " -tol=" + str(tol) + " -t " + str( time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc, posix=False)
+                    args_txic = shlex.split("txic_thermo_fixed.exe " + mz_opt + " -tol " + str(tol) + " -ts " + str(time_w - h_rt_w) + " -te " + str(time_w + h_rt_w) + " -f " + loc )
                 else:
                     #args_txic = shlex.split(TXIC_PATH + "txic " + mz_opt + " -tol=" + str(tol) + " -t " + str(time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc )
                     args_txic = shlex.split( "mono txic_thermo_fixed.exe " + mz_opt + " -tol " + str(tol) + " -ts " + str(time_w - h_rt_w) + " -te " + str(time_w + h_rt_w) + " -f " + loc )
@@ -395,7 +395,7 @@ def main_apex_alone():
     config.read(os.path.join(os.path.dirname(sys.argv[0]), 'moff_setting.properties'))
 
     df = pd.read_csv(file_name, sep="\t")
-    #df = df.ix[9600:9801,:]
+    #df = df.ix[0:1000,:]
     ## check and eventually tranf for PS template
     if not 'matched' in df.columns:
         # check if it is a PS file ,
