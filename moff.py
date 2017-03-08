@@ -438,7 +438,7 @@ def main_apex_alone():
     myPool.join()
 
     log.critical('...apex terminated')
-    log.critical('time to compu²te %4.2f',  time.time() -start_time)
+    log.critical('time to compute %4.2f',  time.time() -start_time)
     save_moff_apex_result(data_split, result, loc_output, file_name)
 
 
