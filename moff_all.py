@@ -152,7 +152,6 @@ if __name__ == '__main__':
 
         ## add multi thredign option
         df = pd.read_csv(file_name,sep="\t")
-
         data_split= np.array_split(df, num_CPU)
 
         log.critical('Starting Apex for %s ...',file_name)
@@ -185,7 +184,7 @@ if __name__ == '__main__':
         myPool.close()
         myPool.join()
         log.critical('...apex terminated')
-        log.critical('...Apex module execution times %4.4f' % time.time() - start_time)
+        log.critical('...apex module execution time %4.4f (sec)' , time.time() - start_time)
 	save_moff_result (data_split, result, loc_output, file_name  )
 
         c+=1
