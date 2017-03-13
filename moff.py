@@ -356,11 +356,11 @@ def main_apex_alone():
     parser.add_argument('--rt_w', dest='rt_window', action='store', type=float, default=3,
                         help='specify rt window for xic (minute). Default value is 3 min', required=False)
 
-    parser.add_argument('--rt_p', dest='rt_p_window', action='store', type=float, default=0.2,
-                        help='specify the time windows for the peak ( minute). Default value is 0.1 ', required=False)
+    parser.add_argument('--rt_p', dest='rt_p_window', action='store', type=float, default=0.4,
+                        help='specify the time windows for the peak ( minute). Default value is 0.4 ', required=False)
 
-    parser.add_argument('--rt_p_match', dest='rt_p_window_match', action='store', type=float, default=0.4,
-                        help='specify the time windows for the matched  peak ( minute). Default value is 0.4 ',
+    parser.add_argument('--rt_p_match', dest='rt_p_window_match', action='store', type=float, default=0.8,
+                        help='specify the time windows for the matched  peak ( minute). Default value is 0.8 ',
                         required=False)
 
     parser.add_argument('--raw_repo', dest='raw', action='store', help='specify the raw file repository folder',
