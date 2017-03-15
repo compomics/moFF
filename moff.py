@@ -250,7 +250,7 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
                 #  Thermo RAW file
                 if flag_windows:
                     os.path.join('folder_name', 'file_name')
-                    args_txic = shlex.split(os.path.join(moff_path, "txic.exe") + " " + mz_opt + " -tol=" + str(tol) + " -t " + str( time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc, posix=False)
+                    args_txic = shlex.split("txic_thermo_fixed.exe " + mz_opt + " -tol " + str(tol) + " -ts " + str(time_w - h_rt_w) + " -te " + str(time_w + h_rt_w) + " -f " + loc )
                 else:
                     #args_txic = shlex.split(TXIC_PATH + "txic " + mz_opt + " -tol=" + str(tol) + " -t " + str(time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc )
                     args_txic = shlex.split( "mono txic_thermo_fixed.exe " + mz_opt + " -tol " + str(tol) + " -ts " + str(time_w - h_rt_w) + " -te " + str(time_w + h_rt_w) + " -f " + loc )
@@ -299,7 +299,7 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
             c_left = 0
             find_5 = False
             stop = False
-            while c_left < (pos_p - 1) and not stop:
+            while (0 <=  ((pos_p - 1) -c_left) ) and not stop:
 
                 if not find_5 and (data_xic.ix[(pos_p - 1) - c_left, 1].values <= (0.5 * val_max)):
                     find_5 = True
@@ -395,7 +395,7 @@ def main_apex_alone():
     config.read(os.path.join(os.path.dirname(sys.argv[0]), 'moff_setting.properties'))
 
     df = pd.read_csv(file_name, sep="\t")
-    #df = df.ix[9600:9801,:]
+    #df = df.ix[0:1000,:]
     ## check and eventually tranf for PS template
     if not 'matched' in df.columns:
         # check if it is a PS file ,
@@ -417,6 +417,7 @@ def main_apex_alone():
         log.critical('RAW file  :  %s' % args.raw_list)
 
     log.critical('Output file in :  %s', loc_output)
+
 
     data_split = np.array_split(df, multiprocessing.cpu_count())
 
