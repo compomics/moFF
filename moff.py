@@ -299,7 +299,7 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
             c_left = 0
             find_5 = False
             stop = False
-            while c_left < (pos_p - 1) and not stop:
+            while (0 <=  ((pos_p - 1) -c_left) ) and not stop:
 
                 if not find_5 and (data_xic.ix[(pos_p - 1) - c_left, 1].values <= (0.5 * val_max)):
                     find_5 = True
@@ -417,6 +417,7 @@ def main_apex_alone():
         log.critical('RAW file  :  %s' % args.raw_list)
 
     log.critical('Output file in :  %s', loc_output)
+
 
     data_split = np.array_split(df, multiprocessing.cpu_count())
 
