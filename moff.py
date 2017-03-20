@@ -111,8 +111,20 @@ def pyMZML_xic_out(name, ppmPrecision, minRT, maxRT, MZValue):
 def check_log_existence(file_to_check):
     if os.path.isfile(file_to_check):
         os.remove(file_to_check)
+	
+	return 1
+    else:
+	
+	return -1
 
 
+def check_output_folder_existence(loc_output ):
+   if not os.path.exists(loc_output):
+	os.mkdir(loc_output)
+
+	return 1
+   else:
+	return 0
 
 
 def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset_index):
@@ -424,7 +436,9 @@ def main_apex_alone():
     log.critical('Starting Apex for .....')
     #print 'Original input size', df.shape
     name = os.path.basename(file_name).split('.')[0]
-
+    
+    check_output_folder_existence(loc_output )
+    
     ##check the existencce of the log file before to go to multiprocess
     check_log_existence(os.path.join(loc_output, name + '__moff.log'))
 
