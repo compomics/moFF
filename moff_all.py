@@ -168,10 +168,12 @@ if __name__ == '__main__':
         #print 'Original input size', df.shape
         name = os.path.basename(file_name).split('.')[0]
         #multithreadlogs.LoggingInit_apex(os.path.join(loc_output, name + '__moff.log'))
-
+	#control id the folder exist
+	moff.check_output_folder_existence(loc_output)
+	#control if exist the same log file : avoid appending output
         moff.check_log_existence(os.path.join(loc_output, name + '__moff.log'))
-
-        myPool = multiprocessing.Pool(num_CPU)
+   	
+	myPool = multiprocessing.Pool(num_CPU)
 
         start_time= time.time()
         result = {}
