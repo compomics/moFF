@@ -57,7 +57,7 @@ def map_ps2moff(data):
     data.drop(data.columns[[0]], axis=1, inplace=True)
     data.columns = data.columns.str.lower()
     data.rename(
-        columns={'sequence': 'peptide', 'measured charge': 'charge', 'theoretical mass': 'mass', 'protein(s)': 'prot',
+        columns={'sequence': 'peptide','modified sequence':'mod_peptide' ,'measured charge': 'charge', 'theoretical mass': 'mass', 'protein(s)': 'prot',
                  'm/z': 'mz'}, inplace=True)
     return data, data.columns.values.tolist()
 
@@ -404,7 +404,7 @@ def main_apex_alone():
             # map  the columns name according to moFF input requirements
             data_ms2, list_name = map_ps2moff(df)
     ## check if the field names are good
-    if check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_x'))) == 1:
+    if check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_apex'))) == 1:
         exit('ERROR minimal field requested are missing or wrong')
 
     log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
