@@ -59,7 +59,7 @@ Txic is compatible with the raw outputfiles originating from any Orbitrap or tri
 ---
 
 
-##Input Data
+## Input Data ##
 
 moFF requires two types of input for the quantification procedure :
  - Thermo RAW file or mzML file
@@ -104,22 +104,22 @@ use :  `python moff_mbr.py -h`
   	--weight_comb         combination weighting : 0 for no weight 1 for a weighted schema
 ```
 
-`python moff_mbr.py --inputF f1_folder/` 
+`python moff_mbr.py --inputF sample_folder/` 
 
 This command runs the MBR modules. The output will be stored in a subfolder ('mbr_output') inside the specified input folder.
 The MBR module will consider all the .txt files present in the specified input folder as replicates (to select specific files or different extension, please refer to the example below).
-The files in *f1_folder/mbr_output* will be identical to the input files, but they will have an additional field ('matched') that specifies which peptides have match (1) or not (0). The MBR algorithm also produces a log file in the provided input directory.
+The files in *sample_folder/mbr_output* will be identical to the input files, but they will have an additional field ('matched') that specifies which peptides have match (1) or not (0). The MBR algorithm also produces a log file in the provided input directory.
 
 
 ### Customizing Match between runs ###
 
 In case of a different extension (.list, etc), please use :
 
-`python --inputF f1_folder/ --ext list ` (Provide the extension without the period ('.'))
+`python --inputF sample_folder/ --ext list ` (Provide the extension without the period ('.'))
 
 In case of using only specific input files within the provided directory, please use a regular expression:
 
-`python --inputF f1_folder/  --sample *_6A ` (This can be combined with the aforementioned syntax)
+`python --inputF sample_folder/  --sample *_6A ` (This can be combined with the aforementioned syntax)
 
 
 [Top of page](#moff)
@@ -141,7 +141,7 @@ use  `python moff.py -h`
 ```
 For example :
 
-`python moff.mbr --inputtsv f1_folder/20080311_CPTAC6_07_6A005.txt  --raw_rep f1_folder/ --tol 1O --output_folder output_moff`
+`python moff.mbr --inputtsv sample_folder/20080311_CPTAC6_07_6A005.txt  --raw_rep sample_folder/ --tol 1O --output_folder output_moff`
 
 WARNING : the raw file names MUST be the same of the input file otherwise the script give you an error !
 NOTE: All the parameters related to the the time windows (rt_w,rt_p, rt_p_match) are basicaly the half of the entire time windows where the apex peak is searched or the XiC is retrieved.
@@ -180,7 +180,7 @@ use `python moff_all.py -h`
 ```
 `python moff_all.py --inputF  sample_folder/   --raw_repo sample_folder/ --output_folder output_moff`
 
-The options are identifcal for both apex and MBR modules. The output for the latter (MBR) is stored in the folder f1_folder/mbr_output, while the former (apex) generates files in the specified output_moff folder. Log files for both algorithms are generated in the respective folders.
+The options are identifcal for both apex and MBR modules. The output for the latter (MBR) is stored in the folder sample_folder/mbr_output, while the former (apex) generates files in the specified output_moff folder. Log files for both algorithms are generated in the respective folders.
 
 You can also specify a list of input and raw files using:
 
