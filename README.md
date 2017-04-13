@@ -69,13 +69,14 @@ The MS2 identified peptides can be presented as a tab-delimited file containing 
 
 (a) The tab-delimited file must contain the following information for all the peptides:
   - 'peptide' : peptide-spectrum-match  sequence
-  - 'prot': protein ID 
+  - 'prot' : protein ID 
+  - 'mod_peptide' :  peptide-spectrum-match  sequence that contains also possible modification (i.e NH2-M<Mox>LTKFESK-COOH )
   - 'rt': peptide-spectrum-match retention time  (i.e the retention time contained in the mgf file; The retention time must be specified in second)
   - 'mz' : mass over charge
   - 'mass' : mass of the peptide
   - 'charge' : charge of the ionized peptide
  
-NOTE 1 : In case the tab-delimited file provided by the user contains fields that are not mentioned here (i.e modifications,petides length) the algorithm will retain these in the final output. The peptide-spectrum-match sequence and the protein id  informations are used only in the match-between-run module.
+NOTE 1 : In case the tab-delimited file provided by the user contains fields that are not mentioned here (i.e petides length, search engines score) the algorithm will retain these in the final output. The peptide-spectrum-match sequence with its modications  and the protein id  and  informations are used only in the match-between-run module.
 
 NOTE 2 : Users can also provide PeptideShaker output as source material for moFF. Please refer to the [moff-GUI](https://github.com/compomics/moff-gui) manual for more information on how to do this.
 
@@ -86,7 +87,7 @@ NOTE 2 : Users can also provide PeptideShaker output as source material for moFF
 
 ## Sample data  ##
 
-The  *f1_folder* contains a resultset for 3 runs of the CPTAC study 6 (Paulovich, MCP Proteomics, 2010). These MS2  peptides were identified by MASCOT. The [raw files]( https://goo.gl/ukbpCI) for this study are required to apply moFF to the sample data.
+The  *sample_folder* contains a resultset for 3 runs of the CPTAC study 6 (Paulovich, MCP Proteomics, 2010). These MS2  peptides were identified by MASCOT. The [raw files]( https://goo.gl/ukbpCI) for this study are required to apply moFF to the sample data.
 
 ---
 
@@ -146,7 +147,7 @@ WARNING : the raw file names MUST be the same of the input file otherwise the sc
 NOTE: All the parameters related to the the time windows (rt_w,rt_p, rt_p_match) are basicaly the half of the entire time windows where the apex peak is searched or the XiC is retrieved.
 
 You can also specify directly the raw file using: 
-`python moff.mbr --inputtsv f1_folder/20080311_CPTAC6_07_6A005.txt  --inputraw f1_folder/20080311_CPTAC6_07_6A005.raw --tol 1O --output_folder output_moff`
+`python moff.py --inputtsv sample_folder/20080311_CPTAC6_07_6A005.txt  --inputraw sample_folder/20080311_CPTAC6_07_6A005.raw --tol 1O --output_folder output_moff`
 
 WARNING: if the user need to use Thermo RAW file can specify them using   `--inputraw` or  `--raw_rep`. In case of **mzML** file the user can ONLY specify them using   `--inputraw`
 
@@ -177,13 +178,13 @@ use `python moff_all.py -h`
 	--rt_p_match		the time windows for the matched features in apex ( minutes). Default value is 0.4
 	--raw_repo		the folder containing the raw files
 ```
-`python moff_all.py --inputF  f1_folder/   --raw_repo f1_folder/ --output_folder output_moff`
+`python moff_all.py --inputF  sample_folder/   --raw_repo sample_folder/ --output_folder output_moff`
 
 The options are identifcal for both apex and MBR modules. The output for the latter (MBR) is stored in the folder f1_folder/mbr_output, while the former (apex) generates files in the specified output_moff folder. Log files for both algorithms are generated in the respective folders.
 
 You can also specify a list of input and raw files using:
 
-`python moff_all.py --inputtsv  f1_folder/input_file1.txt f1_folder/input_file2.txt   --inputraw f1_folder/input_file1.raw f1_folder/input_file2.raw --output_folder output_moff`
+`python moff_all.py --inputtsv  sample_folder/input_file1.txt sample_folder/input_file2.txt   --inputraw sample_folder/input_file1.raw sample_folder/input_file2.raw --output_folder output_moff`
 
 Using `--inputtsv | --inputraw`  you can not filterted the input file using `--sample --ext` like in the case with `--inputF | --raw_repo`
 
