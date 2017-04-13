@@ -57,7 +57,7 @@ def map_ps2moff(data):
     data.drop(data.columns[[0]], axis=1, inplace=True)
     data.columns = data.columns.str.lower()
     data.rename(
-        columns={'sequence': 'peptide', 'measured charge': 'charge', 'theoretical mass': 'mass', 'protein(s)': 'prot',
+        columns={'sequence': 'peptide','modified_sequence':'mod_peptide' , 'measured charge': 'charge', 'theoretical mass': 'mass', 'protein(s)': 'prot',
                  'm/z': 'mz'}, inplace=True)
     return data, data.columns.values.tolist()
 
@@ -407,7 +407,7 @@ def main_apex_alone():
     config.read(os.path.join(os.path.dirname(sys.argv[0]), 'moff_setting.properties'))
 
     df = pd.read_csv(file_name, sep="\t")
-    #df = df.ix[0:1000,:]
+    #df = df.ix[0:4000,:]
     ## check and eventually tranf for PS template
     if not 'matched' in df.columns:
         # check if it is a PS file ,
@@ -419,7 +419,7 @@ def main_apex_alone():
             # map  the columns name according to moFF input requirements
             data_ms2, list_name = map_ps2moff(df)
     ## check if the field names are good
-    if check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_x'))) == 1:
+    if check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_apex'))) == 1:
         exit('ERROR minimal field requested are missing or wrong')
 
     log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
@@ -431,8 +431,12 @@ def main_apex_alone():
     log.critical('Output file in :  %s', loc_output)
 
 
-    data_split = np.array_split(df, multiprocessing.cpu_count())
+    data_split = np.array_split(df, multiprocessing.cpu_count() )
 
+    ##--used for test	
+    #data_split = np.array_split(df, 1)
+    #print data_split[0].shape
+    ##used for test
     log.critical('Starting Apex for .....')
     #print 'Original input size', df.shape
     name = os.path.basename(file_name).split('.')[0]
@@ -443,7 +447,9 @@ def main_apex_alone():
     check_log_existence(os.path.join(loc_output, name + '__moff.log'))
 
     myPool = multiprocessing.Pool(multiprocessing.cpu_count())
-
+    ## code below id for testing 
+    #myPool = multiprocessing.Pool(10 )
+    ## end testing 
     result = {}
     offset = 0
     start_time = time.time()
