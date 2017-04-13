@@ -206,7 +206,7 @@ def run_mbr(args):
             data_moff, list_name = map_ps2moff(data_moff)
             log.critical('Mapping columns names into the  the moFF requested column name..: %s ', a)
             # print data_moff.columns
-        if not check_columns_name(list_name, ast.literal_eval(config.get('moFF', 'col_must_have_x'))):
+        if not check_columns_name(list_name, ast.literal_eval(config.get('moFF', 'col_must_have_mbr'))):
             exit('ERROR minimal field requested are missing or wrong')
         data_moff['matched'] = 0
         data_moff['mass'] = data_moff['mass'].map('{:.4f}'.format)
@@ -387,7 +387,6 @@ def run_mbr(args):
 
         log.info('Before adding %s contains %i ', exp_set[jj], exp_t[jj].shape[0])
         exp_out[jj] = pd.concat([exp_t[jj], test], join='outer', axis=0)
-        print exp_out[jj][exp_out[jj]['matched'] == 1].head(5)
 	log.info('After MBR %s contains:  %i  peptides', exp_set[jj], exp_out[jj].shape[0])
         log.critical('matched features   %i  MS2 features  %i ', exp_out[jj][exp_out[jj]['matched'] == 1].shape[0],
                      exp_out[jj][exp_out[jj]['matched'] == 0].shape[0])
