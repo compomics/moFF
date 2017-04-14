@@ -119,7 +119,7 @@ In case of a different extension (.list, etc), please use :
 
 In case of using only specific input files within the provided directory, please use a regular expression:
 
-`python --inputF sample_folder/  --sample *_6A ` (This can be combined with the aforementioned syntax)
+`python --inputF sample_folder/  --sample *_6A` (This can be combined with the aforementioned syntax)
 
 
 [Top of page](#moff)
@@ -128,14 +128,14 @@ In case of using only specific input files within the provided directory, please
 
 ## Apex intensity ##
 
-use  `python moff.py -h`
-````
+use `python moff.py -h`
+```
   --inputtsv         the input file with for MS2 peptides
   --inputraw	      specify directly the  raw file
   --tol               the mass tollerance (ppm)
   --rt_w              the rt windows for xic (minutes). Default value is 3  min
-  --rt_p     	      the time windows used to get the apex for the ms2 peptide/feature  (minutes). Default value is 0.2
-  --rt_p_match 	      the time windows used to get the apex for machted features (minutes). Default value is 0.4
+  --rt_p     	      the time windows used to get the apex for the ms2 peptide/feature  (minutes). Default value is 0.4
+  --rt_p_match 	      the time windows used to get the apex for machted features (minutes). Default value is 0.6
   --raw_repo          the folder containing the raw files
   --output_folder     the target folder for the output (default is the input folder, raw_repo)
 ```
@@ -192,7 +192,7 @@ Using `--inputtsv | --inputraw`  you can not filterted the input file using `--s
 [Top of page](#moff)
 
 ---
-## Output data
+## Output data ##
 
 The output consists of : 
 
