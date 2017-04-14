@@ -21,7 +21,7 @@ moFF is built up from two standalone modules :
 
 NOTE : Please use *moff_all.py* script to run the entire pipeline with both MBR and apex strategies.
 
-The version presented here is a commandline tool that can easily be adapted to a cluster environment. A graphical user interface can be found [here](https://github.com/compomics/moff-gui). The latter is designed to be able to use [PeptideShaker](https://github.com/compomics/peptide-shaker) results as an input format.
+The version presented here is a commandline tool that can easily be adapted to a cluster environment. A graphical user interface can be found [here](https://github.com/compomics/moff-gui). The latter is designed to be able to use [PeptideShaker](https://github.com/compomics/peptide-shaker) results as an input format. Please refer to the [moff-GUI](https://github.com/compomics/moff-gui) manual for more information on how to do this.
 
 [Top of page](#moff)
 
@@ -59,7 +59,7 @@ Txic is compatible with the raw outputfiles originating from any Orbitrap or tri
 ---
 
 
-##Input Data
+## Input Data ##
 
 moFF requires two types of input for the quantification procedure :
  - Thermo RAW file or mzML file
@@ -69,15 +69,16 @@ The MS2 identified peptides can be presented as a tab-delimited file containing 
 
 (a) The tab-delimited file must contain the following information for all the peptides:
   - 'peptide' : peptide-spectrum-match  sequence
-  - 'prot': protein ID 
+  - 'prot' : protein ID 
+  - 'mod_peptide' :  peptide-spectrum-match  sequence that contains also possible modification (i.e `NH2-M<Mox>LTKFESK-COOH` )
   - 'rt': peptide-spectrum-match retention time  (i.e the retention time contained in the mgf file; The retention time must be specified in second)
   - 'mz' : mass over charge
   - 'mass' : mass of the peptide
   - 'charge' : charge of the ionized peptide
  
-NOTE 1 : In case the tab-delimited file provided by the user contains fields that are not mentioned here (i.e modifications,petides length) the algorithm will retain these in the final output. The peptide-spectrum-match sequence and the protein id  informations are used only in the match-between-run module.
+NOTE 1 : In case the tab-delimited file provided by the user contains fields that are not mentioned here (i.e petides length, search engines score) the algorithm will retain these in the final output. The peptide-spectrum-match sequence with its modications  and the protein id  and  informations are used only in the match-between-run module.
 
-NOTE 2 : Users can also provide PeptideShaker output as source material for moFF. Please refer to the [moff-GUI](https://github.com/compomics/moff-gui) manual for more information on how to do this.
+NOTE 2 : Users can also provide the default PSM export provided by  PeptideShaker as source material for moFF.
 
 
 [Top of page](#moff)
@@ -86,7 +87,7 @@ NOTE 2 : Users can also provide PeptideShaker output as source material for moFF
 
 ## Sample data  ##
 
-The  *f1_folder* contains a resultset for 3 runs of the CPTAC study 6 (Paulovich, MCP Proteomics, 2010). These MS2  peptides were identified by MASCOT. The [raw files]( https://goo.gl/ukbpCI) for this study are required to apply moFF to the sample data.
+The  *sample_folder* contains a resultset for 3 runs of the CPTAC study 6 (Paulovich, MCP Proteomics, 2010). These MS2  peptides were identified by MASCOT. The [raw files]( https://goo.gl/ukbpCI) for this study are required to apply moFF to the sample data.
 
 ---
 
@@ -103,22 +104,22 @@ use :  `python moff_mbr.py -h`
   	--weight_comb         combination weighting : 0 for no weight 1 for a weighted schema
 ```
 
-`python moff_mbr.py --inputF f1_folder/` 
+`python moff_mbr.py --inputF sample_folder/` 
 
 This command runs the MBR modules. The output will be stored in a subfolder ('mbr_output') inside the specified input folder.
 The MBR module will consider all the .txt files present in the specified input folder as replicates (to select specific files or different extension, please refer to the example below).
-The files in *f1_folder/mbr_output* will be identical to the input files, but they will have an additional field ('matched') that specifies which peptides have match (1) or not (0). The MBR algorithm also produces a log file in the provided input directory.
+The files in *sample_folder/mbr_output* will be identical to the input files, but they will have an additional field ('matched') that specifies which peptides have match (1) or not (0). The MBR algorithm also produces a log file in the provided input directory.
 
 
 ### Customizing Match between runs ###
 
 In case of a different extension (.list, etc), please use :
 
-`python --inputF f1_folder/ --ext list ` (Provide the extension without the period ('.'))
+`python --inputF sample_folder/ --ext list ` (Provide the extension without the period ('.'))
 
 In case of using only specific input files within the provided directory, please use a regular expression:
 
-`python --inputF f1_folder/  --sample *_6A ` (This can be combined with the aforementioned syntax)
+`python --inputF sample_folder/  --sample *_6A` (This can be combined with the aforementioned syntax)
 
 
 [Top of page](#moff)
@@ -127,36 +128,35 @@ In case of using only specific input files within the provided directory, please
 
 ## Apex intensity ##
 
-use  `python moff.py -h`
-````
+use `python moff.py -h`
+```
   --inputtsv         the input file with for MS2 peptides
   --inputraw	      specify directly the  raw file
   --tol               the mass tollerance (ppm)
   --rt_w              the rt windows for xic (minutes). Default value is 3  min
-  --rt_p     	      the time windows used to get the apex for the ms2 peptide/feature  (minutes). Default value is 0.2
-  --rt_p_match 	      the time windows used to get the apex for machted features (minutes). Default value is 0.4
+  --rt_p     	      the time windows used to get the apex for the ms2 peptide/feature  (minutes). Default value is 0.4
+  --rt_p_match 	      the time windows used to get the apex for machted features (minutes). Default value is 0.6
   --raw_repo          the folder containing the raw files
   --output_folder     the target folder for the output (default is the input folder, raw_repo)
 ```
 For example :
 
-`python moff.mbr --inputtsv f1_folder/20080311_CPTAC6_07_6A005.txt  --raw_rep f1_folder/ --tol 1O --output_folder output_moff`
+`python moff.mbr --inputtsv sample_folder/20080311_CPTAC6_07_6A005.txt  --raw_rep sample_folder/ --tol 1O --output_folder output_moff`
 
 WARNING : the raw file names MUST be the same of the input file otherwise the script give you an error !
 NOTE: All the parameters related to the the time windows (rt_w,rt_p, rt_p_match) are basicaly the half of the entire time windows where the apex peak is searched or the XiC is retrieved.
 
 You can also specify directly the raw file using: 
-`python moff.mbr --inputtsv f1_folder/20080311_CPTAC6_07_6A005.txt  --inputraw f1_folder/20080311_CPTAC6_07_6A005.raw --tol 1O --output_folder output_moff`
+`python moff.py --inputtsv sample_folder/20080311_CPTAC6_07_6A005.txt  --inputraw sample_folder/20080311_CPTAC6_07_6A005.raw --tol 1O --output_folder output_moff`
 
 WARNING: if the user need to use Thermo RAW file can specify them using   `--inputraw` or  `--raw_rep`. In case of **mzML** file the user can ONLY specify them using   `--inputraw`
-
-
 
 
 
 [Top of page](#moff)
 
 ---
+
 
 ## Entire workflow ##
 
@@ -177,13 +177,13 @@ use `python moff_all.py -h`
 	--rt_p_match		the time windows for the matched features in apex ( minutes). Default value is 0.4
 	--raw_repo		the folder containing the raw files
 ```
-`python moff_all.py --inputF  f1_folder/   --raw_repo f1_folder/ --output_folder output_moff`
+`python moff_all.py --inputF  sample_folder/   --raw_repo sample_folder/ --output_folder output_moff`
 
-The options are identifcal for both apex and MBR modules. The output for the latter (MBR) is stored in the folder f1_folder/mbr_output, while the former (apex) generates files in the specified output_moff folder. Log files for both algorithms are generated in the respective folders.
+The options are identifcal for both apex and MBR modules. The output for the latter (MBR) is stored in the folder sample_folder/mbr_output, while the former (apex) generates files in the specified output_moff folder. Log files for both algorithms are generated in the respective folders.
 
 You can also specify a list of input and raw files using:
 
-`python moff_all.py --inputtsv  f1_folder/input_file1.txt f1_folder/input_file2.txt   --inputraw f1_folder/input_file1.raw f1_folder/input_file2.raw --output_folder output_moff`
+`python moff_all.py --inputtsv  sample_folder/input_file1.txt sample_folder/input_file2.txt   --inputraw sample_folder/input_file1.raw sample_folder/input_file2.raw --output_folder output_moff`
 
 Using `--inputtsv | --inputraw`  you can not filterted the input file using `--sample --ext` like in the case with `--inputF | --raw_repo`
 
@@ -192,7 +192,7 @@ Using `--inputtsv | --inputraw`  you can not filterted the input file using `--s
 [Top of page](#moff)
 
 ---
-## Output data
+## Output data ##
 
 The output consists of : 
 
