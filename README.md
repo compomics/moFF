@@ -21,7 +21,7 @@ moFF is built up from two standalone modules :
 
 NOTE : Please use *moff_all.py* script to run the entire pipeline with both MBR and apex strategies.
 
-The version presented here is a commandline tool that can easily be adapted to a cluster environment. A graphical user interface can be found [here](https://github.com/compomics/moff-gui). The latter is designed to be able to use [PeptideShaker](https://github.com/compomics/peptide-shaker) results as an input format.
+The version presented here is a commandline tool that can easily be adapted to a cluster environment. A graphical user interface can be found [here](https://github.com/compomics/moff-gui). The latter is designed to be able to use [PeptideShaker](https://github.com/compomics/peptide-shaker) results as an input format. Please refer to the [moff-GUI](https://github.com/compomics/moff-gui) manual for more information on how to do this.
 
 [Top of page](#moff)
 
@@ -78,7 +78,7 @@ The MS2 identified peptides can be presented as a tab-delimited file containing 
  
 NOTE 1 : In case the tab-delimited file provided by the user contains fields that are not mentioned here (i.e petides length, search engines score) the algorithm will retain these in the final output. The peptide-spectrum-match sequence with its modications  and the protein id  and  informations are used only in the match-between-run module.
 
-NOTE 2 : Users can also provide PeptideShaker output as source material for moFF. Please refer to the [moff-GUI](https://github.com/compomics/moff-gui) manual for more information on how to do this.
+NOTE 2 : Users can also provide the default PSM export provided by  PeptideShaker as source material for moFF.
 
 
 [Top of page](#moff)
@@ -153,11 +153,10 @@ WARNING: if the user need to use Thermo RAW file can specify them using   `--inp
 
 
 
-
-
 [Top of page](#moff)
 
 ---
+
 
 ## Entire workflow ##
 
