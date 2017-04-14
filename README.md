@@ -70,7 +70,7 @@ The MS2 identified peptides can be presented as a tab-delimited file containing 
 (a) The tab-delimited file must contain the following information for all the peptides:
   - 'peptide' : peptide-spectrum-match  sequence
   - 'prot' : protein ID 
-  - 'mod_peptide' :  peptide-spectrum-match  sequence that contains also possible modification (i.e NH2-M<Mox>LTKFESK-COOH )
+  - 'mod_peptide' :  peptide-spectrum-match  sequence that contains also possible modification (i.e `NH2-M<Mox>LTKFESK-COOH` )
   - 'rt': peptide-spectrum-match retention time  (i.e the retention time contained in the mgf file; The retention time must be specified in second)
   - 'mz' : mass over charge
   - 'mass' : mass of the peptide
