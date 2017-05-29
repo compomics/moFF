@@ -59,6 +59,7 @@ def map_ps2moff(data):
     data.rename(
         columns={'sequence': 'peptide','modified_sequence':'mod_peptide' , 'measured charge': 'charge', 'theoretical mass': 'mass', 'protein(s)': 'prot',
                  'm/z': 'mz'}, inplace=True)
+    print data.columns
     return data, data.columns.values.tolist()
 
 
@@ -69,8 +70,9 @@ list of column names from PS default template loaded from .properties
 
 
 def check_ps_input_data(input_column_name, list_col_ps_default):
-    res = [i for e in list_col_ps_default for i in input_column_name if e in i]
-    if len(res) == len(input_column_name):
+    input_column_name.sort()
+    list_col_ps_default.sort()
+    if list_col_ps_default == input_column_name:    
         # detected a default PS input file
         return 1
     else:
@@ -407,21 +409,23 @@ def main_apex_alone():
     config.read(os.path.join(os.path.dirname(sys.argv[0]), 'moff_setting.properties'))
 
     df = pd.read_csv(file_name, sep="\t")
-    #df = df.ix[0:4000,:]
+    #df = df.ix[0:1000,:]
     ## check and eventually tranf for PS template
     if not 'matched' in df.columns:
         # check if it is a PS file ,
         list_name = df.columns.values.tolist()
-        # get the lists of PS  defaultcolumns from properties file
-        list = ast.literal_eval(config.get('moFF', 'ps_default_export'))
+        # get the lists of PS  defaultcolumns from properties file	
+        list_gold_standard = ast.literal_eval(config.get('moFF', 'ps_default_export_v1'))
         # here it controls if the input file is a PS export; if yes it maps the input in right moFF name
-        if check_ps_input_data(list_name, list) == 1:
+        if check_ps_input_data(list_name, list_gold_standard) == 1:
             # map  the columns name according to moFF input requirements
-            data_ms2, list_name = map_ps2moff(df)
+            df, list_name = map_ps2moff(df)
     ## check if the field names are good
+    #print 'after',df.columns
     if check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_apex'))) == 1:
         exit('ERROR minimal field requested are missing or wrong')
 
+    
     log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
     if args.raw_list is None:
         log.critical('RAW file from folder :  %s' % loc_raw)
