@@ -13,7 +13,7 @@ import sys
 import time
 from sys import platform as _platform
 import multiprocessing
-
+import pymzml
 
 
 import numpy as np
