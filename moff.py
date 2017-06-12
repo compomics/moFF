@@ -252,7 +252,8 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
                     args_txic = shlex.split(os.path.join(moff_path, "txic.exe") + " " + mz_opt + " -tol=" + str(tol) + " -t " + str( time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc, posix=False)
                 else:
                     args_txic = shlex.split(TXIC_PATH + "txic " + mz_opt + " -tol=" + str(tol) + " -t " + str(time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc )
-                
+               
+		log.info("TXIC command = " + args_txic) 
                 p = subprocess.Popen(args_txic, stdout=subprocess.PIPE)
                 output, err = p.communicate()
 
