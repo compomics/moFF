@@ -13,7 +13,7 @@ import sys
 import time
 from sys import platform as _platform
 import multiprocessing
-
+import pymzml
 
 
 import numpy as np
@@ -95,7 +95,6 @@ def pyMZML_xic_out(name, ppmPrecision, minRT, maxRT, MZValue):
         if spectrum['ms level'] == 1 and spectrum['scan start time'] > minRT and spectrum['scan start time'] < maxRT:
             lower_index = bisect.bisect(spectrum.peaks, (float(MZValue - ppmPrecision * MZValue), None))
             upper_index = bisect.bisect(spectrum.peaks, (float(MZValue + ppmPrecision * MZValue), None))
-            print lower_index, upper_index
             maxI = 0.0
             for sp in spectrum.peaks[lower_index: upper_index]:
                 if sp[1] > maxI:
@@ -252,7 +251,8 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
                     args_txic = shlex.split(os.path.join(moff_path, "txic.exe") + " " + mz_opt + " -tol=" + str(tol) + " -t " + str( time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc, posix=False)
                 else:
                     args_txic = shlex.split(TXIC_PATH + "txic " + mz_opt + " -tol=" + str(tol) + " -t " + str(time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc )
-                
+               
+		log.info("TXIC command = " + args_txic) 
                 p = subprocess.Popen(args_txic, stdout=subprocess.PIPE)
                 output, err = p.communicate()
 
