@@ -66,16 +66,16 @@ def map_ps2moff(data):
 input list of columns
 list of column names from PS default template loaded from .properties
 '''
-
-
 def check_ps_input_data(input_column_name, list_col_ps_default):
-    res = [i for e in list_col_ps_default for i in input_column_name if e in i]
-    if len(res) == len(input_column_name):
+    input_column_name.sort()
+    list_col_ps_default.sort()
+    if list_col_ps_default == input_column_name:
         # detected a default PS input file
         return 1
     else:
         # not detected a default PS input file
         return 0
+
 
 
 def check_columns_name(col_list, col_must_have):
@@ -398,7 +398,7 @@ def main_apex_alone():
         # check if it is a PS file ,
         list_name = df.columns.values.tolist()
         # get the lists of PS  defaultcolumns from properties file
-        list = ast.literal_eval(config.get('moFF', 'ps_default_export'))
+        list = ast.literal_eval(config.get('moFF', 'ps_default_export_v1'))
         # here it controls if the input file is a PS export; if yes it maps the input in right moFF name
         if check_ps_input_data(list_name, list) == 1:
             # map  the columns name according to moFF input requirements
