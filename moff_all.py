@@ -10,13 +10,8 @@ import moff
 import moff_mbr
 
 
-
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
-
-
-
-
 
 def save_moff_result (list_df, result, folder_output, name  ):
     xx=[]
@@ -36,7 +31,6 @@ def save_moff_result (list_df, result, folder_output, name  ):
 
 
 
-
 if __name__ == '__main__':
 
     multiprocessing.freeze_support()
@@ -48,7 +42,6 @@ if __name__ == '__main__':
 
     parser.add_argument('--inputtsv', dest='tsv_list', action='store', nargs='*' ,
                         help='specify the mzid file as a list ', required=False)
-
 
     parser.add_argument('--inputraw', dest='raw_list', action='store',  nargs='*' ,
                         help='specify the raw file as a list ', required=False)
@@ -77,14 +70,14 @@ if __name__ == '__main__':
     parser.add_argument('--tol', dest='toll', action='store', type=float, help='specify the tollerance  parameter in ppm',
                         required=True)
 
-    parser.add_argument('--rt_w', dest='rt_window', action='store', type=float, default=3,
-                        help='specify rt window for xic (minute). Default value is 3 min', required=False)
+    parser.add_argument('--rt_w', dest='rt_window', action='store', type=float, default=1,
+                        help='specify rt window for xic (minute). Default value is 1 min', required=False)
 
     parser.add_argument('--rt_p', dest='rt_p_window', action='store', type=float, default=0.4,
-                        help='specify the time windows for the peak ( minute). Default value is 0.4 ', required=False)
+                        help='specify the time windows for the peak (minute). Default value is 0.4 ', required=False)
 
     parser.add_argument('--rt_p_match', dest='rt_p_window_match', action='store', type=float, default=0.8,
-                        help='specify the time windows for the matched peptide peak ( minute). Default value is 0.8 ',
+                        help='specify the time windows for the matched peptide peak (minute). Default value is 0.8 ',
                         required=False)
 
     parser.add_argument('--raw_repo', dest='raw', action='store', help='specify the raw file repository ', required=False)
@@ -120,6 +113,7 @@ if __name__ == '__main__':
     # fixed variable number of split and also number of CPU presence in the macine
     # change this variable  with repset to the machine setting of the user
     num_CPU=multiprocessing.cpu_count()
+    num_CPU = 4
 
     res_state,mbr_list_loc = moff_mbr.run_mbr(args)
     if res_state == -1:
@@ -137,9 +131,13 @@ if __name__ == '__main__':
     c=0
     for file_name in mbr_list_loc:
         tol = args.toll
-        h_rt_w = args.rt_window
-        s_w = args.rt_p_window
-        s_w_match = args.rt_p_window_match
+        #h_rt_w = args.rt_window
+        #s_w = args.rt_p_window
+        #s_w_match = args.rt_p_window_match
+
+        h_rt_w = args.rt_window * 60
+        s_w = args.rt_p_window * 60
+        s_w_match = args.rt_p_window_match * 60
         if args.tsv_list is not None:
         ## list of the raw file and their path
             raw_list = args.raw_list[c]
@@ -156,6 +154,8 @@ if __name__ == '__main__':
 
         log.critical('Starting Apex for %s ...',file_name)
         log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
+
+
         if args.raw_list is None:
             log.critical('RAW file from folder :  %s' % loc_raw)
         else:
@@ -185,7 +185,6 @@ if __name__ == '__main__':
         myPool.join()
         log.critical('...apex terminated')
         log.critical('...apex module execution time %4.4f (sec)' , time.time() - start_time)
-	save_moff_result (data_split, result, loc_output, file_name  )
-
+        save_moff_result (data_split, result, loc_output, file_name  )
         c+=1
 
