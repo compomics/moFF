@@ -219,7 +219,7 @@ def run_mbr(args):
         data_moff['mass'] = data_moff['mass'].map('{:.4f}'.format)
 
         data_moff['code_unique'] = data_moff['mod_peptide'].astype(str) #+ '_' + data_moff['mass'].astype(str)
-        data_moff = data_moff.sort(columns='rt')
+        data_moff = data_moff.sort_values(by='rt')
         exp_t.append(data_moff)
         exp_out.append(data_moff)
 
