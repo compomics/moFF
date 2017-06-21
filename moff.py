@@ -88,11 +88,26 @@ def check_columns_name(col_list, col_must_have):
     return 0
 
 
-def pyMZML_xic_out(name, ppmPrecision, minRT, maxRT, MZValue):
-    run = pymzml.run.Reader(name, MS1_Precision=ppmPrecision, MSn_Precision=ppmPrecision)
+def pyMZML_xic_out(name, ppmPrecision, minRT, maxRT, MZValue,run, runid_list,rt_list):
+    #run = pymzml.run.Reader(name, MS1_Precision=ppmPrecision, MSn_Precision=ppmPrecision)
     timeDependentIntensities = []
-    for spectrum in run:
+
+    minpos = bisect.bisect_left(rt_list, minRT)
+    maxpos = bisect.bisect_left(rt_list, maxRT)
+
+    #print minpos, maxpos, rt_list[minpos], rt_list[maxpos], runid_list[minpos], runid_list[maxpos]
+
+    for specpos in range(minpos,maxpos):
+        specid = runid_list[specpos]
+
+        spectrum = run[specid]
+
+    #for spectrum in run:
+
+        if spectrum['scan start time'] > maxRT:
+            break
         if spectrum['ms level'] == 1 and spectrum['scan start time'] > minRT and spectrum['scan start time'] < maxRT:
+            #print minRT, maxRT, spectrum['scan start time']
             lower_index = bisect.bisect(spectrum.peaks, (float(MZValue - ppmPrecision * MZValue), None))
             upper_index = bisect.bisect(spectrum.peaks, (float(MZValue + ppmPrecision * MZValue), None))
             maxI = 0.0
@@ -169,8 +184,21 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
     else:
         #mzML work only with --inputraw option
         loc  = raw_name
+        rt_list = []
+        runid_list = []
+
         if ('MZML' in raw_name.upper()):
             flag_mzml = True
+
+            run_temp = pymzml.run.Reader(raw_name)
+
+            for spectrum in run_temp:
+                if spectrum['ms level'] == 1:
+                    rt_list.append(spectrum['scan start time'])
+                    runid_list.append(spectrum['id'])
+
+            #print rt_list
+
 
     #print loc 
     if os.path.isfile(loc):
@@ -217,7 +245,8 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
         #### PAY ATTENTION HERE , we assume that input RT is in second
         ## RT in Thermo file is in minutes
         #### if it is not the case change the following line
-        time_w = row['rt'] / 60
+        time_w = row['rt'] * 60
+        #print time_w
         if mbr_flag == 0:
             #print 'xx here mbr_flag == 0'
             log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f',(offset_index +c +2), row['mz'], time_w)
@@ -237,7 +266,10 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
             if flag_mzml:
                 # mzml raw file
                 # transform the tollerance in ppm
-                data_xic, status = pyMZML_xic_out(loc, float(tol / (10 ** 6)), time_w - h_rt_w, time_w + h_rt_w,row['mz'])
+
+                log.critical(' %s mass %4.4f rt %4.4f ' % (loc, row['mz'], time_w))
+
+                data_xic, status = pyMZML_xic_out(loc, float(tol / (10 ** 6)), time_w - h_rt_w, time_w + h_rt_w,row['mz'],run_temp, runid_list,rt_list)
 
                 if status == -1:
                     log.warning("WARNINGS: XIC not retrived line: %i", c)
@@ -251,8 +283,8 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
                     args_txic = shlex.split(os.path.join(moff_path, "txic.exe") + " " + mz_opt + " -tol=" + str(tol) + " -t " + str( time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc, posix=False)
                 else:
                     args_txic = shlex.split(TXIC_PATH + "txic " + mz_opt + " -tol=" + str(tol) + " -t " + str(time_w - h_rt_w) + " -t " + str(time_w + h_rt_w) + " " + loc )
-               
-		log.info("TXIC command = " + args_txic) 
+
+                log.info("TXIC command = " + args_txic)
                 p = subprocess.Popen(args_txic, stdout=subprocess.PIPE)
                 output, err = p.communicate()
 
@@ -283,8 +315,11 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
         except (IndexError, ValueError, TypeError):
             log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f ', (offset_index +c +2), row['mz'], time_w)
             log.warning("\t size is not enough to detect the max peak line : %i", c)
-            continue
+            #TODO should  increment be before the contineu??
+
             c += 1
+            continue
+
         except pd.parser.CParserError:
             log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f ', (offset_index +c +2),  row['mz'], time_w)
             log.warning("\t WARNINGS: XIC not retrived line:")
@@ -378,9 +413,9 @@ def main_apex_alone():
 
     file_name = args.name
     tol = args.toll
-    h_rt_w = args.rt_window
-    s_w = args.rt_p_window
-    s_w_match = args.rt_p_window_match
+    h_rt_w = args.rt_window * 60
+    s_w = args.rt_p_window * 60
+    s_w_match = args.rt_p_window_match * 60
 
     loc_raw = args.raw
     loc_output = args.loc_out
@@ -414,8 +449,10 @@ def main_apex_alone():
         log.critical('RAW file  :  %s' % args.raw_list)
 
     log.critical('Output file in :  %s', loc_output)
+    #print multiprocessing.cpu_count()
 
-    data_split = np.array_split(df, multiprocessing.cpu_count())
+    num_proc = 4
+    data_split = np.array_split(df, num_proc)
 
     log.critical('Starting Apex for .....')
     #print 'Original input size', df.shape
@@ -424,7 +461,7 @@ def main_apex_alone():
     ##check the existencce of the log file before to go to multiprocess
     check_log_existence(os.path.join(loc_output, name + '__moff.log'))
 
-    myPool = multiprocessing.Pool(multiprocessing.cpu_count())
+    myPool = multiprocessing.Pool(num_proc)
 
     result = {}
     offset = 0
