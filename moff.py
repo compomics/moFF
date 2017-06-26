@@ -35,6 +35,23 @@ log.setLevel(logging.DEBUG)
 TXIC_PATH = os.environ.get('TXIC_PATH', './')
 
 
+
+def scan_mzml ( name ):
+	if ('MZML' in name.upper()):
+
+		rt_list = []
+		runid_list = []
+		run_temp = pymzml.run.Reader( name )
+		for spectrum in run_temp:
+			if spectrum['ms level'] == 1:
+				rt_list.append(spectrum['scan start time'])
+				runid_list.append(spectrum['id'])
+    
+		return (rt_list,runid_list )
+	else:
+		return (None,None )
+
+
 def save_moff_apex_result(list_df, result, folder_output, name):
     xx = []
     for df_index in range(0,len(list_df)):
@@ -129,8 +146,8 @@ def check_log_existence(file_to_check):
 
 
 
-def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset_index):
-
+def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset_index , rt_list1, runid_list1   ):
+    
     #setting logger for multiprocess
     ch = logging.StreamHandler()
     ch.setLevel(logging.ERROR)
@@ -182,25 +199,27 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
                 loc  = os.path.join(loc_raw, name_file + '.raw')
 
     else:
+	
         #mzML work only with --inputraw option
         loc  = raw_name
-        rt_list = []
-        runid_list = []
-
+        
+	#rt_list = []
+        #runid_list = []
+	
+	#read and save all the scan
         if ('MZML' in raw_name.upper()):
             flag_mzml = True
-
             run_temp = pymzml.run.Reader(raw_name)
-
+	    '''
             for spectrum in run_temp:
                 if spectrum['ms level'] == 1:
                     rt_list.append(spectrum['scan start time'])
                     runid_list.append(spectrum['id'])
 
             #print rt_list
+	    '''
 
-
-    #print loc 
+    
     if os.path.isfile(loc):
         log.info('raw file exist')
     else:
@@ -245,7 +264,7 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
         #### PAY ATTENTION HERE , we assume that input RT is in second
         ## RT in Thermo file is in minutes
         #### if it is not the case change the following line
-        time_w = row['rt'] * 60
+        time_w = row['rt'] / 60  #* 60
         #print time_w
         if mbr_flag == 0:
             #print 'xx here mbr_flag == 0'
@@ -267,9 +286,9 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
                 # mzml raw file
                 # transform the tollerance in ppm
 
-                log.critical(' %s mass %4.4f rt %4.4f ' % (loc, row['mz'], time_w))
-
-                data_xic, status = pyMZML_xic_out(loc, float(tol / (10 ** 6)), time_w - h_rt_w, time_w + h_rt_w,row['mz'],run_temp, runid_list,rt_list)
+                #log.critical(' %s mass %4.4f rt %4.4f ' % (loc, row['mz'], time_w))
+		data_xic, status = pyMZML_xic_out(loc, float(tol / (10 ** 6)), time_w - h_rt_w, time_w + h_rt_w,row['mz'],run_temp, runid_list1,rt_list1)
+                #data_xic, status = pyMZML_xic_out(loc, float(tol / (10 ** 6)), time_w - h_rt_w, time_w + h_rt_w,row['mz'],run_temp, runid_list,rt_list)
 
                 if status == -1:
                     log.warning("WARNINGS: XIC not retrived line: %i", c)
@@ -413,9 +432,9 @@ def main_apex_alone():
 
     file_name = args.name
     tol = args.toll
-    h_rt_w = args.rt_window * 60
-    s_w = args.rt_p_window * 60
-    s_w_match = args.rt_p_window_match * 60
+    h_rt_w = args.rt_window #* 60
+    s_w = args.rt_p_window #* 60
+    s_w_match = args.rt_p_window_match #* 60
 
     loc_raw = args.raw
     loc_output = args.loc_out
@@ -428,6 +447,7 @@ def main_apex_alone():
     config.read(os.path.join(os.path.dirname(sys.argv[0]), 'moff_setting.properties'))
 
     df = pd.read_csv(file_name, sep="\t")
+    df = df.ix[0:100,:]
     ## check and eventually tranf for PS template
     if not 'matched' in df.columns:
         # check if it is a PS file ,
@@ -451,7 +471,7 @@ def main_apex_alone():
     log.critical('Output file in :  %s', loc_output)
     #print multiprocessing.cpu_count()
 
-    num_proc = 4
+    num_proc = multiprocessing.cpu_count()
     data_split = np.array_split(df, num_proc)
 
     log.critical('Starting Apex for .....')
@@ -461,14 +481,21 @@ def main_apex_alone():
     ##check the existencce of the log file before to go to multiprocess
     check_log_existence(os.path.join(loc_output, name + '__moff.log'))
 
-    myPool = multiprocessing.Pool(num_proc)
+    myPool = multiprocessing.Pool(num_proc )
 
+
+    rt_list , id_list   = scan_mzml ( args.raw_list )
+    
+    #print len( rt_list), len(id_list )
+    #print type(read_mzml)
+    
+    
     result = {}
     offset = 0
     start_time = time.time()
     for df_index in range(0, len(data_split)):
         result[df_index] = myPool.apply_async(apex_multithr, args=(
-        data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset))
+        data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,   rt_list , id_list  ))
         offset += len(data_split[df_index])
 
     myPool.close()
