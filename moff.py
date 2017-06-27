@@ -13,7 +13,7 @@ import sys
 import time
 from sys import platform as _platform
 import multiprocessing
-
+import pymzml
 
 
 import numpy as np
@@ -44,8 +44,6 @@ def save_moff_apex_result(list_df, result, folder_output, name):
             xx.append( result[df_index].get()[0] )
     
     final_res = pd.concat(xx)
-    #print final_res.shape
-    # print os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt")
     final_res.to_csv(os.path.join(folder_output, os.path.basename(name).split('.')[0] + "_moff_result.txt"), sep="\t",
                      index=False)
 
@@ -59,7 +57,6 @@ def map_ps2moff(data):
     data.rename(
         columns={'sequence': 'peptide','modified_sequence':'mod_peptide' , 'measured charge': 'charge', 'theoretical mass': 'mass', 'protein(s)': 'prot',
                  'm/z': 'mz'}, inplace=True)
-    print data.columns
     return data, data.columns.values.tolist()
 
 
@@ -84,7 +81,6 @@ def check_columns_name(col_list, col_must_have):
     for c_name in col_must_have:
         if not (c_name in col_list):
             # fail
-            print 'The following filed name is missing or wrong: ', c_name
             return 1
     # succes
     return 0
@@ -409,7 +405,7 @@ def main_apex_alone():
     config.read(os.path.join(os.path.dirname(sys.argv[0]), 'moff_setting.properties'))
 
     df = pd.read_csv(file_name, sep="\t")
-    #df = df.ix[0:1000,:]
+    df = df.ix[0:4000,:]
     ## check and eventually tranf for PS template
     if not 'matched' in df.columns:
         # check if it is a PS file ,
@@ -417,11 +413,10 @@ def main_apex_alone():
         # get the lists of PS  defaultcolumns from properties file	
         list_gold_standard = ast.literal_eval(config.get('moFF', 'ps_default_export_v1'))
         # here it controls if the input file is a PS export; if yes it maps the input in right moFF name
-        if check_ps_input_data(list_name, list_gold_standard) == 1:
+        if check_ps_input_data(list_name, list_gold_standard) == 1 :
             # map  the columns name according to moFF input requirements
             df, list_name = map_ps2moff(df)
     ## check if the field names are good
-    #print 'after',df.columns
     if check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_apex'))) == 1:
         exit('ERROR minimal field requested are missing or wrong')
 
@@ -437,10 +432,6 @@ def main_apex_alone():
 
     data_split = np.array_split(df, multiprocessing.cpu_count() )
 
-    ##--used for test	
-    #data_split = np.array_split(df, 1)
-    #print data_split[0].shape
-    ##used for test
     log.critical('Starting Apex for .....')
     #print 'Original input size', df.shape
     name = os.path.basename(file_name).split('.')[0]
@@ -467,10 +458,9 @@ def main_apex_alone():
 
     log.critical('...apex terminated')
     log.critical( 'Computational time (sec):  %4.4f ' % (time.time() -start_time))
-    print 'Time no result collect',  time.time() -start_time
+    #print 'Time no result collect',  time.time() -start_time
     start_time_2 = time.time()
     save_moff_apex_result(data_split, result, loc_output, file_name)
-    #print 'Time no result collect 2',  time.time() -start_time_2
 
 
 if __name__ == '__main__':
