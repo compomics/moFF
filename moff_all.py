@@ -13,6 +13,27 @@ import moff_mbr
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
+
+# read just one time the mzml file to save san id and its rt
+# in order to speed up the computation
+# this function it is called just one time before the dataframe splitting
+def scan_mzml ( name ):
+        if ('MZML' in name.upper()):
+                rt_list = []
+                runid_list = []
+                run_temp = pymzml.run.Reader( name )
+                for spectrum in run_temp:
+                        if spectrum['ms level'] == 1:
+                                rt_list.append(spectrum['scan start time'])
+                                runid_list.append(spectrum['id'])
+
+                return (rt_list,runid_list )
+        else:
+                # in case of raw file  I put to -1 -1 the result
+                return (-1,-1 )
+
+
+
 def save_moff_result (list_df, result, folder_output, name  ):
     xx=[]
     for df_index in range(0,len(list_df)):
@@ -70,7 +91,7 @@ if __name__ == '__main__':
     parser.add_argument('--tol', dest='toll', action='store', type=float, help='specify the tollerance  parameter in ppm',
                         required=True)
 
-    parser.add_argument('--rt_w', dest='rt_window', action='store', type=float, default=1,
+    parser.add_argument('--rt_w', dest='rt_window', action='store', type=float, default=3,
                         help='specify rt window for xic (minute). Default value is 1 min', required=False)
 
     parser.add_argument('--rt_p', dest='rt_p_window', action='store', type=float, default=0.4,
@@ -113,7 +134,7 @@ if __name__ == '__main__':
     # fixed variable number of split and also number of CPU presence in the macine
     # change this variable  with repset to the machine setting of the user
     num_CPU=multiprocessing.cpu_count()
-    num_CPU = 4
+   
 
     res_state,mbr_list_loc = moff_mbr.run_mbr(args)
     if res_state == -1:
@@ -135,9 +156,9 @@ if __name__ == '__main__':
         #s_w = args.rt_p_window
         #s_w_match = args.rt_p_window_match
 
-        h_rt_w = args.rt_window * 60
-        s_w = args.rt_p_window * 60
-        s_w_match = args.rt_p_window_match * 60
+        h_rt_w = args.rt_window 
+        s_w = args.rt_p_window 
+        s_w_match = args.rt_p_window_match 
         if args.tsv_list is not None:
         ## list of the raw file and their path
             raw_list = args.raw_list[c]
@@ -168,6 +189,9 @@ if __name__ == '__main__':
         name = os.path.basename(file_name).split('.')[0]
         #multithreadlogs.LoggingInit_apex(os.path.join(loc_output, name + '__moff.log'))
 
+	#  IF raw_list contains mzML file -->  I m going to  read the file, one time just to save all the scan  Id and their RT.
+    	rt_list , id_list   = scan_mzml ( args.raw_list )	
+
         moff.check_log_existence(os.path.join(loc_output, name + '__moff.log'))
 
         myPool = multiprocessing.Pool(num_CPU)
@@ -177,7 +201,7 @@ if __name__ == '__main__':
         offset = 0
         for df_index in range(0,len(data_split)):
 
-            result[df_index] = myPool.apply_async(moff.apex_multithr,args = (data_split[df_index],name,raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset ))
+            result[df_index] = myPool.apply_async(moff.apex_multithr,args = (data_split[df_index],name,raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,rt_list , id_list ))
             offset += len(data_split[df_index])
 
 
