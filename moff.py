@@ -93,7 +93,6 @@ def pyMZML_xic_out(name, ppmPrecision, minRT, maxRT, MZValue):
         if spectrum['ms level'] == 1 and spectrum['scan start time'] > minRT and spectrum['scan start time'] < maxRT:
             lower_index = bisect.bisect(spectrum.peaks, (float(MZValue - ppmPrecision * MZValue), None))
             upper_index = bisect.bisect(spectrum.peaks, (float(MZValue + ppmPrecision * MZValue), None))
-            print lower_index, upper_index
             maxI = 0.0
             for sp in spectrum.peaks[lower_index: upper_index]:
                 if sp[1] > maxI:
