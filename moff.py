@@ -78,7 +78,7 @@ def map_ps2moff(data):
         columns={'sequence': 'peptide','modified sequence':'mod_peptide' ,'measured charge': 'charge', 'theoretical mass': 'mass', 'protein(s)': 'prot',
                  'm/z': 'mz'}, inplace=True)
     return data, data.columns.values.tolist()
-:w
+
 
 
 '''
@@ -434,7 +434,7 @@ def main_apex_alone():
     config.read(os.path.join(os.path.dirname(sys.argv[0]), 'moff_setting.properties'))
 
     df = pd.read_csv(file_name, sep="\t")
-    df = df.ix[0:50,:]
+    #df = df.ix[0:50,:]
     ## check and eventually tranf for PS template
     if not 'matched' in df.columns:
         # check if it is a PS file ,
