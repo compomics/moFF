@@ -110,6 +110,10 @@ if __name__ == '__main__':
                         help='specify the file that contains the features to use in the match-between-run RT prediction ',
                         required=False)
 
+    parser.add_argument('--peptide_summary', dest='pep_matrix', action='store',type=int,default= 0,
+                        help='sumarize all the peptide intesity in one tab-delited file ',
+                        required=False)
+
     args = parser.parse_args()
 
     ## init globa logger
@@ -135,7 +139,7 @@ if __name__ == '__main__':
     # change this variable  with repset to the machine setting of the user
     num_CPU=multiprocessing.cpu_count()
    
-
+    '''
     res_state,mbr_list_loc = moff_mbr.run_mbr(args)
     if res_state == -1:
         exit('An error is occurred during the writing of the mbr file')
@@ -211,4 +215,11 @@ if __name__ == '__main__':
         log.critical('...apex module execution time %4.4f (sec)' , time.time() - start_time)
         save_moff_result (data_split, result, loc_output, file_name  )
         c+=1
+    '''
+    if args.pep_matrix == 1 :
+	# put loc_output once done 
+	moff.compute_peptide_matrix(args.loc_out)
+
+
+
 
