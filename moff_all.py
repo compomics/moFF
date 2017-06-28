@@ -8,7 +8,7 @@ import multiprocessing
 import time
 import moff
 import moff_mbr
-
+import pymzml
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -190,7 +190,7 @@ if __name__ == '__main__':
         #multithreadlogs.LoggingInit_apex(os.path.join(loc_output, name + '__moff.log'))
 
 	#  IF raw_list contains mzML file -->  I m going to  read the file, one time just to save all the scan  Id and their RT.
-    	rt_list , id_list   = scan_mzml ( args.raw_list )	
+    	rt_list , id_list   = scan_mzml ( raw_list )	
 
         moff.check_log_existence(os.path.join(loc_output, name + '__moff.log'))
 
