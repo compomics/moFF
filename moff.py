@@ -37,21 +37,27 @@ TXIC_PATH = os.environ.get('TXIC_PATH', './')
 
 
 
-def compute_peptide_matrix(loc_output ):
+def compute_peptide_matrix(loc_output,log ):
 	name_col=[]
 	name_col.append('prot')
 	d=[]
+	if not glob.glob(loc_output+'/*_moff_result.txt') :
+		return -1
 	for name in glob.glob(loc_output+'/*_moff_result.txt'):
-		print os.path.basename(name)
-		name_col.append(   os.path.basename(name).split('match_moff_result.txt')[0])
+		#print os.path.basename(name)
+		if 'match_' in os.path.basename(name):
+			name_col.append(   os.path.basename(name).split('match_moff_result.txt')[0])
+		else:
+			name_col.append(os.path.basename(name).split('moff_result.txt')[0] )
 		data= pd.read_csv(name,sep="\t")
-    		print 'Original data \t',data.shape
+    		#print 'Original data \t',data.shape
     		# no modified peptide
     		'''
 		data = data[data['variable modifications'].isnull()]
     		data = data[data['fixed modifications'].isnull()]
     		'''
 		data = data[data['intensity'] != -1]
+		log.critical( 'Collecting moFF result file : %s   --> Retrived peptide peaks after filtering:  %i',os.path.basename(name)  ,data.shape[0] )
 		d.append(data[['prot','peptide','mod_peptide','mass','charge','rt_peak','rt','spectrum title','intensity']])
    		
 		##data = data[ data['lwhm'] != -1]
@@ -65,7 +71,6 @@ def compute_peptide_matrix(loc_output ):
         df = pd.DataFrame(index=index, columns=name_col)
         df = df.fillna(0)
 	for i in range(0,len(d)):
-		print i
 		grouped = d[i].groupby('peptide',as_index=True)['prot','intensity']
 		#print grouped.agg({'prot':'max', 'intensity':'sum'}).columns
 		df.ix[:,i+1]= grouped.agg({'prot':'max', 'intensity':'sum'})['intensity']
@@ -76,8 +81,9 @@ def compute_peptide_matrix(loc_output ):
 	#print df.head(5)
 	df.reset_index(level=0, inplace=True)
 	#print os.path.join(loc_output, "peptide_summary_intensity.tab")
+	log.critical( 'Writing peptide_summary intensity file' )
 	df.to_csv( os.path.join(loc_output, "peptide_summary_intensity.tab")  ,sep='\t',index=False)
-	return -1 
+	return 1 
 
 
 
