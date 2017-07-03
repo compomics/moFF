@@ -8,12 +8,12 @@ import multiprocessing
 import time
 import moff
 import moff_mbr
-import pymzml
+
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
-
+'''
 # read just one time the mzml file to save san id and its rt
 # in order to speed up the computation
 # this function it is called just one time before the dataframe splitting
@@ -32,7 +32,7 @@ def scan_mzml ( name ):
                 # in case of raw file  I put to -1 -1 the result
                 return (-1,-1 )
 
-
+'''
 
 def save_moff_result (list_df, result, folder_output, name  ):
     xx=[]
@@ -139,7 +139,7 @@ if __name__ == '__main__':
     # change this variable  with repset to the machine setting of the user
     num_CPU=multiprocessing.cpu_count()
    
-    '''
+        
     res_state,mbr_list_loc = moff_mbr.run_mbr(args)
     if res_state == -1:
         exit('An error is occurred during the writing of the mbr file')
@@ -171,11 +171,11 @@ if __name__ == '__main__':
 
         loc_raw = args.raw
         loc_output = args.loc_out
-
+	
 
         ## add multi thredign option
         df = pd.read_csv(file_name,sep="\t")
-        data_split= np.array_split(df, num_CPU)
+	data_split= np.array_split(df, num_CPU)
 
         log.critical('Starting Apex for %s ...',file_name)
         log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
@@ -194,7 +194,7 @@ if __name__ == '__main__':
         #multithreadlogs.LoggingInit_apex(os.path.join(loc_output, name + '__moff.log'))
 
 	#  IF raw_list contains mzML file -->  I m going to  read the file, one time just to save all the scan  Id and their RT.
-    	rt_list , id_list   = scan_mzml ( raw_list )	
+    	rt_list , id_list   = moff.scan_mzml ( raw_list )	
 
         moff.check_log_existence(os.path.join(loc_output, name + '__moff.log'))
 
@@ -215,11 +215,12 @@ if __name__ == '__main__':
         log.critical('...apex module execution time %4.4f (sec)' , time.time() - start_time)
         save_moff_result (data_split, result, loc_output, file_name  )
         c+=1
-    '''
+    
     if args.pep_matrix == 1 :
 	# put loc_output once done 
-	moff.compute_peptide_matrix(args.loc_out)
-
+	state = moff.compute_peptide_matrix(args.loc_out,log)
+	if state == -1 :
+		log.critical ('Error during the computation of the peptide intensity summary file: Check the output folderis that  contains the moFF results file')
 
 
 
