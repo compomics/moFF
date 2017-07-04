@@ -35,6 +35,64 @@ log.setLevel(logging.DEBUG)
 TXIC_PATH = os.environ.get('TXIC_PATH', './')
 
 
+
+
+def compute_peptide_matrix(loc_output,log ):
+        name_col=[]
+        name_col.append('prot')
+        d=[]
+        if not glob.glob(loc_output+'/*_moff_result.txt') :
+                return -1
+        for name in glob.glob(loc_output+'/*_moff_result.txt'):
+                #print os.path.basename(name)
+                if 'match_' in os.path.basename(name):
+                        name_col.append(   os.path.basename(name).split('match_moff_result.txt')[0])
+                else:
+                        name_col.append(os.path.basename(name).split('moff_result.txt')[0] )
+                data= pd.read_csv(name,sep="\t")
+                #print 'Original data \t',data.shape
+                # no modified peptide
+                '''
+                data = data[data['variable modifications'].isnull()]
+                data = data[data['fixed modifications'].isnull()]
+                '''
+                data = data[data['intensity'] != -1]
+                log.critical( 'Collecting moFF result file : %s   --> Retrived peptide peaks after filtering:  %i',os.path.basename(name)  ,data.shape[0] )
+                d.append(data[['prot','peptide','mod_peptide','mass','charge','rt_peak','rt','spectrum title','intensity']])
+
+                ##data = data[ data['lwhm'] != -1]
+                ##data = data[data['rwhm'] != -1 ]
+
+        intersect_share = reduce(np.union1d, ([x['peptide'].unique() for x in d]))
+        #print name_col,len(d)
+        #print intersect_share.shape
+        index= intersect_share
+
+        df = pd.DataFrame(index=index, columns=name_col)
+        df = df.fillna(0)
+        for i in range(0,len(d)):
+                grouped = d[i].groupby('peptide',as_index=True)['prot','intensity']
+                #print grouped.agg({'prot':'max', 'intensity':'sum'}).columns
+                df.ix[:,i+1]= grouped.agg({'prot':'max', 'intensity':'sum'})['intensity']
+                df.ix[:,0]= grouped.agg({'prot':'max', 'intensity':'sum'})['prot']
+                #print d[i].groupby('peptide')['prot'].max().head(5)
+                #print d[i].groupby('peptide')['prot'].sum().head(5)
+                #print d[i][d[i]['peptide']==intersect_share[0] ]
+        #print df.head(5)
+        df.reset_index(level=0, inplace=True)
+        df.rename( columns={'index':'peptide'},inplace=True)
+        #print os.path.join(loc_output, "peptide_summary_intensity.tab")
+        log.critical( 'Writing peptide_summary intensity file' )
+        df.to_csv( os.path.join(loc_output, "peptide_summary_intensity.tab")  ,sep='\t',index=False)
+        return 1
+
+
+
+
+
+
+
+
 def save_moff_apex_result(list_df, result, folder_output, name):
     xx = []
     for df_index in range(0,len(list_df)):
@@ -380,6 +438,10 @@ def main_apex_alone():
     parser.add_argument('--output_folder', dest='loc_out', action='store', default='', help='specify the folder output',
                         required=False)
 
+    parser.add_argument('--peptide_summary', dest='pep_matrix', action='store',type=int,default= 0,
+                        help='sumarize all the peptide intesity in one tab-delited file ',
+                        required=False)
+
     args = parser.parse_args()
 
     if (args.raw_list is None) and (args.raw is None):
@@ -461,6 +523,10 @@ def main_apex_alone():
     start_time_2 = time.time()
     save_moff_apex_result(data_split, result, loc_output, file_name)
 
+	
+    if args.pep_matrix == 1 :
+	# TO DO manage the error with retunr -1 like in moff_all.py  master repo
+        compute_peptide_matrix(loc_output)
 
 if __name__ == '__main__':
     main_apex_alone()
