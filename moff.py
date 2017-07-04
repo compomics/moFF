@@ -80,6 +80,7 @@ def compute_peptide_matrix(loc_output,log ):
 		#print d[i][d[i]['peptide']==intersect_share[0] ]
 	#print df.head(5)
 	df.reset_index(level=0, inplace=True)
+	df.rename( columns={'index':'peptide'},inplace=True)
 	#print os.path.join(loc_output, "peptide_summary_intensity.tab")
 	log.critical( 'Writing peptide_summary intensity file' )
 	df.to_csv( os.path.join(loc_output, "peptide_summary_intensity.tab")  ,sep='\t',index=False)
