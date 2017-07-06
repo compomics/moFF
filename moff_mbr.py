@@ -28,20 +28,26 @@ def map_ps2moff(data):
     return data, data.columns.values.tolist()
 
 
+
+
+
+
 '''
 input list of columns
 list of column names from PS default template loaded from .properties
 '''
-
-
 def check_ps_input_data(input_column_name, list_col_ps_default):
-    res = [i for e in list_col_ps_default for i in input_column_name if e in i]
-    if len(res) == len(input_column_name):
+    input_column_name.sort()
+    list_col_ps_default.sort()
+    if list_col_ps_default == input_column_name:
         # detected a default PS input file
         return 1
     else:
         # not detected a default PS input file
         return 0
+
+
+
 
 
 # filtering _outlier
@@ -198,7 +204,8 @@ def run_mbr(args):
         data_moff = pd.read_csv(a, sep="\t", header=0)
         list_name = data_moff.columns.values.tolist()
         # get the lists of PS  defaultcolumns from properties file
-        list_ps_def = ast.literal_eval(config.get('moFF', 'ps_default_export'))
+        
+	list_ps_def = ast.literal_eval(config.get('moFF', 'ps_default_export_v1'))
         # here it controls if the input file is a PS export; if yes it maps the input in right moFF name
         if check_ps_input_data(list_name, list_ps_def) == 1:
             log.critical('Detected input file from PeptideShaker export..: %s ', a)
@@ -212,7 +219,7 @@ def run_mbr(args):
         data_moff['mass'] = data_moff['mass'].map('{:.4f}'.format)
 
         data_moff['code_unique'] = data_moff['mod_peptide'].astype(str) #+ '_' + data_moff['mass'].astype(str)
-        data_moff = data_moff.sort(columns='rt')
+        data_moff = data_moff.sort_values(by='rt')
         exp_t.append(data_moff)
         exp_out.append(data_moff)
 

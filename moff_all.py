@@ -8,13 +8,29 @@ import multiprocessing
 import time
 import moff
 import moff_mbr
-
-
+import pymzml
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 
+# read just one time the mzml file to save san id and its rt
+# in order to speed up the computation
+# this function it is called just one time before the dataframe splitting
+def scan_mzml ( name ):
+        if ('MZML' in name.upper()):
+                rt_list = []
+                runid_list = []
+                run_temp = pymzml.run.Reader( name )
+                for spectrum in run_temp:
+                        if spectrum['ms level'] == 1:
+                                rt_list.append(spectrum['scan start time'])
+                                runid_list.append(spectrum['id'])
+
+                return (rt_list,runid_list )
+        else:
+                # in case of raw file  I put to -1 -1 the result
+                return (-1,-1 )
 
 
 
@@ -36,7 +52,6 @@ def save_moff_result (list_df, result, folder_output, name  ):
 
 
 
-
 if __name__ == '__main__':
 
     multiprocessing.freeze_support()
@@ -48,7 +63,6 @@ if __name__ == '__main__':
 
     parser.add_argument('--inputtsv', dest='tsv_list', action='store', nargs='*' ,
                         help='specify the mzid file as a list ', required=False)
-
 
     parser.add_argument('--inputraw', dest='raw_list', action='store',  nargs='*' ,
                         help='specify the raw file as a list ', required=False)
@@ -78,13 +92,13 @@ if __name__ == '__main__':
                         required=True)
 
     parser.add_argument('--rt_w', dest='rt_window', action='store', type=float, default=3,
-                        help='specify rt window for xic (minute). Default value is 3 min', required=False)
+                        help='specify rt window for xic (minute). Default value is 1 min', required=False)
 
     parser.add_argument('--rt_p', dest='rt_p_window', action='store', type=float, default=0.4,
-                        help='specify the time windows for the peak ( minute). Default value is 0.4 ', required=False)
+                        help='specify the time windows for the peak (minute). Default value is 0.4 ', required=False)
 
     parser.add_argument('--rt_p_match', dest='rt_p_window_match', action='store', type=float, default=0.8,
-                        help='specify the time windows for the matched peptide peak ( minute). Default value is 0.8 ',
+                        help='specify the time windows for the matched peptide peak (minute). Default value is 0.8 ',
                         required=False)
 
     parser.add_argument('--raw_repo', dest='raw', action='store', help='specify the raw file repository ', required=False)
@@ -120,6 +134,7 @@ if __name__ == '__main__':
     # fixed variable number of split and also number of CPU presence in the macine
     # change this variable  with repset to the machine setting of the user
     num_CPU=multiprocessing.cpu_count()
+   
 
     res_state,mbr_list_loc = moff_mbr.run_mbr(args)
     if res_state == -1:
@@ -137,9 +152,13 @@ if __name__ == '__main__':
     c=0
     for file_name in mbr_list_loc:
         tol = args.toll
-        h_rt_w = args.rt_window
-        s_w = args.rt_p_window
-        s_w_match = args.rt_p_window_match
+        #h_rt_w = args.rt_window
+        #s_w = args.rt_p_window
+        #s_w_match = args.rt_p_window_match
+
+        h_rt_w = args.rt_window 
+        s_w = args.rt_p_window 
+        s_w_match = args.rt_p_window_match 
         if args.tsv_list is not None:
         ## list of the raw file and their path
             raw_list = args.raw_list[c]
@@ -156,6 +175,8 @@ if __name__ == '__main__':
 
         log.critical('Starting Apex for %s ...',file_name)
         log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
+
+
         if args.raw_list is None:
             log.critical('RAW file from folder :  %s' % loc_raw)
         else:
@@ -168,6 +189,9 @@ if __name__ == '__main__':
         name = os.path.basename(file_name).split('.')[0]
         #multithreadlogs.LoggingInit_apex(os.path.join(loc_output, name + '__moff.log'))
 
+	#  IF raw_list contains mzML file -->  I m going to  read the file, one time just to save all the scan  Id and their RT.
+    	rt_list , id_list   = scan_mzml ( raw_list )	
+
         moff.check_log_existence(os.path.join(loc_output, name + '__moff.log'))
 
         myPool = multiprocessing.Pool(num_CPU)
@@ -177,7 +201,7 @@ if __name__ == '__main__':
         offset = 0
         for df_index in range(0,len(data_split)):
 
-            result[df_index] = myPool.apply_async(moff.apex_multithr,args = (data_split[df_index],name,raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset ))
+            result[df_index] = myPool.apply_async(moff.apex_multithr,args = (data_split[df_index],name,raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,rt_list , id_list ))
             offset += len(data_split[df_index])
 
 
@@ -185,7 +209,6 @@ if __name__ == '__main__':
         myPool.join()
         log.critical('...apex terminated')
         log.critical('...apex module execution time %4.4f (sec)' , time.time() - start_time)
-	save_moff_result (data_split, result, loc_output, file_name  )
-
+        save_moff_result (data_split, result, loc_output, file_name  )
         c+=1
 
