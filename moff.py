@@ -13,7 +13,7 @@ import sys
 import time
 from sys import platform as _platform
 import multiprocessing
-
+import pymzml
 
 
 import numpy as np
@@ -35,6 +35,64 @@ log.setLevel(logging.DEBUG)
 TXIC_PATH = os.environ.get('TXIC_PATH', './')
 
 
+
+
+def compute_peptide_matrix(loc_output,log ):
+        name_col=[]
+        name_col.append('prot')
+        d=[]
+        if not glob.glob(loc_output+'/*_moff_result.txt') :
+                return -1
+        for name in glob.glob(loc_output+'/*_moff_result.txt'):
+                #print os.path.basename(name)
+                if 'match_' in os.path.basename(name):
+                        name_col.append(   os.path.basename(name).split('match_moff_result.txt')[0])
+                else:
+                        name_col.append(os.path.basename(name).split('moff_result.txt')[0] )
+                data= pd.read_csv(name,sep="\t")
+                #print 'Original data \t',data.shape
+                # no modified peptide
+                '''
+                data = data[data['variable modifications'].isnull()]
+                data = data[data['fixed modifications'].isnull()]
+                '''
+                data = data[data['intensity'] != -1]
+                log.critical( 'Collecting moFF result file : %s   --> Retrived peptide peaks after filtering:  %i',os.path.basename(name)  ,data.shape[0] )
+                d.append(data[['prot','peptide','mod_peptide','mass','charge','rt_peak','rt','spectrum title','intensity']])
+
+                ##data = data[ data['lwhm'] != -1]
+                ##data = data[data['rwhm'] != -1 ]
+
+        intersect_share = reduce(np.union1d, ([x['peptide'].unique() for x in d]))
+        #print name_col,len(d)
+        #print intersect_share.shape
+        index= intersect_share
+
+        df = pd.DataFrame(index=index, columns=name_col)
+        df = df.fillna(0)
+        for i in range(0,len(d)):
+                grouped = d[i].groupby('peptide',as_index=True)['prot','intensity']
+                #print grouped.agg({'prot':'max', 'intensity':'sum'}).columns
+                df.ix[:,i+1]= grouped.agg({'prot':'max', 'intensity':'sum'})['intensity']
+                df.ix[:,0]= grouped.agg({'prot':'max', 'intensity':'sum'})['prot']
+                #print d[i].groupby('peptide')['prot'].max().head(5)
+                #print d[i].groupby('peptide')['prot'].sum().head(5)
+                #print d[i][d[i]['peptide']==intersect_share[0] ]
+        #print df.head(5)
+        df.reset_index(level=0, inplace=True)
+        df.rename( columns={'index':'peptide'},inplace=True)
+        #print os.path.join(loc_output, "peptide_summary_intensity.tab")
+        log.critical( 'Writing peptide_summary intensity file' )
+        df.to_csv( os.path.join(loc_output, "peptide_summary_intensity.tab")  ,sep='\t',index=False)
+        return 1
+
+
+
+
+
+
+
+
 def save_moff_apex_result(list_df, result, folder_output, name):
     xx = []
     for df_index in range(0,len(list_df)):
@@ -44,8 +102,6 @@ def save_moff_apex_result(list_df, result, folder_output, name):
             xx.append( result[df_index].get()[0] )
     
     final_res = pd.concat(xx)
-    #print final_res.shape
-    # print os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt")
     final_res.to_csv(os.path.join(folder_output, os.path.basename(name).split('.')[0] + "_moff_result.txt"), sep="\t",
                      index=False)
 
@@ -69,8 +125,9 @@ list of column names from PS default template loaded from .properties
 
 
 def check_ps_input_data(input_column_name, list_col_ps_default):
-    res = [i for e in list_col_ps_default for i in input_column_name if e in i]
-    if len(res) == len(input_column_name):
+    input_column_name.sort()
+    list_col_ps_default.sort()
+    if list_col_ps_default == input_column_name:    
         # detected a default PS input file
         return 1
     else:
@@ -82,7 +139,6 @@ def check_columns_name(col_list, col_must_have):
     for c_name in col_must_have:
         if not (c_name in col_list):
             # fail
-            print 'The following filed name is missing or wrong: ', c_name
             return 1
     # succes
     return 0
@@ -95,7 +151,6 @@ def pyMZML_xic_out(name, ppmPrecision, minRT, maxRT, MZValue):
         if spectrum['ms level'] == 1 and spectrum['scan start time'] > minRT and spectrum['scan start time'] < maxRT:
             lower_index = bisect.bisect(spectrum.peaks, (float(MZValue - ppmPrecision * MZValue), None))
             upper_index = bisect.bisect(spectrum.peaks, (float(MZValue + ppmPrecision * MZValue), None))
-            print lower_index, upper_index
             maxI = 0.0
             for sp in spectrum.peaks[lower_index: upper_index]:
                 if sp[1] > maxI:
@@ -383,6 +438,10 @@ def main_apex_alone():
     parser.add_argument('--output_folder', dest='loc_out', action='store', default='', help='specify the folder output',
                         required=False)
 
+    parser.add_argument('--peptide_summary', dest='pep_matrix', action='store',type=int,default= 0,
+                        help='sumarize all the peptide intesity in one tab-delited file ',
+                        required=False)
+
     args = parser.parse_args()
 
     if (args.raw_list is None) and (args.raw is None):
@@ -407,21 +466,22 @@ def main_apex_alone():
     config.read(os.path.join(os.path.dirname(sys.argv[0]), 'moff_setting.properties'))
 
     df = pd.read_csv(file_name, sep="\t")
-    #df = df.ix[0:4000,:]
+    df = df.ix[0:4000,:]
     ## check and eventually tranf for PS template
     if not 'matched' in df.columns:
         # check if it is a PS file ,
         list_name = df.columns.values.tolist()
-        # get the lists of PS  defaultcolumns from properties file
-        list = ast.literal_eval(config.get('moFF', 'ps_default_export'))
+        # get the lists of PS  defaultcolumns from properties file	
+        list_gold_standard = ast.literal_eval(config.get('moFF', 'ps_default_export_v1'))
         # here it controls if the input file is a PS export; if yes it maps the input in right moFF name
-        if check_ps_input_data(list_name, list) == 1:
+        if check_ps_input_data(list_name, list_gold_standard) == 1 :
             # map  the columns name according to moFF input requirements
-            data_ms2, list_name = map_ps2moff(df)
+            df, list_name = map_ps2moff(df)
     ## check if the field names are good
     if check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_apex'))) == 1:
         exit('ERROR minimal field requested are missing or wrong')
 
+    
     log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
     if args.raw_list is None:
         log.critical('RAW file from folder :  %s' % loc_raw)
@@ -433,10 +493,6 @@ def main_apex_alone():
 
     data_split = np.array_split(df, multiprocessing.cpu_count() )
 
-    ##--used for test	
-    #data_split = np.array_split(df, 1)
-    #print data_split[0].shape
-    ##used for test
     log.critical('Starting Apex for .....')
     #print 'Original input size', df.shape
     name = os.path.basename(file_name).split('.')[0]
@@ -463,10 +519,16 @@ def main_apex_alone():
 
     log.critical('...apex terminated')
     log.critical( 'Computational time (sec):  %4.4f ' % (time.time() -start_time))
-    print 'Time no result collect',  time.time() -start_time
+    #print 'Time no result collect',  time.time() -start_time
     start_time_2 = time.time()
     save_moff_apex_result(data_split, result, loc_output, file_name)
-    #print 'Time no result collect 2',  time.time() -start_time_2
+
+	
+    if args.pep_matrix == 1 :
+	# TO DO manage the error with retunr -1 like in moff_all.py  master repo
+        state = compute_peptide_matrix(loc_output)
+    if state ==-1:
+	log.critical ('Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')
 
 
 if __name__ == '__main__':
