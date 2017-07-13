@@ -526,7 +526,10 @@ def main_apex_alone():
 	
     if args.pep_matrix == 1 :
 	# TO DO manage the error with retunr -1 like in moff_all.py  master repo
-        compute_peptide_matrix(loc_output)
+        state = compute_peptide_matrix(loc_output)
+    if state ==-1:
+	log.critical ('Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')
+
 
 if __name__ == '__main__':
     main_apex_alone()
