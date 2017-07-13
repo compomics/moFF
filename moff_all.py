@@ -96,6 +96,10 @@ if __name__ == '__main__':
                         help='specify the file that contains the features to use in the match-between-run RT prediction ',
                         required=False)
 
+    parser.add_argument('--peptide_summary', dest='pep_matrix', action='store',type=int,default= 0,
+                        help='sumarize all the peptide intesity in one tab-delited file ',
+                        required=False)    
+
     args = parser.parse_args()
 
     ## init globa logger
@@ -191,4 +195,9 @@ if __name__ == '__main__':
         save_moff_result (data_split, result, loc_output, file_name  )
 
         c+=1
-
+	
+	if args.pep_matrix == 1 :
+        # put loc_output once done
+        	state = moff.compute_peptide_matrix(args.loc_out,log)
+        if state == -1 :
+                log.critical ('Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')
