@@ -231,7 +231,7 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
         #### PAY ATTENTION HERE , we assume that input RT is in second
         ## RT in Thermo file is in minutes
         #### if it is not the case change the following line
-        time_w = row['rt'] / 60
+        time_w = row['rt'] #/ 60
         if mbr_flag == 0:
             #print 'xx here mbr_flag == 0'
             log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f',(offset_index +c +2), row['mz'], time_w)
