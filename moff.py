@@ -307,7 +307,7 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
         #### PAY ATTENTION HERE , we assume that input RT is in second
         ## RT in Thermo file is in minutes
         #### if it is not the case change the following line
-        time_w = row['rt'] / 60  #* 60
+        time_w = row['rt'] / 60  
         #print time_w
         if mbr_flag == 0:
             #print 'xx here mbr_flag == 0'
@@ -546,9 +546,13 @@ def main_apex_alone():
     log.critical('...apex module execution time %4.4f (sec)' , time.time() - start_time)
     save_moff_apex_result(data_split, result, loc_output, file_name)
     
+
     if args.pep_matrix == 1 :
-        
-        compute_peptide_matrix(loc_output)
+        # TO DO manage the error with retunr -1 like in moff_all.py  master repo
+        state = compute_peptide_matrix(loc_output)
+    if state ==-1:
+        log.critical ('Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')
+
 
 if __name__ == '__main__':
     main_apex_alone()
