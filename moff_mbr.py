@@ -181,10 +181,13 @@ def run_mbr(args):
         for id_name in args.tsv_list:
             exp_set.append(id_name)
     else:
-        for root, dirs, files in os.walk(args.loc_in):
-            for f in files:
-                if f.endswith('.' + args.ext):
-                    exp_set.append(os.path.join(root, f))
+
+	for  item in os.listdir(args.loc_in):
+            log.critical(item)
+	    if os.path.isfile(os.path.join(args.loc_in, item)):
+		if os.path.join(args.loc_in, item).endswith('.' + args.ext):
+		   exp_set.append(os.path.join(args.loc_in, item))
+
 
                 ## sample optiion is valid only if  folder iin option is valid
     if (args.sample is not None) and (args.loc_in is not None):
