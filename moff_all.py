@@ -220,7 +220,7 @@ if __name__ == '__main__':
 	# put loc_output once done 
 	state = moff.compute_peptide_matrix(args.loc_out,log)
 	if state == -1 :
-		log.critical ('Error during the computation of the peptide intensity summary file: Check the output folderis that  contains the moFF results file')
+		log.critical ('Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')
 
 
 
