@@ -363,7 +363,6 @@ def run_mbr(args):
                 pre_pep_save)
 
         # (n_replicates-1) == offset for the  model vector
-        # print test.columns[5:6]
 
         test['time_pred'] = test.ix[:, 6: (6 + (n_replicates - 1))].apply(
             lambda x: combine_model(x, model_save[(jj * (n_replicates - 1)):((jj + 1) * (n_replicates - 1))],
@@ -396,7 +395,7 @@ def run_mbr(args):
             test[field] = np.nan  # -1
 
         log.info('Before adding %s contains %i ', exp_set[jj], exp_t[jj].shape[0])
-        exp_out[jj] = pd.concat([exp_t[jj], test], join='outer', axis=0)
+	exp_out[jj] = pd.concat([exp_t[jj], test], join='outer', axis=0)
 	log.info('After MBR %s contains:  %i  peptides', exp_set[jj], exp_out[jj].shape[0])
         log.critical('matched features   %i  MS2 features  %i ', exp_out[jj][exp_out[jj]['matched'] == 1].shape[0],
                      exp_out[jj][exp_out[jj]['matched'] == 0].shape[0])
