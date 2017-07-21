@@ -13,26 +13,7 @@ import moff_mbr
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
-'''
-# read just one time the mzml file to save san id and its rt
-# in order to speed up the computation
-# this function it is called just one time before the dataframe splitting
-def scan_mzml ( name ):
-        if ('MZML' in name.upper()):
-                rt_list = []
-                runid_list = []
-                run_temp = pymzml.run.Reader( name )
-                for spectrum in run_temp:
-                        if spectrum['ms level'] == 1:
-                                rt_list.append(spectrum['scan start time'])
-                                runid_list.append(spectrum['id'])
 
-                return (rt_list,runid_list )
-        else:
-                # in case of raw file  I put to -1 -1 the result
-                return (-1,-1 )
-
-'''
 
 def save_moff_result (list_df, result, folder_output, name  ):
     xx=[]
