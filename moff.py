@@ -259,6 +259,7 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 	
 	#read and save all the scan
         if ('MZML' in raw_name.upper()):
+	    print 'mzML inside the IF '
             flag_mzml = True
             run_temp = pymzml.run.Reader(raw_name)
 
@@ -491,7 +492,7 @@ def main_apex_alone():
     config.read(os.path.join(os.path.dirname(sys.argv[0]), 'moff_setting.properties'))
 
     df = pd.read_csv(file_name, sep="\t")
-    #df = df.ix[0:50,:]
+    df = df.ix[0:500,:]
     ## check and eventually tranf for PS template
     if not 'matched' in df.columns:
         # check if it is a PS file ,
@@ -550,8 +551,8 @@ def main_apex_alone():
     if args.pep_matrix == 1 :
         # TO DO manage the error with retunr -1 like in moff_all.py  master repo
         state = compute_peptide_matrix(loc_output)
-    if state ==-1:
-        log.critical ('Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')
+    	if state ==-1:
+        	log.critical ('Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')
 
 
 if __name__ == '__main__':
