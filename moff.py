@@ -24,20 +24,20 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 
-"""
- input
-   - MS2 ID file
-   - tol
-   - half rt time window in minute
- output
-   - list of intensities..+
-"""
+
 
 TXIC_PATH = os.environ.get('TXIC_PATH', './')
 
+'''
+input : loc_output location wheret to store the result
+	log logger reference
+	tag_filename tag used in the output file name
 
+output : it crater the peptide summary intensity file null
 
-def compute_peptide_matrix(loc_output,log ):
+'''
+
+def compute_peptide_matrix(loc_output,log,tag_filename ):
 	name_col=[]
 	name_col.append('prot')
 	d=[]
@@ -46,9 +46,9 @@ def compute_peptide_matrix(loc_output,log ):
 	for name in glob.glob(loc_output+'/*_moff_result.txt'):
 		#print os.path.basename(name)
 		if 'match_' in os.path.basename(name):
-			name_col.append(   os.path.basename(name).split('match_moff_result.txt')[0])
+			name_col.append( 'sumIntensity_' +   os.path.basename(name).split('_match_moff_result.txt')[0])
 		else:
-			name_col.append(os.path.basename(name).split('moff_result.txt')[0] )
+			name_col.append( 'sumIntensity_' +  os.path.basename(name).split('_moff_result.txt')[0] )
 		data= pd.read_csv(name,sep="\t")
     		#print 'Original data \t',data.shape
     		# no modified peptide
@@ -83,14 +83,21 @@ def compute_peptide_matrix(loc_output,log ):
 	df.rename( columns={'index':'peptide'},inplace=True)
 	#print os.path.join(loc_output, "peptide_summary_intensity.tab")
 	log.critical( 'Writing peptide_summary intensity file' )
-	df.to_csv( os.path.join(loc_output, "peptide_summary_intensity.tab")  ,sep='\t',index=False)
+	df.to_csv( os.path.join(loc_output,"peptide_summary_intensity_"+ tag_filename +".tab")  ,sep='\t',index=False)
 	return 1 
 
 
+"""
+input : mzML file  location 
 
-# read just one time the mzml file to save san id and its rt
-# in order to speed up the computation
-# this function it is called just one time before the dataframe splitting
+output : rt_list all the scan time saved  
+	runt_id all the scan id saved 
+	
+read just one time the mzml file to save san id and its rt  in order to speed up the computation
+this function it is called just one time before the dataframe splitting
+In case of Thermo raw file , it returns -1 and -1
+
+"""
 def scan_mzml ( name ):
 	if ('MZML' in name.upper()):
 
@@ -104,9 +111,20 @@ def scan_mzml ( name ):
     
 		return (rt_list,runid_list )
 	else:
-		# in case of raw file  I put to -1 -1 the result
+		# in case of raw file  I put to -1 -1 thm result
 		return (-1,-1 )
 
+
+
+"""
+input : list_df : list of input
+	result :  list of df collected by the apex routine with the apex data
+	folder_output : folder where to save the files
+	name :  file raw name used to construst the final file name of the result
+
+output : none
+this routine collect all the result from  apex after the multithreding part.
+"""
 
 def save_moff_apex_result(list_df, result, folder_output, name):
     xx = []
@@ -123,7 +141,12 @@ def save_moff_apex_result(list_df, result, folder_output, name):
     return (1)
 
 
+"""
+input : data  input df
 
+output : data with the column names changed
+	data.columns list of the nex column name
+"""
 def map_ps2moff(data):
     data.drop(data.columns[[0]], axis=1, inplace=True)
     data.columns = data.columns.str.lower()
@@ -134,10 +157,14 @@ def map_ps2moff(data):
 
 
 
-'''
-input list of columns
-list of column names from PS default template loaded from .properties
-'''
+"""
+input: input column_name   list of input column name
+	list_col_ps_Default list of column names requested
+
+output 1 if all the requested column name  are there
+       0 miss some of the requested column names 
+check if the input data is a PS export
+"""
 def check_ps_input_data(input_column_name, list_col_ps_default):
     input_column_name.sort()
     list_col_ps_default.sort()
@@ -148,36 +175,60 @@ def check_ps_input_data(input_column_name, list_col_ps_default):
         # not detected a default PS input file
         return 0
 
+"""
+input: col_list   list of input column name
+        col_must_have list of column names requested
 
+output 1 if all the requested column name  are there
+       0 miss some of the requested column names
+
+
+General check is some of the requested field are present in the actually columns
+"""
 
 def check_columns_name(col_list, col_must_have):
     for c_name in col_must_have:
         if not (c_name in col_list):
             # fail
-            print 'The following filed name is missing or wrong: ', c_name
+            log.critical( 'The following filed name is missing or wrong: %s ', c_name )
             return 1
     # succes
     return 0
 
+"""
+input: name  mzML file location
+       ppmPRecision precision
+	minRT, mxRT  min and max rt values of the feature
+	mzValue mz valued of the feature
+	run, run_id, rt_list  pymzML object and the list of scan_id and their starting rt time.
+
+output dataframe with Xic 
+	a state value 1 (positive) -1(negative)
+
+
+Get a fast Xic using previously stored scan_is and their RT in order to speed up the computation.  
+"""
 
 def pyMZML_xic_out(name, ppmPrecision, minRT, maxRT, MZValue,run, runid_list,rt_list):
     timeDependentIntensities = []
-
     minpos = bisect.bisect_left(rt_list, minRT)
     maxpos = bisect.bisect_left(rt_list, maxRT)
 
-
+    #print minpos,maxpos
+    #print len(runid_list)
     for specpos in range(minpos,maxpos):
-        specid = runid_list[specpos]
-
+	specid = runid_list[specpos]
+	#print specid
         spectrum = run[specid]
-
+	#print spectrum
     #for spectrum in run:
-
-        if spectrum['scan start time'] > maxRT:
+	if spectrum['scan start time'] > maxRT:
+	    #print 'qutting'
             break
-        if spectrum['ms level'] == 1 and spectrum['scan start time'] > minRT and spectrum['scan start time'] < maxRT:
-            lower_index = bisect.bisect(spectrum.peaks, (float(MZValue - ppmPrecision * MZValue), None))
+	# spectrum['ms level'] == 1
+        if spectrum['scan start time'] > minRT and spectrum['scan start time'] < maxRT:
+            #print 'in ', specid
+	    lower_index = bisect.bisect(spectrum.peaks, (float(MZValue - ppmPrecision * MZValue), None))
             upper_index = bisect.bisect(spectrum.peaks, (float(MZValue + ppmPrecision * MZValue), None))
             maxI = 0.0
             for sp in spectrum.peaks[lower_index: upper_index]:
@@ -185,17 +236,24 @@ def pyMZML_xic_out(name, ppmPrecision, minRT, maxRT, MZValue,run, runid_list,rt_
                     maxI = sp[1]
             if maxI > 0:
                 timeDependentIntensities.append([spectrum['scan start time'], maxI])
-
     if len(timeDependentIntensities) > 5:
         return (pd.DataFrame(timeDependentIntensities, columns=['rt', 'intensity']), 1)
     else:
         return (pd.DataFrame(timeDependentIntensities, columns=['rt', 'intensity']), -1)
 
+"""
+check if the log file exist.
+"""
+
 def check_log_existence(file_to_check):
     if os.path.isfile(file_to_check):
         os.remove(file_to_check)
 
+"""
+Apex computation in a multi-threading mode.
 
+
+"""
 
 
 def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset_index , rt_list1, runid_list1   ):
@@ -254,17 +312,22 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 	
         #mzML work only with --inputraw option
         loc  = raw_name
-	#rt_list = []
-        #runid_list = []
+	rt_list = []
+        runid_list = []
 	
 	#read and save all the scan
         if ('MZML' in raw_name.upper()):
 	    print 'mzML inside the IF '
             flag_mzml = True
             run_temp = pymzml.run.Reader(raw_name)
+	    st = time.time()
+    	    run_temp = pymzml.run.Reader(raw_name)
+            
+		# I m going to  the raw file, one time just to save all the sna Id and their RT.
+    	    #rt_list , id_list   = scan_mzml ( raw_name )
+    	    print 'reading mzML file ',  time.time() - st
+    	    #print len(rt_list),len(id_list)	    
 
-
-    
     if os.path.isfile(loc):
         log.info('raw file exist')
     else:
@@ -329,11 +392,10 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
             if flag_mzml:
                 # mzml raw file
                 # transform the tollerance in ppm
-
-                #log.critical(' %s mass %4.4f rt %4.4f ' % (loc, row['mz'], time_w))
+                #log.critical(' %s mass %4.4f rt %4.4f' % (loc, row['mz'], time_w,))
 		data_xic, status = pyMZML_xic_out(loc, float(tol / (10 ** 6)), time_w - h_rt_w, time_w + h_rt_w,row['mz'],run_temp, runid_list1,rt_list1)
-                #data_xic, status = pyMZML_xic_out(loc, float(tol / (10 ** 6)), time_w - h_rt_w, time_w + h_rt_w,row['mz'],run_temp, runid_list,rt_list)
-
+		#data_xic, status = pyMZML_xic_out(loc, float(tol / (10 ** 6)), time_w - h_rt_w, time_w + h_rt_w,row['mz'],run_temp, runid_list,rt_list)
+		
                 if status == -1:
                     log.warning("WARNINGS: XIC not retrived line: %i", c)
                     log.warning('MZ: %4.4f RT: %4.4f Mass: %i', row['mz'], row['rt'], index_ms2)
@@ -468,6 +530,10 @@ def main_apex_alone():
                         help='sumarize all the peptide intesity in one tab-delited file ',
                         required=False)
 
+    parser.add_argument('--tag_pep_sum_file', dest='tag_pepsum', action='store',type=str,default= 'moFF_run',
+                        help='a tag that is used in the peptide summary file name',
+                        required=False)
+
     args = parser.parse_args()
 
     if (args.raw_list is None) and (args.raw is None):
@@ -492,15 +558,15 @@ def main_apex_alone():
     config.read(os.path.join(os.path.dirname(sys.argv[0]), 'moff_setting.properties'))
 
     df = pd.read_csv(file_name, sep="\t")
-    df = df.ix[0:500,:]
+    #df = df.ix[0:1000,:]
     ## check and eventually tranf for PS template
     if not 'matched' in df.columns:
         # check if it is a PS file ,
         list_name = df.columns.values.tolist()
         # get the lists of PS  defaultcolumns from properties file
-        list = ast.literal_eval(config.get('moFF', 'ps_default_export_v1'))
+        list_check = ast.literal_eval(config.get('moFF', 'ps_default_export_v1'))
         # here it controls if the input file is a PS export; if yes it maps the input in right moFF name
-        if check_ps_input_data(list_name, list) == 1:
+        if check_ps_input_data(list_name, list_check) == 1:
             # map  the columns name according to moFF input requirements
             data_ms2, list_name = map_ps2moff(df)
     ## check if the field names are good
@@ -526,18 +592,21 @@ def main_apex_alone():
     ##check the existencce of the log file before to go to multiprocess
     check_log_existence(os.path.join(loc_output, name + '__moff.log'))
 
-    myPool = multiprocessing.Pool(num_proc )
-	
+    myPool =  multiprocessing.Pool(num_proc )
+    	
+    st = time.time()
     # I m going to  the raw file, one time just to save all the sna Id and their RT.
-    rt_list , id_list   = scan_mzml ( args.raw_list )
-    
+    rt_list , id_list  =  scan_mzml ( args.raw_list )
+    print 'pre reading mzML file ',  time.time() - st
+    #print len(rt_list),len(id_list) 
+    #data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,   rt_list , id_list  ))
     
     result = {}
     offset = 0
     start_time = time.time()
     for df_index in range(0, len(data_split)):
         result[df_index] = myPool.apply_async(apex_multithr, args=(
-        data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,   rt_list , id_list  ))
+        data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list  ))
         offset += len(data_split[df_index])
 
     myPool.close()
@@ -545,12 +614,13 @@ def main_apex_alone():
 
     log.critical('...apex terminated')
     log.critical('...apex module execution time %4.4f (sec)' , time.time() - start_time)
+    print 'final time',  time.time() - start_time
     save_moff_apex_result(data_split, result, loc_output, file_name)
     
 
     if args.pep_matrix == 1 :
         # TO DO manage the error with retunr -1 like in moff_all.py  master repo
-        state = compute_peptide_matrix(loc_output)
+        state = compute_peptide_matrix(loc_output,args.tag_pepsum)
     	if state ==-1:
         	log.critical ('Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')
 
