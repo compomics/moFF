@@ -15,10 +15,12 @@ import pandas as pd
 from sklearn import linear_model
 from sklearn.metrics import mean_absolute_error
 
+import moff
+
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
-
+"""
 def map_ps2moff(data):
     data.drop(data.columns[[0]], axis=1, inplace=True)
     data.columns = data.columns.str.lower()
@@ -47,7 +49,7 @@ def check_ps_input_data(input_column_name, list_col_ps_default):
         return 0
 
 
-
+"""
 
 
 # filtering _outlier
@@ -99,7 +101,7 @@ def combine_model(x, model, err, weight_flag):
         # output not weight
         return float(app_sum) / float(np.where(~ np.isnan(x))[0].shape[0])
 
-
+"""
 # check columns read  from  a properties file
 def check_columns_name(col_list, col_must_have):
     for c_name in col_must_have:
@@ -108,7 +110,7 @@ def check_columns_name(col_list, col_must_have):
             return False
     # succes
     return True
-
+"""
 
 # run the mbr in moFF : input  ms2 identified peptide   output csv file with the matched peptides added
 def run_mbr(args):
@@ -210,13 +212,13 @@ def run_mbr(args):
         
 	list_ps_def = ast.literal_eval(config.get('moFF', 'ps_default_export_v1'))
         # here it controls if the input file is a PS export; if yes it maps the input in right moFF name
-        if check_ps_input_data(list_name, list_ps_def) == 1:
+        if moff.check_ps_input_data(list_name, list_ps_def) == 1:
             log.critical('Detected input file from PeptideShaker export..: %s ', a)
             # map  the columns name according to moFF input requirements
-            data_moff, list_name = map_ps2moff(data_moff)
+            data_moff, list_name = moff.map_ps2moff(data_moff)
             log.critical('Mapping columns names into the  the moFF requested column name..: %s ', a)
             # print data_moff.columns
-        if not check_columns_name(list_name, ast.literal_eval(config.get('moFF', 'col_must_have_mbr'))):
+        if not moff.check_columns_name(list_name, ast.literal_eval(config.get('moFF', 'col_must_have_mbr'))):
             exit('ERROR minimal field requested are missing or wrong')
         data_moff['matched'] = 0
         data_moff['mass'] = data_moff['mass'].map('{:.4f}'.format)
