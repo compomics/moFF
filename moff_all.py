@@ -15,24 +15,6 @@ log.setLevel(logging.DEBUG)
 
 
 
-def save_moff_result (list_df, result, folder_output, name  ):
-    xx=[]
-    for df_index in range(0,len(list_df)):
-        if result[df_index].get()[1] == -1:
-            exit ('Raw file not retrieved: wrong path or upper/low case mismatch')
-        else:
-            xx.append( result[df_index].get()[0])
-
-    final_res = pd.concat(xx)
-    #print final_res.shape
-    #print os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt")
-    final_res.to_csv( os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt"),sep="\t",index=False )    
-
-    return (1)
-
-
-
-
 if __name__ == '__main__':
 
     multiprocessing.freeze_support()
@@ -67,8 +49,6 @@ if __name__ == '__main__':
                         help='weights for model combination combination : 0 for no weight  1 weighted devised by trein err of the model.',
                         required=False)
 
-    # parser.add_argument('--input', dest='name', action='store',help='specify input list of MS2 peptides ', required=True)
-
     parser.add_argument('--tol', dest='toll', action='store', type=float, help='specify the tollerance  parameter in ppm',
                         required=True)
 
@@ -95,6 +75,10 @@ if __name__ == '__main__':
                         help='sumarize all the peptide intesity in one tab-delited file ',
                         required=False)
 
+    parser.add_argument('--tag_pep_sum_file', dest='tag_pepsum', action='store',type=str,default= 'moFF_run',
+                        help='a tag that is used in the peptide summary file name',
+                        required=False)
+    
     args = parser.parse_args()
 
     ## init globa logger
@@ -156,6 +140,7 @@ if __name__ == '__main__':
 
         ## add multi thredign option
         df = pd.read_csv(file_name,sep="\t")
+	df = df.ix[0:3,:]
 	data_split= np.array_split(df, num_CPU)
 
         log.critical('Starting Apex for %s ...',file_name)
@@ -194,12 +179,13 @@ if __name__ == '__main__':
         myPool.join()
         log.critical('...apex terminated')
         log.critical('...apex module execution time %4.4f (sec)' , time.time() - start_time)
-        save_moff_result (data_split, result, loc_output, file_name  )
+        print 'multi thre. terminated', time.time() - start_time
+	moff.save_moff_apex_result (data_split, result, loc_output, file_name  )
         c+=1
     
     if args.pep_matrix == 1 :
 	# put loc_output once done 
-	state = moff.compute_peptide_matrix(args.loc_out,log)
+	state = moff.compute_peptide_matrix(args.loc_out,log,args.tag_pepsum)
 	if state == -1 :
 		log.critical ('Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')
 
