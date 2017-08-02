@@ -21,36 +21,11 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 """
-def map_ps2moff(data):
-    data.drop(data.columns[[0]], axis=1, inplace=True)
-    data.columns = data.columns.str.lower()
-    data.rename(
-        columns={'sequence': 'peptide', 'modified sequence' :'mod_peptide'  ,'measured charge': 'charge', 'theoretical mass': 'mass', 'protein(s)': 'prot',
-                 'm/z': 'mz'}, inplace=True)
-    return data, data.columns.values.tolist()
+input : x and y (independet variable target RT values  )
 
 
-
-
-
-
-'''
-input list of columns
-list of column names from PS default template loaded from .properties
-'''
-def check_ps_input_data(input_column_name, list_col_ps_default):
-    input_column_name.sort()
-    list_col_ps_default.sort()
-    if list_col_ps_default == input_column_name:
-        # detected a default PS input file
-        return 1
-    else:
-        # not detected a default PS input file
-        return 0
-
-
+output covariance matrix for the input point 
 """
-
 
 # filtering _outlier
 def MahalanobisDist(x, y):
@@ -66,8 +41,13 @@ def MahalanobisDist(x, y):
         md.append(np.sqrt(np.dot(np.dot(np.transpose(diff_xy[i]), inv_covariance_xy), diff_xy[i])))
     return md
 
+"""
+input X,y, and filter 
 
-# remove outlier
+output:  filtered data both x and y 
+
+remove outlier
+"""
 def MD_removeOutliers(x, y, width):
     MD = MahalanobisDist(x, y)
     threshold = np.mean(MD) * float(width)  # adjust 1.5 accordingly
@@ -79,9 +59,16 @@ def MD_removeOutliers(x, y, width):
         else:
             outliers.append(i)  # position of removed pair
     return (np.array(nx), np.array(ny), np.array(outliers))
+"""
+input x; test point data 
+      model vector of the model trained
+      err : vector this error of the trained model
+      weight_flag : flag for weihthing or not 
 
+output : predicted rt according with the schema choosen
 
-# combination of rt predicted by each single model
+combination of rt predicted by each single model
+"""
 def combine_model(x, model, err, weight_flag):
     x = x.values
     tot_err = np.sum(np.array(err)[np.where(~np.isnan(x))])
@@ -101,18 +88,15 @@ def combine_model(x, model, err, weight_flag):
         # output not weight
         return float(app_sum) / float(np.where(~ np.isnan(x))[0].shape[0])
 
+
+
 """
-# check columns read  from  a properties file
-def check_columns_name(col_list, col_must_have):
-    for c_name in col_must_have:
-        if not (c_name in col_list):
-            # fail
-            return False
-    # succes
-    return True
+run the mbr in moFF : 
+        input  ms2 identified peptide   
+	
+        output csv file with the matched peptides added
 """
 
-# run the mbr in moFF : input  ms2 identified peptide   output csv file with the matched peptides added
 def run_mbr(args):
 
     ch = logging.StreamHandler()
@@ -183,7 +167,6 @@ def run_mbr(args):
     else:
 
 	for  item in os.listdir(args.loc_in):
-            log.critical(item)
 	    if os.path.isfile(os.path.join(args.loc_in, item)):
 		if os.path.join(args.loc_in, item).endswith('.' + args.ext):
 		   exp_set.append(os.path.join(args.loc_in, item))
