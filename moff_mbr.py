@@ -114,7 +114,6 @@ def check_columns_name(col_list, col_must_have):
 
 # run the mbr in moFF : input  ms2 identified peptide   output csv file with the matched peptides added
 def run_mbr(args):
-    print __name__
 
     ch = logging.StreamHandler()
     ch.setLevel(logging.ERROR)
@@ -128,7 +127,6 @@ def run_mbr(args):
         else:
              #  if the user does not use  --output_folder the mbr folder will be created on moFF path location
             output_dir = os.path.join('mbr_output')
-            print os.path.abspath(output_dir)
 
     else:
         ## the user use the --inputF option
@@ -206,8 +204,8 @@ def run_mbr(args):
     for a in exp_set:
         log.critical('Reading file: %s ', a)
         exp_subset.append(a)
-        data_moff = pd.read_csv(a, sep="\t", header=0)
-        list_name = data_moff.columns.values.tolist()
+        df = pd.read_csv(a, sep="\t", header=0)
+        list_name = df.columns.values.tolist()
         # get the lists of PS  defaultcolumns from properties file
         
 	list_ps_def = ast.literal_eval(config.get('moFF', 'ps_default_export_v1'))
@@ -215,10 +213,10 @@ def run_mbr(args):
         if moff.check_ps_input_data(list_name, list_ps_def) == 1:
             log.critical('Detected input file from PeptideShaker export..: %s ', a)
             # map  the columns name according to moFF input requirements
-            data_moff, list_name = moff.map_ps2moff(data_moff)
+            data_moff, list_name = moff.map_ps2moff(df)
             log.critical('Mapping columns names into the  the moFF requested column name..: %s ', a)
             # print data_moff.columns
-        if not moff.check_columns_name(list_name, ast.literal_eval(config.get('moFF', 'col_must_have_mbr'))):
+        if moff.check_columns_name(list_name, ast.literal_eval(config.get('moFF', 'col_must_have_mbr'))) == -1  :
             exit('ERROR minimal field requested are missing or wrong')
         data_moff['matched'] = 0
         data_moff['mass'] = data_moff['mass'].map('{:.4f}'.format)
