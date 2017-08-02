@@ -59,29 +59,24 @@ def compute_peptide_matrix(loc_output,log,tag_filename ):
 		data = data[data['intensity'] != -1]
 		log.critical( 'Collecting moFF result file : %s   --> Retrived peptide peaks after filtering:  %i',os.path.basename(name)  ,data.shape[0] )
 		d.append(data[['prot','peptide','mod_peptide','mass','charge','rt_peak','rt','spectrum title','intensity']])
-   		
+   	        # Other possibile quality controll filter	
 		##data = data[ data['lwhm'] != -1]
     		##data = data[data['rwhm'] != -1 ]   
 	
 	intersect_share = reduce(np.union1d, ([x['peptide'].unique() for x in d]))
-        #print name_col,len(d)
-	#print intersect_share.shape
 	index= intersect_share
         
         df = pd.DataFrame(index=index, columns=name_col)
         df = df.fillna(0)
 	for i in range(0,len(d)):
 		grouped = d[i].groupby('peptide',as_index=True)['prot','intensity']
-		#print grouped.agg({'prot':'max', 'intensity':'sum'}).columns
+		# print grouped.agg({'prot':'max', 'intensity':'sum'}).columns
 		df.ix[:,i+1]= grouped.agg({'prot':'max', 'intensity':'sum'})['intensity']
-		df.ix[:,0]= grouped.agg({'prot':'max', 'intensity':'sum'})['prot']
-		#print d[i].groupby('peptide')['prot'].max().head(5)
-		#print d[i].groupby('peptide')['prot'].sum().head(5)
-		#print d[i][d[i]['peptide']==intersect_share[0] ]
+		df.ix[ np.intersect1d(df.index,grouped.groups.keys()) ,0]= grouped.agg({'prot':'max', 'intensity':'sum'})['prot']
 	#print df.head(5)
 	df.reset_index(level=0, inplace=True)
+	df = df.fillna(0)
 	df.rename( columns={'index':'peptide'},inplace=True)
-	#print os.path.join(loc_output, "peptide_summary_intensity.tab")
 	log.critical( 'Writing peptide_summary intensity file' )
 	df.to_csv( os.path.join(loc_output,"peptide_summary_intensity_"+ tag_filename +".tab")  ,sep='\t',index=False)
 	return 1 
@@ -99,6 +94,9 @@ In case of Thermo raw file , it returns -1 and -1
 
 """
 def scan_mzml ( name ):
+	# when I am using thermo raw and --raw_repo option used
+	if name is None:
+		return (-1,-1)
 	if ('MZML' in name.upper()):
 
 		rt_list = []
@@ -189,7 +187,7 @@ General check is some of the requested field are present in the actually columns
 def check_columns_name(col_list, col_must_have):
     for c_name in col_must_have:
         if not (c_name in col_list):
-            # fail
+            # fai
             log.critical( 'The following filed name is missing or wrong: %s ', c_name )
             return 1
     # succes
@@ -558,7 +556,8 @@ def main_apex_alone():
     config.read(os.path.join(os.path.dirname(sys.argv[0]), 'moff_setting.properties'))
 
     df = pd.read_csv(file_name, sep="\t")
-    #df = df.ix[0:1000,:]
+    # for denug purpose
+    #df = df.ix[0:10,:]
     ## check and eventually tranf for PS template
     if not 'matched' in df.columns:
         # check if it is a PS file ,
@@ -594,12 +593,8 @@ def main_apex_alone():
 
     myPool =  multiprocessing.Pool(num_proc )
     	
-    st = time.time()
-    # I m going to  the raw file, one time just to save all the sna Id and their RT.
+    # I m going reading  raw file, one time just to save all the sna Id and their RT.
     rt_list , id_list  =  scan_mzml ( args.raw_list )
-    print 'pre reading mzML file ',  time.time() - st
-    #print len(rt_list),len(id_list) 
-    #data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,   rt_list , id_list  ))
     
     result = {}
     offset = 0
@@ -619,8 +614,7 @@ def main_apex_alone():
     
 
     if args.pep_matrix == 1 :
-        # TO DO manage the error with retunr -1 like in moff_all.py  master repo
-        state = compute_peptide_matrix(loc_output,args.tag_pepsum)
+        state = compute_peptide_matrix(loc_output,log,args.tag_pepsum)
     	if state ==-1:
         	log.critical ('Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')
 
