@@ -313,15 +313,11 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 	
 	#read and save all the scan
         if ('MZML' in raw_name.upper()):
-	    print 'mzML inside the IF '
             flag_mzml = True
             run_temp = pymzml.run.Reader(raw_name)
-	    st = time.time()
-    	    run_temp = pymzml.run.Reader(raw_name)
             
-		# I m going to  the raw file, one time just to save all the sna Id and their RT.
+	    # I m going to  the raw file, one time just to save all the sna Id and their RT.
     	    #rt_list , id_list   = scan_mzml ( raw_name )
-    	    print 'reading mzML file ',  time.time() - st
     	    #print len(rt_list),len(id_list)	    
 
     if os.path.isfile(loc):
@@ -606,7 +602,7 @@ def main_apex_alone():
 
     log.critical('...apex terminated')
     log.critical('...apex module execution time %4.4f (sec)' , time.time() - start_time)
-    print 'final time',  time.time() - start_time
+    #print 'final time',  time.time() - start_time
     save_moff_apex_result(data_split, result, loc_output, file_name)
     
 
