@@ -50,8 +50,9 @@ def compute_peptide_matrix(loc_output,log,tag_filename ):
 		else:
 			name_col.append( 'sumIntensity_' +  os.path.basename(name).split('_moff_result.txt')[0] )
 		data= pd.read_csv(name,sep="\t")
-    		#print 'Original data \t',data.shape
-    		# no modified peptide
+		# Other possibile quality controll filter
+                ##data = data[ data['lwhm'] != -1]
+                ##data = data[data['rwhm'] != -1 ]
     		'''
 		data = data[data['variable modifications'].isnull()]
     		data = data[data['fixed modifications'].isnull()]
@@ -59,9 +60,6 @@ def compute_peptide_matrix(loc_output,log,tag_filename ):
 		data = data[data['intensity'] != -1]
 		log.critical( 'Collecting moFF result file : %s   --> Retrived peptide peaks after filtering:  %i',os.path.basename(name)  ,data.shape[0] )
 		d.append(data[['prot','peptide','mod_peptide','mass','charge','rt_peak','rt','spectrum title','intensity']])
-   	        # Other possibile quality controll filter	
-		##data = data[ data['lwhm'] != -1]
-    		##data = data[data['rwhm'] != -1 ]   
 	
 	intersect_share = reduce(np.union1d, ([x['peptide'].unique() for x in d]))
 	index= intersect_share
@@ -557,7 +555,6 @@ def main_apex_alone():
 
     df = pd.read_csv(file_name, sep="\t")
     # for denug purpose
-    #df = df.ix[0:10,:]
     ## check and eventually tranf for PS template
     if not 'matched' in df.columns:
         # check if it is a PS file ,
