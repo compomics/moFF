@@ -187,8 +187,8 @@ def run_mbr(args):
     for a in exp_set:
         log.critical('Reading file: %s ', a)
         exp_subset.append(a)
-        df = pd.read_csv(a, sep="\t", header=0)
-        list_name = df.columns.values.tolist()
+        data_moff = pd.read_csv(a, sep="\t", header=0)
+        list_name = data_moff.columns.values.tolist()
         # get the lists of PS  defaultcolumns from properties file
         
 	list_ps_def = ast.literal_eval(config.get('moFF', 'ps_default_export_v1'))
@@ -196,7 +196,7 @@ def run_mbr(args):
         if moff.check_ps_input_data(list_name, list_ps_def) == 1:
             log.critical('Detected input file from PeptideShaker export..: %s ', a)
             # map  the columns name according to moFF input requirements
-            data_moff, list_name = moff.map_ps2moff(df)
+            data_moff, list_name = moff.map_ps2moff(data_moff)
             log.critical('Mapping columns names into the  the moFF requested column name..: %s ', a)
             # print data_moff.columns
         if moff.check_columns_name(list_name, ast.literal_eval(config.get('moFF', 'col_must_have_mbr'))) == -1  :
