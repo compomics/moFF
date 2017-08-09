@@ -141,7 +141,7 @@ use `python moff.py -h`
 ```
 For example :
 
-`python moff.mbr --inputtsv sample_folder/20080311_CPTAC6_07_6A005.txt  --raw_rep sample_folder/ --tol 1O --output_folder output_moff`
+`python moff.py --inputtsv sample_folder/20080311_CPTAC6_07_6A005.txt  --raw_repo sample_folder/ --tol 1O --output_folder output_moff`
 
 WARNING : the raw file names MUST be the same of the input file otherwise the script give you an error !
 NOTE: All the parameters related to the the time windows (rt_w,rt_p, rt_p_match) are basicaly the half of the entire time windows where the apex peak is searched or the XiC is retrieved.
