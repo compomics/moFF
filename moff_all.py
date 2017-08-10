@@ -140,7 +140,6 @@ if __name__ == '__main__':
 
         ## add multi thredign option
         df = pd.read_csv(file_name,sep="\t")
-	df = df.ix[0:3,:]
 	data_split= np.array_split(df, num_CPU)
 
         log.critical('Starting Apex for %s ...',file_name)
