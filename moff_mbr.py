@@ -105,7 +105,7 @@ def check_columns_name(col_list, col_must_have):
 
 # run the mbr in moFF : input  ms2 identified peptide   output csv file with the matched peptides added
 def run_mbr(args):
-    print __name__
+    #print __name__
 
     ch = logging.StreamHandler()
     ch.setLevel(logging.ERROR)
@@ -169,15 +169,16 @@ def run_mbr(args):
     exp_subset = []
     # list of the name of the mbr output
     exp_out_name = []
-
     if args.loc_in is None:
         for id_name in args.tsv_list:
             exp_set.append(id_name)
     else:
-        for root, dirs, files in os.walk(args.loc_in):
-            for f in files:
-                if f.endswith('.' + args.ext):
-                    exp_set.append(os.path.join(root, f))
+	
+	for  item in os.listdir(args.loc_in):
+		log.critical(item) 
+		if os.path.isfile(os.path.join(args.loc_in, item)):
+			if os.path.join(args.loc_in, item).endswith('.' + args.ext):
+				exp_set.append(os.path.join(args.loc_in, item))
 
                 ## sample optiion is valid only if  folder iin option is valid
     if (args.sample is not None) and (args.loc_in is not None):
@@ -337,7 +338,7 @@ def run_mbr(args):
                 add_pep_frame['code_unique'] = add_pep_frame['mod_peptide'] + '_' + add_pep_frame['prot'] + '_' + '_' + add_pep_frame['charge'].astype(str)
                 add_pep_frame = add_pep_frame.groupby('code_unique', as_index=False)[
                     'peptide','mod_peptide', 'mass', 'charge', 'mz', 'prot', 'rt'].aggregate(max)
-                add_pep_frame = add_pep_frame[['peptide', 'mod_peptide','mass', 'mz', 'charge', 'prot', 'rt']]
+                add_pep_frame = add_pep_frame[['code_unique','peptide', 'mod_peptide','mass', 'mz', 'charge', 'prot', 'rt']]
                 list_name = add_pep_frame.columns.tolist()
                 list_name = [w.replace('rt', 'rt_' + str(c_rt)) for w in list_name]
                 add_pep_frame.columns = list_name
@@ -351,8 +352,9 @@ def run_mbr(args):
                 lambda left, right: pd.merge(left, right, on=['peptide','mod_peptide' ,'mass', 'mz', 'charge', 'prot'], how='outer'),
                 pre_pep_save)
 
-        # (n_replicates-1) == offset for the  model vector
-        # print test.columns[5:6]
+        # aggregated by code_unique,  to avoid duplicates
+        test =  test.groupby('code_unique', as_index=False).aggregate(max)
+        test.drop('code_unique', axis=1, inplace=True)
 
         test['time_pred'] = test.ix[:, 6: (6 + (n_replicates - 1))].apply(
             lambda x: combine_model(x, model_save[(jj * (n_replicates - 1)):((jj + 1) * (n_replicates - 1))],
