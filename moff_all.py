@@ -1,14 +1,15 @@
 #!/usr/bin/env python
-import numpy as np
-import pandas as pd
 import argparse
 import logging
-import os
 import multiprocessing
+import os
 import time
+
+import numpy as np
+import pandas as pd
+
 import moff
 import moff_mbr
-
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -106,6 +107,7 @@ if __name__ == '__main__':
    
         
     res_state,mbr_list_loc = moff_mbr.run_mbr(args)
+
     if res_state == -1:
         exit('An error is occurred during the writing of the mbr file')
     if args.tsv_list is not None:

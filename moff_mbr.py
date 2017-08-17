@@ -331,22 +331,26 @@ def run_mbr(args):
                 add_pep_frame['code_unique'] = add_pep_frame['mod_peptide'] + '_' + add_pep_frame['prot'] + '_' + '_' + add_pep_frame['charge'].astype(str)
                 add_pep_frame = add_pep_frame.groupby('code_unique', as_index=False)[
                     'peptide','mod_peptide', 'mass', 'charge', 'mz', 'prot', 'rt'].aggregate(max)
-                add_pep_frame = add_pep_frame[['peptide', 'mod_peptide','mass', 'mz', 'charge', 'prot', 'rt']]
+                # maintain the code_unique for the next step
+                add_pep_frame = add_pep_frame[['code_unique','peptide', 'mod_peptide','mass', 'mz', 'charge', 'prot', 'rt']]
+
                 list_name = add_pep_frame.columns.tolist()
                 list_name = [w.replace('rt', 'rt_' + str(c_rt)) for w in list_name]
                 add_pep_frame.columns = list_name
                 pre_pep_save.append(add_pep_frame)
+
                 c_rt += 1
                 # print 'input columns',pre_pep_save[0].columns
         if n_replicates == 2:
             test = pre_pep_save[0]
         else:
             test = reduce(
-                lambda left, right: pd.merge(left, right, on=['peptide','mod_peptide' ,'mass', 'mz', 'charge', 'prot'], how='outer'),
+                lambda left, right: pd.merge(left, right, on=['code_unique','peptide','mod_peptide' ,'mass', 'mz', 'charge', 'prot'], how='outer'),
                 pre_pep_save)
 
-        # (n_replicates-1) == offset for the  model vector
-
+        # aggregated by code_unique,  to avoid duplicates
+        test =  test.groupby('code_unique', as_index=False).aggregate(max)
+        test.drop('code_unique', axis=1, inplace=True)
         test['time_pred'] = test.ix[:, 6: (6 + (n_replicates - 1))].apply(
             lambda x: combine_model(x, model_save[(jj * (n_replicates - 1)):((jj + 1) * (n_replicates - 1))],
                                     model_err[(jj * (n_replicates - 1)):((jj + 1) * (n_replicates - 1))], args.w_comb), axis=1)
