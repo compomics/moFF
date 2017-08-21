@@ -143,9 +143,9 @@ use `python moff.py -h`
 ```
 For example :
 
-`python moff.py --inputtsv sample_folder/20080311_CPTAC6_07_6A005.txt  --raw_repo sample_folder/ --tol 1O --output_folder output_moff`
+`python moff.py --inputtsv sample_folder/20080311_CPTAC6_07_6A005.txt  --raw_repo sample_folder/ --tol 1O --output_folder output_moff --peptide_summary 1 `
 
-WARNING : the raw file names MUST be the same of the input file otherwise the script give you an error !
+WARNING : the raw file names MUST be the same of the input file otherwise the script gives you an error !
 NOTE: All the parameters related to the the time windows (rt_w,rt_p, rt_p_match) are basicaly the half of the entire time windows where the apex peak is searched or the XiC is retrieved.
 
 You can also specify directly the raw file using: 
@@ -181,13 +181,13 @@ use `python moff_all.py -h`
   	--tag_pep_sum_file  tag string that will be part of the  peptided summary intensity file name. Default value is moFF_run
 	--raw_repo		the folder containing the raw files
 ```
-`python moff_all.py --inputF  sample_folder/   --raw_repo sample_folder/ --output_folder output_moff`
+`python moff_all.py --inputF  sample_folder/   --raw_repo sample_folder/ --tol 10  --output_folder output_moff --peptide_summary 1`
 
 The options are identifcal for both apex and MBR modules. The output for the latter (MBR) is stored in the folder sample_folder/mbr_output, while the former (apex) generates files in the specified output_moff folder. Log files for both algorithms are generated in the respective folders.
 
 You can also specify a list of input and raw files using:
 
-`python moff_all.py --inputtsv  sample_folder/input_file1.txt sample_folder/input_file2.txt   --inputraw sample_folder/input_file1.raw sample_folder/input_file2.raw --output_folder output_moff`
+`python moff_all.py --inputtsv  sample_folder/input_file1.txt sample_folder/input_file2.txt  --inputraw sample_folder/input_file1.raw sample_folder/input_file2.raw --tol 10 --output_folder output_moff --peptide_summary 1 `
 
 Using `--inputtsv | --inputraw`  you can not filterted the input file using `--sample --ext` like in the case with `--inputF | --raw_repo`
 
