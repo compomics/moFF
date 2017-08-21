@@ -35,9 +35,15 @@ log.setLevel(logging.DEBUG)
 TXIC_PATH = os.environ.get('TXIC_PATH', './')
 
 
+'''
+input : loc_output location wheret to store the result
+	log logger reference
+	tag_filename tag used in the output file name
+output : it crater the peptide summary intensity file null
+'''
 
 
-def compute_peptide_matrix(loc_output,log ):
+def compute_peptide_matrix(loc_output,log,tag_filename ):
         name_col=[]
         name_col.append('prot')
         d=[]
@@ -46,9 +52,9 @@ def compute_peptide_matrix(loc_output,log ):
         for name in glob.glob(loc_output+'/*_moff_result.txt'):
                 #print os.path.basename(name)
                 if 'match_' in os.path.basename(name):
-                        name_col.append(   os.path.basename(name).split('match_moff_result.txt')[0])
+                        name_col.append(   os.path.basename(name).split('_match_moff_result.txt')[0])
                 else:
-                        name_col.append(os.path.basename(name).split('moff_result.txt')[0] )
+                        name_col.append(os.path.basename(name).split('_moff_result.txt')[0] )
                 data= pd.read_csv(name,sep="\t")
                 #print 'Original data \t',data.shape
                 # no modified peptide
@@ -58,6 +64,7 @@ def compute_peptide_matrix(loc_output,log ):
                 '''
                 data = data[data['intensity'] != -1]
                 log.critical( 'Collecting moFF result file : %s   --> Retrived peptide peaks after filtering:  %i',os.path.basename(name)  ,data.shape[0] )
+		print 'after filtering data ',os.path.basename(name)  ,data.shape[0]
                 d.append(data[['prot','peptide','mod_peptide','mass','charge','rt_peak','rt','spectrum title','intensity']])
 
                 ##data = data[ data['lwhm'] != -1]
@@ -74,8 +81,8 @@ def compute_peptide_matrix(loc_output,log ):
                 grouped = d[i].groupby('peptide',as_index=True)['prot','intensity']
                 #print grouped.agg({'prot':'max', 'intensity':'sum'}).columns
                 df.ix[:,i+1]= grouped.agg({'prot':'max', 'intensity':'sum'})['intensity']
-                df.ix[:,0]= grouped.agg({'prot':'max', 'intensity':'sum'})['prot']
-                #print d[i].groupby('peptide')['prot'].max().head(5)
+                df.ix[ np.intersect1d(df.index,grouped.groups.keys()) ,0]= grouped.agg({'prot':'max', 'intensity':'sum'})['prot']
+		#print d[i].groupby('peptide')['prot'].max().head(5)
                 #print d[i].groupby('peptide')['prot'].sum().head(5)
                 #print d[i][d[i]['peptide']==intersect_share[0] ]
         #print df.head(5)
@@ -83,7 +90,7 @@ def compute_peptide_matrix(loc_output,log ):
         df.rename( columns={'index':'peptide'},inplace=True)
         #print os.path.join(loc_output, "peptide_summary_intensity.tab")
         log.critical( 'Writing peptide_summary intensity file' )
-        df.to_csv( os.path.join(loc_output, "peptide_summary_intensity.tab")  ,sep='\t',index=False)
+        df.to_csv( os.path.join(loc_output, "peptide_summary_intensity_"+ tag_filename +".tab" )   ,sep='\t',index=False)
         return 1
 
 
@@ -442,6 +449,10 @@ def main_apex_alone():
                         help='sumarize all the peptide intesity in one tab-delited file ',
                         required=False)
 
+    parser.add_argument('--tag_pep_sum_file', dest='tag_pepsum', action='store',type=str,default= 'moFF_run',
+                        help='a tag that is used in the peptide summary file name', required=False)
+
+
     args = parser.parse_args()
 
     if (args.raw_list is None) and (args.raw is None):
@@ -466,7 +477,7 @@ def main_apex_alone():
     config.read(os.path.join(os.path.dirname(sys.argv[0]), 'moff_setting.properties'))
 
     df = pd.read_csv(file_name, sep="\t")
-    df = df.ix[0:4000,:]
+    #df = df.ix[0:1000,:]
     ## check and eventually tranf for PS template
     if not 'matched' in df.columns:
         # check if it is a PS file ,
@@ -490,7 +501,7 @@ def main_apex_alone():
 
     log.critical('Output file in :  %s', loc_output)
 
-
+    
     data_split = np.array_split(df, multiprocessing.cpu_count() )
 
     log.critical('Starting Apex for .....')
@@ -502,7 +513,7 @@ def main_apex_alone():
     ##check the existencce of the log file before to go to multiprocess
     check_log_existence(os.path.join(loc_output, name + '__moff.log'))
 
-    myPool = multiprocessing.Pool(multiprocessing.cpu_count())
+    myPool = multiprocessing.Pool( multiprocessing.cpu_count())
     ## code below id for testing 
     #myPool = multiprocessing.Pool(10 )
     ## end testing 
@@ -519,16 +530,16 @@ def main_apex_alone():
 
     log.critical('...apex terminated')
     log.critical( 'Computational time (sec):  %4.4f ' % (time.time() -start_time))
-    #print 'Time no result collect',  time.time() -start_time
+    print 'Time no result collect',  time.time() -start_time
     start_time_2 = time.time()
     save_moff_apex_result(data_split, result, loc_output, file_name)
 
 	
     if args.pep_matrix == 1 :
 	# TO DO manage the error with retunr -1 like in moff_all.py  master repo
-        state = compute_peptide_matrix(loc_output)
-    if state ==-1:
-	log.critical ('Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')
+        state = compute_peptide_matrix(loc_output,args.tag_pepsum)
+    	if state ==-1:
+		log.critical ('Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')
 
 
 if __name__ == '__main__':
