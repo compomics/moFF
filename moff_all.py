@@ -98,7 +98,9 @@ if __name__ == '__main__':
 
     parser.add_argument('--peptide_summary', dest='pep_matrix', action='store',type=int,default= 0,
                         help='sumarize all the peptide intesity in one tab-delited file ',
-                        required=False)    
+                        required=False)   
+
+    parser.add_argument('--tag_pep_sum_file', dest='tag_pepsum', action='store',type=str,default= 'moFF_run', help='a tag that is used in the peptide summary file name',required=False) 
 
     args = parser.parse_args()
 
@@ -125,6 +127,7 @@ if __name__ == '__main__':
     # change this variable  with repset to the machine setting of the user
     num_CPU=multiprocessing.cpu_count()
 
+    
     res_state,mbr_list_loc = moff_mbr.run_mbr(args)
     if res_state == -1:
         exit('An error is occurred during the writing of the mbr file')
@@ -193,11 +196,9 @@ if __name__ == '__main__':
         print 'multi thre. terminated', time.time() - start_time
         log.critical('...apex terminated')
         save_moff_result (data_split, result, loc_output, file_name  )
-
-        c+=1
-	
-	if args.pep_matrix == 1 :
-        # put loc_output once done
-        	state = moff.compute_peptide_matrix(args.loc_out,log)
-        if state == -1 :
-                log.critical ('Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')
+	c+=1
+    
+    if args.pep_matrix == 1 :
+	state = moff.compute_peptide_matrix(args.loc_out,log,args.tag_pepsum)
+	if state == -1 :
+		log.critical ('Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')
