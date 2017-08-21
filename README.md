@@ -137,6 +137,8 @@ use `python moff.py -h`
   --rt_p     	      the time windows used to get the apex for the ms2 peptide/feature  (minutes). Default value is 0.4
   --rt_p_match 	      the time windows used to get the apex for machted features (minutes). Default value is 0.6
   --raw_repo          the folder containing the raw files
+  --peptide_summary   flag that allows have as output the peptided summary intensity file. Default is disable (0)
+  --tag_pep_sum_file  tag string that will be part of the  peptided summary intensity file name. Default value is moFF_run
   --output_folder     the target folder for the output (default is the input folder, raw_repo)
 ```
 For example :
@@ -175,6 +177,8 @@ use `python moff_all.py -h`
   	--rt_w			the rt windows for xic (minutes). Default value is  3  min
 	--rt_p			the time windows for the ms2 peptide/feature in apex (minutes). Default value is 0.2
 	--rt_p_match		the time windows for the matched features in apex ( minutes). Default value is 0.4
+	--peptide_summary   flag that allows have as output the peptided summary intensity file. Default is disable (0)
+  	--tag_pep_sum_file  tag string that will be part of the  peptided summary intensity file name. Default value is moFF_run
 	--raw_repo		the folder containing the raw files
 ```
 `python moff_all.py --inputF  sample_folder/   --raw_repo sample_folder/ --output_folder output_moff`
@@ -198,6 +202,7 @@ The output consists of :
 
 - a tab delimited file (with the same name of the input raw file) containing the apex intensity values and additional information (a)
 - a log file specific to the apex module (b) or the MBR module (c)
+- peptide summary intensity file (when peptide summary option is enabled) (d) 
 
 (a) Description of the fields added by moFF in the output file:
 
@@ -218,6 +223,8 @@ Parameter | Meaning
 (b) A log file is also provided containing the process output. 
 
 (c) A log file where all the information about all the trained linear model are displayed.
+
+(d) The peptide summary intensity is a tab delimited file where for each  peptide sequence the MS1 intensities are summed for all the occurences in each runs (aggregated by charge states and modification). In case you run the entire workflow this file will contains the summed intensity for all the runs, insted of just a selected run in case of the apex module. Along with peptide sequences also the protein ids are provided. The file could be used for downstream statiscal analysis   
 
 NOTE : The log files and the output files are in the output folder specified by the user. 
 
