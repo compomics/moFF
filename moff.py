@@ -58,8 +58,11 @@ def compute_peptide_matrix(loc_output,log,tag_filename ):
     		data = data[data['fixed modifications'].isnull()]
     		'''
 		data = data[data['intensity'] != -1]
+		data.sort_values('rt',ascending=True, inplace=True)
 		log.critical( 'Collecting moFF result file : %s   --> Retrived peptide peaks after filtering:  %i',os.path.basename(name)  ,data.shape[0] )
-		d.append(data[['prot','peptide','mod_peptide','mass','charge','rt_peak','rt','spectrum title','intensity']])
+		# cleaning peptide fragmented more than one time. we keep the earliest one
+		data.drop_duplicates(subset=['prot','peptide','mod_peptide','mass','charge'], keep='first', inplace=True)
+		d.append(data[['prot','peptide','mod_peptide','mass','charge','rt_peak','rt','intensity']])
 	
 	intersect_share = reduce(np.union1d, ([x['peptide'].unique() for x in d]))
 	index= intersect_share
