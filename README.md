@@ -43,7 +43,7 @@ Required python libraries :
 - pandas  > 0.17.
 - numpy > 1.10.0
 - argparse > 1.2.1 
-- scikit-learn > 0.17
+- scikit-learn > 0.18
 - pymzML > 0.7.7
 
 Optional requirements :
