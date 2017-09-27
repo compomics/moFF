@@ -40,10 +40,10 @@ Required java version :
 
 Required python libraries :
 - Python 2.7
-- pandas  > 0.17.
+- pandas  > 0.20.
 - numpy > 1.10.0
 - argparse > 1.2.1 
-- scikit-learn > 0.17
+- scikit-learn > 0.18
 - pymzML > 0.7.7
 
 Optional requirements :
@@ -175,12 +175,17 @@ use `python moff_all.py -h`
   	--weight_comb		combination weighting : 0 for no weight 1 for a weighted schema
   	--tol			the mass tollerance (ppm)
   	--rt_w			the rt windows for xic (minutes). Default value is  3  min
-	--rt_p			the time windows for the ms2 peptide/feature in apex (minutes). Default value is 0.2
-	--rt_p_match		the time windows for the matched features in apex ( minutes). Default value is 0.4
+	--rt_p			the time windows for the ms2 peptide/feature in apex (minutes). Default value is 1
+	--rt_p_match		the time windows for the matched features in apex ( minutes). Default value is 1.5
 	--peptide_summary   flag that allows have as output the peptided summary intensity file. Default is disable (0)
   	--tag_pep_sum_file  tag string that will be part of the  peptided summary intensity file name. Default value is moFF_run
 	--raw_repo		the folder containing the raw files
 ```
+For a correct rt windows, we suggest to set the rt_p value equal or slighly greater to the dynamic exclusion duration set in your machine.
+We suggest also to set the rt_p_match always slightly bigger than the rt windows used the MS2 fetures (rt_p )
+
+  
+
 `python moff_all.py --inputF  sample_folder/   --raw_repo sample_folder/ --tol 10  --output_folder output_moff --peptide_summary 1`
 
 The options are identifcal for both apex and MBR modules. The output for the latter (MBR) is stored in the folder sample_folder/mbr_output, while the former (apex) generates files in the specified output_moff folder. Log files for both algorithms are generated in the respective folders.
