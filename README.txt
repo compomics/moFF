@@ -10,7 +10,7 @@ Python 2.7
 pandas  > 0.17.
 numpy > 1.9.0
 argparse > 1.2.1 
-scikit-learn > 0.17
+scikit-learn > 0.18
 
 moFF is composed by two stand alone modules : 
 	moff_mbr.py :  matching between run 
