@@ -212,7 +212,7 @@ def run_mbr(args):
         data_moff['mass'] = data_moff['mass'].map('{:.4f}'.format)
 
         data_moff['code_unique'] = data_moff['mod_peptide'].astype(str) #+ '_' + data_moff['mass'].astype(str)
-        data_moff = data_moff.sort(columns='rt')
+        data_moff = data_moff.sort_values(by='rt')
         exp_t.append(data_moff)
         exp_out.append(data_moff)
 
@@ -336,8 +336,7 @@ def run_mbr(args):
                 add_pep_frame = add_pep_frame[['peptide','mod_peptide' ,'mass', 'mz', 'charge', 'prot', 'rt']]
                 # add_pep_frame['code_unique'] = '_'.join([add_pep_frame['peptide'], add_pep_frame['prot'], add_pep_frame['mass'].astype(str), add_pep_frame['charge'].astype(str)])
                 add_pep_frame['code_unique'] = add_pep_frame['mod_peptide'] + '_' + add_pep_frame['prot'] + '_' + '_' + add_pep_frame['charge'].astype(str)
-                add_pep_frame = add_pep_frame.groupby('code_unique', as_index=False)[
-                    'peptide','mod_peptide', 'mass', 'charge', 'mz', 'prot', 'rt'].aggregate(max)
+                add_pep_frame = add_pep_frame.groupby('code_unique', as_index=False)['peptide','mod_peptide', 'mass', 'charge', 'mz', 'prot', 'rt'].aggregate(max)
                 add_pep_frame = add_pep_frame[['code_unique','peptide', 'mod_peptide','mass', 'mz', 'charge', 'prot', 'rt']]
                 list_name = add_pep_frame.columns.tolist()
                 list_name = [w.replace('rt', 'rt_' + str(c_rt)) for w in list_name]
@@ -349,7 +348,7 @@ def run_mbr(args):
             test = pre_pep_save[0]
         else:
             test = reduce(
-                lambda left, right: pd.merge(left, right, on=['peptide','mod_peptide' ,'mass', 'mz', 'charge', 'prot'], how='outer'),
+                lambda left, right: pd.merge(left, right, on=['code_unique','peptide','mod_peptide' ,'mass', 'mz', 'charge', 'prot'], how='outer'),
                 pre_pep_save)
 
         # aggregated by code_unique,  to avoid duplicates
