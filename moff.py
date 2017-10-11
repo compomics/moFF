@@ -121,7 +121,6 @@ def scan_mzml ( name ):
 
 def  mzML_get_all( temp,tol,loc,run,   rt_list1, runid_list1 ):
 	app_list=[]
-	print temp.shape
 	for index_ms2, row in temp.iterrows():
 		
 		data, status=pyMZML_xic_out(loc, float(tol / (10 ** 6)), row['ts'], row['te'], row['mz'],run, runid_list1,rt_list1 )
@@ -129,7 +128,6 @@ def  mzML_get_all( temp,tol,loc,run,   rt_list1, runid_list1 ):
 			app_list.append(data) 
 		else:
 			app_list.append(-1)
-	print len(app_list)
 	return app_list
 
 
@@ -139,18 +137,11 @@ def pyMZML_xic_out(name, ppmPrecision, minRT, maxRT, MZValue,run, runid_list,rt_
     minpos = bisect.bisect_left(rt_list, minRT)
     maxpos = bisect.bisect_left(rt_list, maxRT)
 
-    #print minpos,maxpos
-    #print len(runid_list)
     for specpos in range(minpos,maxpos):
 	specid = runid_list[specpos]
-	#print specid
         spectrum = run[specid]
-	#print spectrum
-    #for spectrum in run:
 	if spectrum['scan start time'] > maxRT:
-	    #print 'qutting'
             break
-	# spectrum['ms level'] == 1
         if spectrum['scan start time'] > minRT and spectrum['scan start time'] < maxRT:
             #print 'in ', specid
 	    lower_index = bisect.bisect(spectrum.peaks, (float(MZValue - ppmPrecision * MZValue), None))
@@ -239,7 +230,6 @@ def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_in
 		log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f ', (offset_index +c +2), x['mz'], time_w)
                 log.info("\t LW_BOUND window  %4.4f", time_w - temp_w)
                 log.info("\t UP_BOUND window %4.4f", time_w + temp_w)
-                #cosche log.info(data_xic[(data_xic['rt'] > (time_w - +0.60)) & (data_xic['rt'] < (time_w + 0.60))])
                 log.info("\t WARNINGS: moff_rtWin_peak is not enough to detect the max peak ")
                 
 		
@@ -343,7 +333,6 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
         if ('MZML' in raw_name.upper()):
             flag_mzml = True
 
-    #print loc 
     if os.path.isfile(loc):
         log.info('raw file exist')
     else:
@@ -385,7 +374,6 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
     
 	
     ## to export a list of XIc
-    #print 'input request size',data_ms2.shape
     try:
     	temp=data_ms2[['mz','rt']].copy()
    	# strange cases  
@@ -398,7 +386,7 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 	if not flag_mzml :
 
 		# txic-28-9-separate-jsonlines.exe
-		args_txic = shlex.split( "mono txic-9-10.exe " +  " -j " + temp.to_json( orient='records' ) + " -f " + loc     ,posix=True )
+		args_txic = shlex.split( "mono txic_json.exe " +  " -j " + temp.to_json( orient='records' ) + " -f " + loc     ,posix=True )
     		start_timelocal = time.time()
 
     		p = subprocess.Popen(args_txic, stdout=subprocess.PIPE)
@@ -407,7 +395,6 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
     
     		xic_data=[]
     		for l in range ( 0,temp.shape[0] ) :
-			#print l
 			temp = json.loads( output.split('\n')[l].decode("utf-8") ) 
 			xic_data.append(pd.DataFrame( { 'rt' : temp['results']['times'], 'intensity':  temp['results']['intensities'] }   , columns=['rt', 'intensity'] ) )
     	
@@ -415,7 +402,6 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 		run_temp = pymzml.run.Reader(raw_name)
 		xic_data =  mzML_get_all( temp,tol,loc, run_temp ,rt_list , id_list  )
 	#10p_noise    5p_noise  SNR     intensity  log_L_R    log_int  lwhm rt_peak  rwhm
-	#print offset_index
 	data_ms2.reset_index(inplace=True)
 	#print data_ms2.index
 	data_ms2[['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']] = data_ms2.apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index) , axis=1   )
@@ -511,7 +497,6 @@ def main_apex_alone():
     #print data_split[0].shape
     ##used for test
     log.critical('Starting Apex  .....')
-    #print 'Original input size', df.shape
     name = os.path.basename(file_name).split('.')[0]
     
     check_output_folder_existence(loc_output )
