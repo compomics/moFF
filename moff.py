@@ -86,17 +86,17 @@ def compute_peptide_matrix(loc_output, log, tag_filename):
 
 
 def save_moff_apex_result(list_df, result, folder_output, name):
-	#print len(list_df)
+
 	try:
 		xx = []
 		for df_index in range(0,len(list_df)):
 			if result[df_index].get()[1] == -1:
 					exit ('Raw file not retrieved: wrong path or upper/low case mismatch')
 			else:
-				#print result[df_index].get()[0]
+
 					xx.append( result[df_index].get()[0] )
 
-			#print len(xx)
+
 			final_res = pd.concat(xx)
 		if 'index' in final_res.columns:
 			final_res.drop('index',axis=1,inplace=True )
@@ -104,7 +104,6 @@ def save_moff_apex_result(list_df, result, folder_output, name):
 	except Exception as e :
 		traceback.print_exc()
 		print
-		# print os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt")
 		raise e
 	return (1)
 
@@ -188,7 +187,7 @@ def pyMZML_xic_out(name, ppmPrecision, minRT, maxRT, MZValue,run, runid_list,rt_
 		if spectrum['scan start time'] > maxRT:
 			break
 		if spectrum['scan start time'] > minRT and spectrum['scan start time'] < maxRT:
-			#print 'in ', specid
+
 			lower_index = bisect.bisect(spectrum.peaks, (float(MZValue - ppmPrecision * MZValue), None))
 			upper_index = bisect.bisect(spectrum.peaks, (float(MZValue + ppmPrecision * MZValue), None))
 			maxI = 0.0
@@ -264,7 +263,7 @@ def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_in
 		pp = data_xic[data_xic["intensity"] == data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))]['intensity'].max()].index
 		pos_p = ind_v[pp]
 		if pos_p.values.shape[0] > 1:
-			print 'error'
+
 			return pd.Series({'intensity': -1, 'rt_peak': -1,'lwhm':-1,'rwhm':-1,'5p_noise':-1,'10p_noise':-1,'SNR':-1,'log_L_R':-1,'log_int':-1})
 		val_max = data_xic.ix[pos_p, 1].values
 	else:
@@ -404,8 +403,6 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 	# set mbr_flag
 	if 'matched' in data_ms2.columns:
 		mbr_flag = 1
-		#log.critical('Apex module has detected mbr peptides')
-		#log.info('moff_rtWin_peak for matched peptide:   %4.4f ', s_w_match)
 
 
 	## to export a list of XIc
@@ -418,7 +415,7 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 		temp['te'] = (data_ms2['rt'] /60  ) + h_rt_w
 		temp.drop('rt',1,inplace=True )
 		if not flag_mzml :
-			# txic-28-9-separate-jsonlines.exe
+
 			if not flag_windows:
 				args_txic = shlex.split( "mono txic_json.exe " +  " -j " + temp.to_json( orient='records' ) + " -f " + loc,posix=True )
 			else:
@@ -515,13 +512,9 @@ def main_apex_alone():
 
 	log.critical('Output file in :  %s', loc_output)
 
-	# multiprocessing.cpu_count()
 	data_split = np.array_split(df,  multiprocessing.cpu_count()  )
 
-	##--used for test
-	#data_split = np.array_split(df, 1)
-	#print data_split[0].shape
-	##used for test
+
 	log.critical('Starting Apex  .....')
 	name = os.path.basename(file_name).split('.')[0]
 
@@ -534,9 +527,8 @@ def main_apex_alone():
 
 	#multiprocessing.cpu_count()
 	myPool = multiprocessing.Pool(  multiprocessing.cpu_count()   )
-	## code below id for testing
-	#myPool = multiprocessing.Pool(10 )
-	## end testing
+
+
 	result = {}
 	offset = 0
 	start_time = time.time()
@@ -549,7 +541,7 @@ def main_apex_alone():
 	myPool.join()
 	log.critical('...apex terminated')
 	log.critical( 'Computational time (sec):  %4.4f ' % (time.time() -start_time))
-	print 'Time no result collect',  time.time() -start_time
+	#print 'Time no result collect',  time.time() -start_time
 	start_time_2 = time.time()
 	save_moff_apex_result(data_split, result, loc_output, file_name)
 	#print 'Time no result collect 2',  time.time() -start_time_2

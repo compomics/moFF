@@ -8,6 +8,7 @@ import multiprocessing
 import time
 import moff
 import moff_mbr
+import traceback
 
 
 
@@ -15,23 +16,6 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 
-
-
-
-def save_moff_result (list_df, result, folder_output, name  ):
-	xx=[]
-	for df_index in range(0,len(list_df)):
-		if result[df_index].get()[1] == -1:
-			exit ('Raw file not retrieved: wrong path or upper/low case mismatch')
-		else:
-			xx.append( result[df_index].get()[0])
-
-	final_res = pd.concat(xx)
-	#print final_res.shape
-	#print os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt")
-	final_res.to_csv( os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt"),sep="\t",index=False )
-
-	return (1)
 
 
 
@@ -199,7 +183,8 @@ if __name__ == '__main__':
 		myPool.join()
 		print ' TIME multi thre. terminated', time.time() - start_time
 		log.critical('...apex terminated in  %4.4f sec', time.time() - start_time )
-		save_moff_result (data_split, result, loc_output, file_name  )
+		#moff.save_moff_result (data_split, result, loc_output, file_name  )
+		moff.save_moff_apex_result(data_split, result, loc_output, file_name  )
 	log.critical('TOTAL time for apex %4.4f sec', time.time() - start_time)
 	c+=1
 
