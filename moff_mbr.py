@@ -9,6 +9,7 @@ import logging
 import os
 import re
 import sys
+import moff
 
 import numpy as np
 import pandas as pd
@@ -19,28 +20,9 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 
-def map_ps2moff(data):
-    data.drop(data.columns[[0]], axis=1, inplace=True)
-    data.columns = data.columns.str.lower()
-    data.rename(
-        columns={'sequence': 'peptide', 'modified sequence' :'mod_peptide'  ,'measured charge': 'charge', 'theoretical mass': 'mass', 'protein(s)': 'prot',
-                 'm/z': 'mz'}, inplace=True)
-    return data, data.columns.values.tolist()
 
 
-'''
-input list of columns
-list of column names from PS default template loaded from .properties
-'''
-def check_ps_input_data(input_column_name, list_col_ps_default):
-    input_column_name.sort()
-    list_col_ps_default.sort()
-    if list_col_ps_default == input_column_name:
-        # detected a default PS input file
-        return 1
-    else:
-        # not detected a default PS input file
-        return 0
+
 
 
 # filtering _outlier
@@ -94,14 +76,7 @@ def combine_model(x, model, err, weight_flag):
         return float(app_sum) / float(np.where(~ np.isnan(x))[0].shape[0])
 
 
-# check columns read  from  a properties file
-def check_columns_name(col_list, col_must_have):
-    for c_name in col_must_have:
-        if not (c_name in col_list):
-            # fail
-            return False
-    # succes
-    return True
+
 
 
 # run the mbr in moFF : input  ms2 identified peptide   output csv file with the matched peptides added
@@ -201,14 +176,14 @@ def run_mbr(args):
         # get the lists of PS  defaultcolumns from properties file
         list_ps_def = ast.literal_eval(config.get('moFF', 'ps_default_export_v1'))
         # here it controls if the input file is a PS export; if yes it maps the input in right moFF name
-        if check_ps_input_data(list_name, list_ps_def) == 1:
+        if moff.check_ps_input_data(list_name, list_ps_def) == 1:
             log.critical('Detected input file from PeptideShaker export..: %s ', a)
             # map  the columns name according to moFF input requirements
-            data_moff, list_name = map_ps2moff(data_moff)
+            data_moff, list_name = moff.map_ps2moff(data_moff,'col_must_have_mbr')
             log.critical('Mapping columns names into the  the moFF requested column name..: %s ', a)
             # print data_moff.columns
-        if not check_columns_name(list_name, ast.literal_eval(config.get('moFF', 'col_must_have_mbr'))):
-            exit('ERROR minimal field requested are missing or wrong')
+        if  moff.check_columns_name(list_name, ast.literal_eval(config.get('moFF', 'col_must_have_mbr'))) == 1 :
+	        exit('ERROR minimal field requested are missing or wrong')
         data_moff['matched'] = 0
         data_moff['mass'] = data_moff['mass'].map('{:.4f}'.format)
 

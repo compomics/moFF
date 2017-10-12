@@ -110,10 +110,13 @@ def save_moff_apex_result(list_df, result, folder_output, name):
 
 
 
-def map_ps2moff(data):
+def map_ps2moff(data,type_mapping):
 	data.drop(data.columns[[0]], axis=1, inplace=True)
 	data.columns = data.columns.str.lower()
-	data.rename(columns={'sequence': 'peptide', 'measured charge': 'charge', 'theoretical mass': 'mass', 'protein(s)': 'prot', 'm/z': 'mz'}, inplace=True)
+	if type_mapping == 'col_must_have_mbr':
+		data.rename( columns={'sequence': 'peptide', 'modified sequence': 'mod_peptide', 'measured charge': 'charge','theoretical mass': 'mass', 'protein(s)': 'prot','m/z': 'mz'}, inplace=True)
+	if  type_mapping == 'col_must_have_apex':
+		data.rename(columns={'sequence': 'peptide', 'measured charge': 'charge', 'theoretical mass': 'mass', 'protein(s)': 'prot', 'm/z': 'mz'}, inplace=True)
 	return data, data.columns.values.tolist()
 
 
@@ -122,15 +125,13 @@ input list of columns
 list of column names from PS default template loaded from .properties
 '''
 
-def check_ps_input_data(input_column_name, list_col_ps_default):
-	input_column_name.sort()
-	list_col_ps_default.sort()
-	if list_col_ps_default == input_column_name:
-		# detected a default PS input file
-		return 1
-	else:
-		# not detected a default PS input file
-		return 0
+def check_ps_input_data(col_list, col_must_have):
+	for c_name in col_must_have:
+		if not (c_name in col_list):
+			# fail
+			return False
+	# succes
+	return True
 
 
 def check_columns_name(col_list, col_must_have):
@@ -499,7 +500,7 @@ def main_apex_alone():
 		# here it controls if the input file is a PS export; if yes it maps the input in right moFF name
 		if check_ps_input_data(list_name, list) == 1:
 			# map  the columns name according to moFF input requirements
-			data_ms2, list_name = map_ps2moff(df)
+			data_ms2, list_name = map_ps2moff(df,'col_must_have_apex')
 	## check if the field names are good
 	if check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_apex'))) == 1:
 		exit('ERROR minimal field requested are missing or wrong')
