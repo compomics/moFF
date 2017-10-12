@@ -86,28 +86,29 @@ def compute_peptide_matrix(loc_output, log, tag_filename):
 
 
 def save_moff_apex_result(list_df, result, folder_output, name):
-	#print len(list_df)
-	try:
-		xx = []
-		for df_index in range(0,len(list_df)):
-			if result[df_index].get()[1] == -1:
-				exit ('Raw file not retrieved: wrong path or upper/low case mismatch')
-			else:
-				#print result[df_index].get()[0]
-				xx.append( result[df_index].get()[0] )
+    #print len(list_df)
+    try:
+	xx = []
+    	for df_index in range(0,len(list_df)):
+        	if result[df_index].get()[1] == -1:
+            		exit ('Raw file not retrieved: wrong path or upper/low case mismatch')
+        	else:
+	    		#print result[df_index].get()[0]
+            		xx.append( result[df_index].get()[0] )
 
-		#print len(xx)
+    	#print len(xx)
 
-		final_res = pd.concat(xx)
-		if 'index' in final_res.columns:
-			final_res.drop('index',axis=1,inplace=True )
-		final_res.to_csv(os.path.join(folder_output, os.path.basename(name).split('.')[0] + "_moff_result.txt"), sep="\t",index=False)
-	except Exception as e :
+    	final_res = pd.concat(xx)
+	if 'index' in final_res.columns:
+		final_res.drop('index',axis=1,inplace=True )
+   	final_res.to_csv(os.path.join(folder_output, os.path.basename(name).split('.')[0] + "_moff_result.txt"), sep="\t",index=False)
+    except Exception as e :
 		traceback.print_exc()
 		print
-		# print os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt")
+    	# print os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt")
 		raise e
-	return (1)
+    return (1)
+
 
 
 
@@ -116,8 +117,6 @@ def map_ps2moff(data):
 	data.columns = data.columns.str.lower()
 	data.rename(columns={'sequence': 'peptide', 'measured charge': 'charge', 'theoretical mass': 'mass', 'protein(s)': 'prot', 'm/z': 'mz'}, inplace=True)
 	return data, data.columns.values.tolist()
-
-
 
 
 '''
@@ -205,6 +204,7 @@ def pyMZML_xic_out(name, ppmPrecision, minRT, maxRT, MZValue,run, runid_list,rt_
 	else:
 		return (pd.DataFrame(timeDependentIntensities, columns=['rt', 'intensity']), -1)
 
+
 def check_log_existence(file_to_check):
 	if os.path.isfile(file_to_check):
 		os.remove(file_to_check)
@@ -243,7 +243,104 @@ def compute_log_LR (data_xic,index,v_max):
 
 
 
+    def compute_log_LR (data_xic,index,v_max):
+    log_time = [-1, -1]
+    c_left = 0
+    find_5 = False
+    stop = False
+    while c_left < (index - 1) and not stop:
+        if not find_5 and ( data_xic.ix[(index - 1) - c_left, 1] <= (0.5 * v_max)):
+            find_5 = True
+            log_time[0] = data_xic.ix[(index - 1) - c_left, 0] * 60
+            stop = True
+        c_left += 1
+    find_5 = False
+    stop = False
+    r_left = 0
+    while ((index + 1) + r_left <  data_xic.shape[0] ) and not stop:
+        if not find_5 and data_xic.ix[(index + 1) + r_left, 1] <= (0.50 * v_max):
+            find_5 = True
+            log_time[1] = data_xic.ix[(index + 1) + r_left, 0] * 60
+            stop = True
+        r_left += 1
+    return log_time
+
+
+
 ## compute apex for mzML
+
+
+def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_index):
+	c = x.name
+	data_xic = xic_array[c]
+	time_w= x['rt'] / 60
+	if mbr_flag == 0:
+            log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f',(offset_index +c +2), x['mz'], time_w)
+            temp_w = s_w
+        else:
+            log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f matched (yes=1/no=0): %i',(offset_index +c +2), x['mz'], time_w,x['matched'])
+                    # row['matched'])
+            if x['matched'] == 1:
+                temp_w = s_w_match
+            else:
+                temp_w = s_w
+	if data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0] >= 1:
+		#data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].to_csv('thermo_testXIC_'+str(c)+'.txt',index=False,sep='\t')
+		ind_v = data_xic.index
+                pp = data_xic[data_xic["intensity"] == data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))]['intensity'].max()].index
+                pos_p = ind_v[pp]
+                if pos_p.values.shape[0] > 1:
+			print 'error'
+			return pd.Series({'intensity': -1, 'rt_peak': -1,'lwhm':-1,'rwhm':-1,'5p_noise':-1,'10p_noise':-1,'SNR':-1,'log_L_R':-1,'log_int':-1})
+		val_max = data_xic.ix[pos_p, 1].values
+	else:
+
+		log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f ', (offset_index +c +2), x['mz'], time_w)
+                log.info("\t LW_BOUND window  %4.4f", time_w - temp_w)
+                log.info("\t UP_BOUND window %4.4f", time_w + temp_w)
+                log.info("\t WARNINGS: moff_rtWin_peak is not enough to detect the max peak ")
+
+
+            	return  pd.Series({'intensity': -1, 'rt_peak': -1,
+                   'lwhm':-1,
+                    'rwhm':-1,
+                    '5p_noise':-1,
+                    '10p_noise':-1,
+                    'SNR':-1,
+                    'log_L_R':-1,
+                    'log_int':-1})
+
+	pnoise_5 = np.percentile(data_xic[(data_xic['rt'] > (time_w - h_rt_w )) & (data_xic['rt'] < (time_w + h_rt_w ))]['intensity'], 5 )
+    pnoise_10 = np.percentile( data_xic[(data_xic['rt'] > (time_w - h_rt_w )) & (data_xic['rt'] < (time_w + h_rt_w)  )]['intensity'], 10)
+
+	# find the lwhm and rwhm
+	time_point =  compute_log_LR (data_xic,pos_p[0],val_max)
+	if time_point[0]== -1 or  time_point[1] ==-1:
+		# keep the shape measure to -1
+		log_L_R=-1
+	else:
+    		log_L_R= np.log2(abs( time_w  - time_point[0]) / abs( time_w - time_point[1]))
+
+	if (pnoise_5 == 0 and pnoise_10 > 0):
+                SNR  = 20 * np.log10(data_xic.ix[pos_p, 1].values / pnoise_10)
+	else:
+		if pnoise_5 != 0:
+                    SNR = 20 * np.log10(data_xic.ix[pos_p, 1].values / pnoise_5)
+                else:
+                    log.info('\t 5 percentile is %4.4f (added 0.5)', pnoise_5)
+		    SNR = 20 * np.log10(data_xic.ix[pos_p, 1].values / (pnoise_5 +0.5))
+
+
+	return pd.Series({'intensity': val_max[0], 'rt_peak': data_xic.ix[pos_p, 0].values[0] * 60,
+               'lwhm': time_point[0] ,
+                'rwhm': time_point[1] ,
+                '5p_noise': pnoise_5,
+                '10p_noise':pnoise_10,
+                'SNR':SNR[0],
+                'log_L_R': log_L_R,
+                'log_int': np.log2(val_max)[0] })
+
+
 
 
 def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_index):
@@ -316,9 +413,9 @@ def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_in
 
 def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset_index,  rt_list , id_list ):
 	#setting logger for multiprocess
-	ch = logging.StreamHandler()
-	ch.setLevel(logging.ERROR)
-	log.addHandler(ch)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.ERROR)
+    log.addHandler(ch)
 
 	#setting flag and ptah
 	moff_path = os.path.dirname(sys.argv[0])
@@ -562,4 +659,4 @@ def main_apex_alone():
 			log.critical ('Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')
 
 if __name__ == '__main__':
-	main_apex_alone()
+    main_apex_alone()

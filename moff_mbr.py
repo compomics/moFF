@@ -76,6 +76,7 @@ def MD_removeOutliers(x, y, width):
 def combine_model(x, model, err, weight_flag):
     x = x.values
     tot_err = np.sum(np.array(err)[np.where(~np.isnan(x))])
+
     app_sum = 0
     app_sum_2 = 0
     for ii in range(0, len(x)):
@@ -169,16 +170,16 @@ def run_mbr(args):
     exp_subset = []
     # list of the name of the mbr output
     exp_out_name = []
+
     if args.loc_in is None:
         for id_name in args.tsv_list:
             exp_set.append(id_name)
     else:
-
-	for  item in os.listdir(args.loc_in):
-		log.critical(item)
-		if os.path.isfile(os.path.join(args.loc_in, item)):
-			if os.path.join(args.loc_in, item).endswith('.' + args.ext):
-				exp_set.append(os.path.join(args.loc_in, item))
+        for item in os.listdir(args.loc_in):
+            log.critical(item)
+            if os.path.isfile(os.path.join(args.loc_in, item)):
+	            if os.path.join(args.loc_in, item).endswith('.' + args.ext):
+		            exp_set.append(os.path.join(args.loc_in, item))
 
                 ## sample optiion is valid only if  folder iin option is valid
     if (args.sample is not None) and (args.loc_in is not None):
@@ -246,7 +247,7 @@ def run_mbr(args):
         # log.info('Custom list of peptide used  provided by the user in %s', args.rt_feat_file)
         shared_pep_list = pd.read_csv(args.rt_feat_file, sep='\t')
         shared_pep_list['mass'] = shared_pep_list['mass'].map('{:.4f}'.format)
-        shared_pep_list['code'] = shared_pep_list['mod_peptide'].astype(str) #+ '_' + shared_pep_list['mass'].astype(str)
+        shared_pep_list['code'] = shared_pep_list['peptide'].astype(str) + '_' + shared_pep_list['mass'].astype(str)
         list_shared_pep = shared_pep_list['code']
         log.info('Custom list of peptide contains  %i ', list_shared_pep.shape[0])
 
@@ -320,7 +321,7 @@ def run_mbr(args):
     log.info('Combination of the  model  --------')
     log.info('Weighted combination  %s : ', 'Weighted' if int(args.w_comb) == 1 else 'Unweighted')
 
-    diff_field = np.setdiff1d(exp_t[0].columns, ['matched', 'peptide','mod_peptide', 'mass', 'mz', 'charge', 'prot', 'rt'])
+    diff_field = np.setdiff1d(exp_t[0].columns, ['matched', 'peptide', 'mass', 'mz', 'charge', 'prot', 'rt'])
 
     for jj in aa:
         pre_pep_save = []
@@ -387,7 +388,7 @@ def run_mbr(args):
 
         log.info('Before adding %s contains %i ', exp_set[jj], exp_t[jj].shape[0])
         exp_out[jj] = pd.concat([exp_t[jj], test], join='outer', axis=0)
-	log.info('After MBR %s contains:  %i  peptides', exp_set[jj], exp_out[jj].shape[0])
+        log.info('After MBR %s contains:  %i  peptides', exp_set[jj], exp_out[jj].shape[0])
         log.critical('matched features   %i  MS2 features  %i ', exp_out[jj][exp_out[jj]['matched'] == 1].shape[0],
                      exp_out[jj][exp_out[jj]['matched'] == 0].shape[0])
         exp_out[jj].to_csv(
