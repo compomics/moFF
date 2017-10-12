@@ -23,7 +23,7 @@ def map_ps2moff(data):
     data.drop(data.columns[[0]], axis=1, inplace=True)
     data.columns = data.columns.str.lower()
     data.rename(
-        columns={'sequence': 'peptide', 'measured charge': 'charge', 'theoretical mass': 'mass', 'protein(s)': 'prot',
+        columns={'sequence': 'peptide', 'modified sequence' :'mod_peptide'  ,'measured charge': 'charge', 'theoretical mass': 'mass', 'protein(s)': 'prot',
                  'm/z': 'mz'}, inplace=True)
     return data, data.columns.values.tolist()
 
@@ -32,11 +32,10 @@ def map_ps2moff(data):
 input list of columns
 list of column names from PS default template loaded from .properties
 '''
-
-
 def check_ps_input_data(input_column_name, list_col_ps_default):
-    res = [i for e in list_col_ps_default for i in input_column_name if e in i]
-    if len(res) == len(input_column_name):
+    input_column_name.sort()
+    list_col_ps_default.sort()
+    if list_col_ps_default == input_column_name:
         # detected a default PS input file
         return 1
     else:
@@ -77,7 +76,6 @@ def MD_removeOutliers(x, y, width):
 def combine_model(x, model, err, weight_flag):
     x = x.values
     tot_err = np.sum(np.array(err)[np.where(~np.isnan(x))])
-
     app_sum = 0
     app_sum_2 = 0
     for ii in range(0, len(x)):
@@ -107,7 +105,7 @@ def check_columns_name(col_list, col_must_have):
 
 # run the mbr in moFF : input  ms2 identified peptide   output csv file with the matched peptides added
 def run_mbr(args):
-    print __name__
+    #print __name__
 
     ch = logging.StreamHandler()
     ch.setLevel(logging.ERROR)
@@ -171,15 +169,16 @@ def run_mbr(args):
     exp_subset = []
     # list of the name of the mbr output
     exp_out_name = []
-
     if args.loc_in is None:
         for id_name in args.tsv_list:
             exp_set.append(id_name)
     else:
-        for root, dirs, files in os.walk(args.loc_in):
-            for f in files:
-                if f.endswith('.' + args.ext):
-                    exp_set.append(os.path.join(root, f))
+
+	for  item in os.listdir(args.loc_in):
+		log.critical(item)
+		if os.path.isfile(os.path.join(args.loc_in, item)):
+			if os.path.join(args.loc_in, item).endswith('.' + args.ext):
+				exp_set.append(os.path.join(args.loc_in, item))
 
                 ## sample optiion is valid only if  folder iin option is valid
     if (args.sample is not None) and (args.loc_in is not None):
@@ -199,7 +198,7 @@ def run_mbr(args):
         data_moff = pd.read_csv(a, sep="\t", header=0)
         list_name = data_moff.columns.values.tolist()
         # get the lists of PS  defaultcolumns from properties file
-        list_ps_def = ast.literal_eval(config.get('moFF', 'ps_default_export'))
+        list_ps_def = ast.literal_eval(config.get('moFF', 'ps_default_export_v1'))
         # here it controls if the input file is a PS export; if yes it maps the input in right moFF name
         if check_ps_input_data(list_name, list_ps_def) == 1:
             log.critical('Detected input file from PeptideShaker export..: %s ', a)
@@ -207,13 +206,13 @@ def run_mbr(args):
             data_moff, list_name = map_ps2moff(data_moff)
             log.critical('Mapping columns names into the  the moFF requested column name..: %s ', a)
             # print data_moff.columns
-        if not check_columns_name(list_name, ast.literal_eval(config.get('moFF', 'col_must_have_x'))):
+        if not check_columns_name(list_name, ast.literal_eval(config.get('moFF', 'col_must_have_mbr'))):
             exit('ERROR minimal field requested are missing or wrong')
         data_moff['matched'] = 0
         data_moff['mass'] = data_moff['mass'].map('{:.4f}'.format)
 
-        data_moff['code_unique'] = data_moff['peptide'].astype(str) + '_' + data_moff['mass'].astype(str)
-        data_moff = data_moff.sort(columns='rt')
+        data_moff['code_unique'] = data_moff['mod_peptide'].astype(str) #+ '_' + data_moff['mass'].astype(str)
+        data_moff = data_moff.sort_values(by='rt')
         exp_t.append(data_moff)
         exp_out.append(data_moff)
 
@@ -247,7 +246,7 @@ def run_mbr(args):
         # log.info('Custom list of peptide used  provided by the user in %s', args.rt_feat_file)
         shared_pep_list = pd.read_csv(args.rt_feat_file, sep='\t')
         shared_pep_list['mass'] = shared_pep_list['mass'].map('{:.4f}'.format)
-        shared_pep_list['code'] = shared_pep_list['peptide'].astype(str) + '_' + shared_pep_list['mass'].astype(str)
+        shared_pep_list['code'] = shared_pep_list['mod_peptide'].astype(str) #+ '_' + shared_pep_list['mass'].astype(str)
         list_shared_pep = shared_pep_list['code']
         log.info('Custom list of peptide contains  %i ', list_shared_pep.shape[0])
 
@@ -321,7 +320,7 @@ def run_mbr(args):
     log.info('Combination of the  model  --------')
     log.info('Weighted combination  %s : ', 'Weighted' if int(args.w_comb) == 1 else 'Unweighted')
 
-    diff_field = np.setdiff1d(exp_t[0].columns, ['matched', 'peptide', 'mass', 'mz', 'charge', 'prot', 'rt'])
+    diff_field = np.setdiff1d(exp_t[0].columns, ['matched', 'peptide','mod_peptide', 'mass', 'mz', 'charge', 'prot', 'rt'])
 
     for jj in aa:
         pre_pep_save = []
@@ -334,14 +333,11 @@ def run_mbr(args):
                 list_pep_repB = exp_t[i[1]]['peptide'].unique()
                 set_dif_s_in_1 = np.setdiff1d(list_pep_repB, list_pep_repA)
                 add_pep_frame = exp_t[i[1]][exp_t[i[1]]['peptide'].isin(set_dif_s_in_1)].copy()
-                add_pep_frame = add_pep_frame[['peptide', 'mass', 'mz', 'charge', 'prot', 'rt']]
+                add_pep_frame = add_pep_frame[['peptide','mod_peptide' ,'mass', 'mz', 'charge', 'prot', 'rt']]
                 # add_pep_frame['code_unique'] = '_'.join([add_pep_frame['peptide'], add_pep_frame['prot'], add_pep_frame['mass'].astype(str), add_pep_frame['charge'].astype(str)])
-                add_pep_frame['code_unique'] = add_pep_frame['peptide'] + '_' + add_pep_frame['prot'] + '_' + \
-                                               add_pep_frame['mass'].astype(str) + '_' + add_pep_frame['charge'].astype(
-                    str)
-                add_pep_frame = add_pep_frame.groupby('code_unique', as_index=False)[
-                    'peptide', 'mass', 'charge', 'mz', 'prot', 'rt'].aggregate(max)
-                add_pep_frame = add_pep_frame[['peptide', 'mass', 'mz', 'charge', 'prot', 'rt']]
+                add_pep_frame['code_unique'] = add_pep_frame['mod_peptide'] + '_' + add_pep_frame['prot'] + '_' + '_' + add_pep_frame['charge'].astype(str)
+                add_pep_frame = add_pep_frame.groupby('code_unique', as_index=False)['peptide','mod_peptide', 'mass', 'charge', 'mz', 'prot', 'rt'].aggregate(max)
+                add_pep_frame = add_pep_frame[['code_unique','peptide', 'mod_peptide','mass', 'mz', 'charge', 'prot', 'rt']]
                 list_name = add_pep_frame.columns.tolist()
                 list_name = [w.replace('rt', 'rt_' + str(c_rt)) for w in list_name]
                 add_pep_frame.columns = list_name
@@ -352,16 +348,16 @@ def run_mbr(args):
             test = pre_pep_save[0]
         else:
             test = reduce(
-                lambda left, right: pd.merge(left, right, on=['peptide', 'mass', 'mz', 'charge', 'prot'], how='outer'),
+                lambda left, right: pd.merge(left, right, on=['code_unique','peptide','mod_peptide' ,'mass', 'mz', 'charge', 'prot'], how='outer'),
                 pre_pep_save)
 
-        # (n_replicates-1) == offset for the  model vector
-        # print test.columns[5:6]
+        # aggregated by code_unique,  to avoid duplicates
+        test =  test.groupby('code_unique', as_index=False).aggregate(max)
+        test.drop('code_unique', axis=1, inplace=True)
 
-        test['time_pred'] = test.ix[:, 5: (5 + (n_replicates - 1))].apply(
+        test['time_pred'] = test.ix[:, 6: (6 + (n_replicates - 1))].apply(
             lambda x: combine_model(x, model_save[(jj * (n_replicates - 1)):((jj + 1) * (n_replicates - 1))],
-                                    model_err[(jj * (n_replicates - 1)):((jj + 1) * (n_replicates - 1))], args.w_comb),
-            axis=1)
+                                    model_err[(jj * (n_replicates - 1)):((jj + 1) * (n_replicates - 1))], args.w_comb), axis=1)
         test['matched'] = 1
         # print test.columns.tolist()
         # iif n_replicates > 3:
@@ -384,14 +380,14 @@ def run_mbr(args):
         list_name = [w.replace('time_pred', 'rt') for w in list_name]
         test.columns = list_name
 
-        test = test[['peptide', 'mass', 'mz', 'charge', 'prot', 'rt', 'matched']]
+        test = test[['peptide','mod_peptide', 'mass', 'mz', 'charge', 'prot', 'rt', 'matched']]
         # just put nan with the missing values
         for field in diff_field.tolist():
             test[field] = np.nan  # -1
 
         log.info('Before adding %s contains %i ', exp_set[jj], exp_t[jj].shape[0])
         exp_out[jj] = pd.concat([exp_t[jj], test], join='outer', axis=0)
-        log.info('After MBR %s contains:  %i  peptides', exp_set[jj], exp_out[jj].shape[0])
+	log.info('After MBR %s contains:  %i  peptides', exp_set[jj], exp_out[jj].shape[0])
         log.critical('matched features   %i  MS2 features  %i ', exp_out[jj][exp_out[jj]['matched'] == 1].shape[0],
                      exp_out[jj][exp_out[jj]['matched'] == 0].shape[0])
         exp_out[jj].to_csv(
