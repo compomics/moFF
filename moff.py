@@ -50,13 +50,6 @@ def compute_peptide_matrix(loc_output, log, tag_filename):
 		else:
 			name_col.append('sumIntensity_' + os.path.basename(name).split('_moff_result.txt')[0])
 		data = pd.read_csv(name, sep="\t")
-		# Other possibile quality controll filter
-		##data = data[ data['lwhm'] != -1]
-		##data = data[data['rwhm'] != -1 ]
-		'''
-		data = data[data['variable modifications'].isnull()]
-		data = data[data['fixed modifications'].isnull()]
-		'''
 		data = data[data['intensity'] != -1]
 		data.sort_values('rt', ascending=True, inplace=True)
 		log.critical('Collecting moFF result file : %s   --> Retrived peptide peaks after filtering:  %i',
@@ -76,7 +69,6 @@ def compute_peptide_matrix(loc_output, log, tag_filename):
 		df.ix[:, i + 1] = grouped.agg({'prot': 'max', 'intensity': 'sum'})['intensity']
 		df.ix[np.intersect1d(df.index, grouped.groups.keys()), 0] = grouped.agg({'prot': 'max', 'intensity': 'sum'})[
 			'prot']
-	# print df.head(5)
 	df.reset_index(level=0, inplace=True)
 	df = df.fillna(0)
 	df.rename(columns={'index': 'peptide'}, inplace=True)
@@ -169,10 +161,11 @@ def  mzML_get_all( temp,tol,loc,run,   rt_list1, runid_list1 ):
 	for index_ms2, row in temp.iterrows():
 
 		data, status=pyMZML_xic_out(loc, float(tol / (10 ** 6)), row['ts'], row['te'], row['mz'],run, runid_list1,rt_list1 )
+		# status is evaluated only herenot used anymore 
 		if status != -1 :
 			app_list.append(data)
 		else:
-			app_list.append(-1)
+			app_list.append(pd.DataFrame(columns=['rt','intensity']))
 	return app_list
 
 
@@ -258,6 +251,17 @@ def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_in
 			temp_w = s_w_match
 		else:
 			temp_w = s_w
+	if data_xic.empty :
+		log.info('\t line %i  --> XiC  %s ',(offset_index +c +2), 'not detected' )
+		return  pd.Series({'intensity': -1, 'rt_peak': -1,
+                                   'lwhm':-1,
+                                        'rwhm':-1,
+                                        '5p_noise':-1,
+                                        '10p_noise':-1,
+                                        'SNR':-1,
+                                        'log_L_R':-1,
+                                        'log_int':-1})
+ 
 	if data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0] >= 1:
 		#data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].to_csv('thermo_testXIC_'+str(c)+'.txt',index=False,sep='\t')
 		ind_v = data_xic.index
@@ -410,10 +414,10 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 	try:
 		temp=data_ms2[['mz','rt']].copy()
 	# strange cases
-
+		
 		temp.ix[:,'tol'] = int( tol)
-		temp['ts'] = (data_ms2['rt'] /60 ) - h_rt_w
-		temp['te'] = (data_ms2['rt'] /60  ) + h_rt_w
+		temp['ts'] = (data_ms2['rt'] /60   ) - h_rt_w
+		temp['te'] = (data_ms2['rt'] /60 ) + h_rt_w
 		temp.drop('rt',1,inplace=True )
 		if not flag_mzml :
 
@@ -426,17 +430,17 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 			output, err = p.communicate()
 			xic_data=[]
 			for l in range ( 0,temp.shape[0] ) :
-					temp = json.loads( output.split('\n')[l].decode("utf-8") )
-					xic_data.append(pd.DataFrame( { 'rt' : temp['results']['times'], 'intensity':  temp['results']['intensities'] }   , columns=['rt', 'intensity'] ) )
+					temp_json = json.loads( output.split('\n')[l].decode("utf-8") )
+					xic_data.append(pd.DataFrame( { 'rt' : temp_json ['results']['times'], 'intensity':  temp_json ['results']['intensities'] }   , columns=['rt', 'intensity'] ) )
 		else:
 			run_temp = pymzml.run.Reader(raw_name)
-			xic_data =  mzML_get_all( temp,tol,loc, run_temp ,rt_list , id_list  )
+			xic_data =  mzML_get_all( temp,tol,loc, run_temp , rt_list , id_list  )
 			#10p_noise    5p_noise  SNR     intensity  log_L_R    log_int  lwhm rt_peak  rwhm
 		data_ms2.reset_index(inplace=True)
 		data_ms2[['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']] = data_ms2.apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index) , axis=1   )
 	except Exception as e:
 		traceback.print_exc()
-		print
+		print 
 		raise e
 
 	return  (data_ms2,1)
@@ -490,7 +494,6 @@ def main_apex_alone():
 	config.read(os.path.join(os.path.dirname(sys.argv[0]), 'moff_setting.properties'))
 
 	df = pd.read_csv(file_name, sep="\t")
-	#df = df.ix[0:100,:]
 	## check and eventually tranf for PS template
 	if not 'matched' in df.columns:
 		# check if it is a PS file ,
@@ -512,8 +515,7 @@ def main_apex_alone():
 		log.critical('RAW file  :  %s' % args.raw_list)
 
 	log.critical('Output file in :  %s', loc_output)
-
-	data_split = np.array_split(df,  multiprocessing.cpu_count()  )
+	data_split = np.array_split(df, multiprocessing.cpu_count()  )
 
 
 	log.critical('Starting Apex  .....')
@@ -527,7 +529,7 @@ def main_apex_alone():
 	rt_list , id_list = scan_mzml ( args.raw_list )
 
 	#multiprocessing.cpu_count()
-	myPool = multiprocessing.Pool(  multiprocessing.cpu_count()   )
+	myPool = multiprocessing.Pool( multiprocessing.cpu_count()   )
 
 
 	result = {}
@@ -542,12 +544,8 @@ def main_apex_alone():
 	myPool.join()
 	log.critical('...apex terminated')
 	log.critical( 'Computational time (sec):  %4.4f ' % (time.time() -start_time))
-	#print 'Time no result collect',  time.time() -start_time
-	start_time_2 = time.time()
 	save_moff_apex_result(data_split, result, loc_output, file_name)
-	#print 'Time no result collect 2',  time.time() -start_time_2
 	if args.pep_matrix == 1 :
-		# # TO DO manage the error with retunr -1 like in moff_all.py  master repo
 		state = compute_peptide_matrix(loc_output,args.tag_pepsum)
 		if state ==-1 :
 			log.critical ('Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')
