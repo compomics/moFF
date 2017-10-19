@@ -157,7 +157,6 @@ if __name__ == '__main__':
 		if 'matched' in df.columns:
 			log.critical('Apex module has detected mbr peptides')
 
-		#print 'Original input size', df.shape
 		name = os.path.basename(file_name).split('.')[0]
 
 		#  IF raw_list contains mzML file -->  I m going to  read the file, one time just to save all the scan  Id and their RT.
