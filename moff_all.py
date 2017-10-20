@@ -56,23 +56,21 @@ if __name__ == '__main__':
 						help='weights for model combination combination : 0 for no weight  1 weighted devised by trein err of the model.',
 						required=False)
 
-    # parser.add_argument('--input', dest='name', action='store',help='specify input list of MS2 peptides ', required=True)
+	# parser.add_argument('--input', dest='name', action='store',help='specify input list of MS2 peptides ', required=True)
 
-    parser.add_argument('--tol', dest='toll', action='store', type=float, help='specify the tollerance  parameter in ppm',
-                        required=True)
+	parser.add_argument('--tol', dest='toll', action='store', type=float, help='specify the tollerance  parameter in ppm',
+						required=True)
 
 	parser.add_argument('--rt_w', dest='rt_window', action='store', type=float, default=3,
 						help='specify rt window for xic (minute). Default value is 3 min', required=False)
 
 	parser.add_argument('--rt_p', dest='rt_p_window', action='store', type=float, default=1,
-                        help='specify the time windows for the peak (minute). Default value is 1 ', required=False)
+						help='specify the time windows for the peak (minute). Default value is 1 ', required=False)
 
-	parser.add_argument('--rt_p_match', dest='rt_p_window_match', action='store', type=float, default=0.4,
-						help='specify the time windows for the matched peptide peak ( minute). Default value is 0.4 ',
+	parser.add_argument('--rt_p_match', dest='rt_p_window_match', action='store', type=float, default=1.3,
+						help='specify the time windows for the matched peptide peak ( minute). Default value is 1.3 ',
 						required=False)
-    parser.add_argument('--rt_p_match', dest='rt_p_window_match', action='store', type=float, default=1.5,
-                        help='specify the time windows for the matched peptide peak (minute). Default value is 1.5 ',
-                        required=False)
+
 
 	parser.add_argument('--raw_repo', dest='raw', action='store', help='specify the raw file repository ', required=False)
 
