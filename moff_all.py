@@ -19,6 +19,23 @@ log.setLevel(logging.DEBUG)
 
 
 
+def save_moff_result (list_df, result, folder_output, name  ):
+	xx=[]
+	for df_index in range(0,len(list_df)):
+		if result[df_index].get()[1] == -1:
+			exit ('Raw file not retrieved: wrong path or upper/low case mismatch')
+		else:
+			xx.append( result[df_index].get()[0])
+
+	final_res = pd.concat(xx)
+	#print final_res.shape
+	#print os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt")
+	final_res.to_csv( os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt"),sep="\t",index=False )
+
+	return (1)
+
+
+
 
 
 if __name__ == '__main__':
@@ -64,13 +81,12 @@ if __name__ == '__main__':
 	parser.add_argument('--rt_w', dest='rt_window', action='store', type=float, default=3,
 						help='specify rt window for xic (minute). Default value is 3 min', required=False)
 
-	parser.add_argument('--rt_p', dest='rt_p_window', action='store', type=float, default=1,
-						help='specify the time windows for the peak (minute). Default value is 1 ', required=False)
+	parser.add_argument('--rt_p', dest='rt_p_window', action='store', type=float, default=0.1,
+						help='specify the time windows for the peak ( minute). Default value is 0.1 ', required=False)
 
-	parser.add_argument('--rt_p_match', dest='rt_p_window_match', action='store', type=float, default=1.3,
-						help='specify the time windows for the matched peptide peak ( minute). Default value is 1.3 ',
+	parser.add_argument('--rt_p_match', dest='rt_p_window_match', action='store', type=float, default=0.4,
+						help='specify the time windows for the matched peptide peak ( minute). Default value is 0.4 ',
 						required=False)
-
 
 	parser.add_argument('--raw_repo', dest='raw', action='store', help='specify the raw file repository ', required=False)
 
@@ -158,6 +174,7 @@ if __name__ == '__main__':
 		if 'matched' in df.columns:
 			log.critical('Apex module has detected mbr peptides')
 
+		#print 'Original input size', df.shape
 		name = os.path.basename(file_name).split('.')[0]
 
 		#  IF raw_list contains mzML file -->  I m going to  read the file, one time just to save all the scan  Id and their RT.
@@ -183,8 +200,7 @@ if __name__ == '__main__':
 		myPool.join()
 		print ' TIME multi thre. terminated', time.time() - start_time
 		log.critical('...apex terminated in  %4.4f sec', time.time() - start_time )
-		#moff.save_moff_result (data_split, result, loc_output, file_name  )
-		moff.save_moff_apex_result(data_split, result, loc_output, file_name  )
+		save_moff_result (data_split, result, loc_output, file_name  )
 	log.critical('TOTAL time for apex %4.4f sec', time.time() - start_time)
 	c+=1
 

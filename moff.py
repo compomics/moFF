@@ -25,7 +25,14 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 
-
+"""
+ input
+   - MS2 ID file
+   - tol
+   - half rt time window in minute
+ output
+   - list of intensities..+
+"""
 
 TXIC_PATH = os.environ.get('TXIC_PATH', './')
 
@@ -43,6 +50,13 @@ def compute_peptide_matrix(loc_output, log, tag_filename):
 		else:
 			name_col.append('sumIntensity_' + os.path.basename(name).split('_moff_result.txt')[0])
 		data = pd.read_csv(name, sep="\t")
+		# Other possibile quality controll filter
+		##data = data[ data['lwhm'] != -1]
+		##data = data[data['rwhm'] != -1 ]
+		'''
+		data = data[data['variable modifications'].isnull()]
+		data = data[data['fixed modifications'].isnull()]
+		'''
 		data = data[data['intensity'] != -1]
 		data.sort_values('rt', ascending=True, inplace=True)
 		log.critical('Collecting moFF result file : %s   --> Retrived peptide peaks after filtering:  %i',
@@ -62,6 +76,7 @@ def compute_peptide_matrix(loc_output, log, tag_filename):
 		df.ix[:, i + 1] = grouped.agg({'prot': 'max', 'intensity': 'sum'})['intensity']
 		df.ix[np.intersect1d(df.index, grouped.groups.keys()), 0] = grouped.agg({'prot': 'max', 'intensity': 'sum'})[
 			'prot']
+	# print df.head(5)
 	df.reset_index(level=0, inplace=True)
 	df = df.fillna(0)
 	df.rename(columns={'index': 'peptide'}, inplace=True)
@@ -71,59 +86,55 @@ def compute_peptide_matrix(loc_output, log, tag_filename):
 
 
 def save_moff_apex_result(list_df, result, folder_output, name):
-
+	#print len(list_df)
 	try:
 		xx = []
 		for df_index in range(0,len(list_df)):
 			if result[df_index].get()[1] == -1:
-					exit ('Raw file not retrieved: wrong path or upper/low case mismatch')
+				exit ('Raw file not retrieved: wrong path or upper/low case mismatch')
 			else:
+				#print result[df_index].get()[0]
+				xx.append( result[df_index].get()[0] )
 
-					xx.append( result[df_index].get()[0] )
+		#print len(xx)
 
-
-			final_res = pd.concat(xx)
+		final_res = pd.concat(xx)
 		if 'index' in final_res.columns:
 			final_res.drop('index',axis=1,inplace=True )
 		final_res.to_csv(os.path.join(folder_output, os.path.basename(name).split('.')[0] + "_moff_result.txt"), sep="\t",index=False)
 	except Exception as e :
 		traceback.print_exc()
 		print
+		# print os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt")
 		raise e
 	return (1)
 
 
 
-
-def map_ps2moff(data,type_mapping):
+def map_ps2moff(data):
 	data.drop(data.columns[[0]], axis=1, inplace=True)
 	data.columns = data.columns.str.lower()
-	if type_mapping == 'col_must_have_mbr':
-		data.rename( columns={'sequence': 'peptide', 'modified sequence': 'mod_peptide', 'measured charge': 'charge','theoretical mass': 'mass', 'protein(s)': 'prot','m/z': 'mz'}, inplace=True)
-	if  type_mapping == 'col_must_have_apex':
-		data.rename(columns={'sequence': 'peptide', 'measured charge': 'charge', 'theoretical mass': 'mass', 'protein(s)': 'prot', 'm/z': 'mz'}, inplace=True)
+	data.rename(columns={'sequence': 'peptide', 'measured charge': 'charge', 'theoretical mass': 'mass', 'protein(s)': 'prot', 'm/z': 'mz'}, inplace=True)
 	return data, data.columns.values.tolist()
 
 
 
-def check_ps_input_data(col_list, col_must_have):
-	for c_name in col_must_have:
-		if not (c_name in col_list):
-			# fail
-			return False
-	# succes
-	return True
 
-"""
-input: col_list   list of input column name
-        col_must_have list of column names requested
+'''
+input list of columns
+list of column names from PS default template loaded from .properties
+'''
 
-output 1 if all the requested column name  are there
-       0 miss some of the requested column names
+def check_ps_input_data(input_column_name, list_col_ps_default):
+	input_column_name.sort()
+	list_col_ps_default.sort()
+	if list_col_ps_default == input_column_name:
+		# detected a default PS input file
+		return 1
+	else:
+		# not detected a default PS input file
+		return 0
 
-
-General check is some of the requested field are present in the actually columns
-"""
 
 def check_columns_name(col_list, col_must_have):
 	for c_name in col_must_have:
@@ -158,7 +169,7 @@ def scan_mzml ( name ):
 def  mzML_get_all( temp,tol,loc,run,   rt_list1, runid_list1 ):
 	app_list=[]
 	for index_ms2, row in temp.iterrows():
-
+		
 		data, status=pyMZML_xic_out(loc, float(tol / (10 ** 6)), row['ts'], row['te'], row['mz'],run, runid_list1,rt_list1 )
 		# status is evaluated only herenot used anymore
 		if status != -1 :
@@ -180,7 +191,7 @@ def pyMZML_xic_out(name, ppmPrecision, minRT, maxRT, MZValue,run, runid_list,rt_
 		if spectrum['scan start time'] > maxRT:
 			break
 		if spectrum['scan start time'] > minRT and spectrum['scan start time'] < maxRT:
-
+			#print 'in ', specid
 			lower_index = bisect.bisect(spectrum.peaks, (float(MZValue - ppmPrecision * MZValue), None))
 			upper_index = bisect.bisect(spectrum.peaks, (float(MZValue + ppmPrecision * MZValue), None))
 			maxI = 0.0
@@ -195,13 +206,13 @@ def pyMZML_xic_out(name, ppmPrecision, minRT, maxRT, MZValue,run, runid_list,rt_
 	else:
 		return (pd.DataFrame(timeDependentIntensities, columns=['rt', 'intensity']), -1)
 
-
 def check_log_existence(file_to_check):
 	if os.path.isfile(file_to_check):
 		os.remove(file_to_check)
 		return 1
 	else:
 		return -1
+
 
 def check_output_folder_existence(loc_output ):
    if not os.path.exists(loc_output):
@@ -250,24 +261,13 @@ def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_in
 			temp_w = s_w_match
 		else:
 			temp_w = s_w
-	if data_xic.empty :
-		log.info('\t line %i  --> XiC  %s ',(offset_index +c +2), 'not detected' )
-		return  pd.Series({'intensity': -1, 'rt_peak': -1,
-                                   'lwhm':-1,
-                                        'rwhm':-1,
-                                        '5p_noise':-1,
-                                        '10p_noise':-1,
-                                        'SNR':-1,
-                                        'log_L_R':-1,
-                                        'log_int':-1})
-
 	if data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0] >= 1:
 		#data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].to_csv('thermo_testXIC_'+str(c)+'.txt',index=False,sep='\t')
 		ind_v = data_xic.index
 		pp = data_xic[data_xic["intensity"] == data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))]['intensity'].max()].index
 		pos_p = ind_v[pp]
 		if pos_p.values.shape[0] > 1:
-
+			print 'error'
 			return pd.Series({'intensity': -1, 'rt_peak': -1,'lwhm':-1,'rwhm':-1,'5p_noise':-1,'10p_noise':-1,'SNR':-1,'log_L_R':-1,'log_int':-1})
 		val_max = data_xic.ix[pos_p, 1].values
 	else:
@@ -293,7 +293,7 @@ def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_in
 		log_L_R=-1
 	else:
 			log_L_R= np.log2(abs( time_w  - time_point[0]) / abs( time_w - time_point[1]))
-
+	
 	if (pnoise_5 == 0 and pnoise_10 > 0):
 				SNR  = 20 * np.log10(data_xic.ix[pos_p, 1].values / pnoise_10)
 	else:
@@ -302,7 +302,7 @@ def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_in
 		else:
 				log.info('\t 5 percentile is %4.4f (added 0.5)', pnoise_5)
 				SNR = 20 * np.log10(data_xic.ix[pos_p, 1].values / (pnoise_5 +0.5))
-
+	
 	return pd.Series({'intensity': val_max[0], 'rt_peak': data_xic.ix[pos_p, 0].values[0] * 60,
 			   'lwhm': time_point[0] ,
 				'rwhm': time_point[1] ,
@@ -407,6 +407,8 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 	# set mbr_flag
 	if 'matched' in data_ms2.columns:
 		mbr_flag = 1
+		#log.critical('Apex module has detected mbr peptides')
+		#log.info('moff_rtWin_peak for matched peptide:   %4.4f ', s_w_match)
 
 
 	## to export a list of XIc
@@ -415,11 +417,11 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 	# strange cases
 
 		temp.ix[:,'tol'] = int( tol)
-		temp['ts'] = (data_ms2['rt'] /60   ) - h_rt_w
-		temp['te'] = (data_ms2['rt'] /60 ) + h_rt_w
+		temp['ts'] = (data_ms2['rt'] /60 ) - h_rt_w
+		temp['te'] = (data_ms2['rt'] /60  ) + h_rt_w
 		temp.drop('rt',1,inplace=True )
 		if not flag_mzml :
-
+			# txic-28-9-separate-jsonlines.exe
 			if not flag_windows:
 				args_txic = shlex.split( "mono txic_json.exe " +  " -j " + temp.to_json( orient='records' ) + " -f " + loc,posix=True )
 			else:
@@ -429,11 +431,11 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 			output, err = p.communicate()
 			xic_data=[]
 			for l in range ( 0,temp.shape[0] ) :
-					temp_json = json.loads( output.split('\n')[l].decode("utf-8") )
-					xic_data.append(pd.DataFrame( { 'rt' : temp_json ['results']['times'], 'intensity':  temp_json ['results']['intensities'] }   , columns=['rt', 'intensity'] ) )
+					temp = json.loads( output.split('\n')[l].decode("utf-8") )
+					xic_data.append(pd.DataFrame( { 'rt' : temp['results']['times'], 'intensity':  temp['results']['intensities'] }   , columns=['rt', 'intensity'] ) )
 		else:
 			run_temp = pymzml.run.Reader(raw_name)
-			xic_data =  mzML_get_all( temp,tol,loc, run_temp , rt_list , id_list  )
+			xic_data =  mzML_get_all( temp,tol,loc, run_temp ,rt_list , id_list  )
 			#10p_noise    5p_noise  SNR     intensity  log_L_R    log_int  lwhm rt_peak  rwhm
 		data_ms2.reset_index(inplace=True)
 		data_ms2[['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']] = data_ms2.apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index) , axis=1   )
@@ -493,6 +495,7 @@ def main_apex_alone():
 	config.read(os.path.join(os.path.dirname(sys.argv[0]), 'moff_setting.properties'))
 
 	df = pd.read_csv(file_name, sep="\t")
+	#df = df.ix[0:100,:]
 	## check and eventually tranf for PS template
 	if not 'matched' in df.columns:
 		# check if it is a PS file ,
@@ -502,7 +505,7 @@ def main_apex_alone():
 		# here it controls if the input file is a PS export; if yes it maps the input in right moFF name
 		if check_ps_input_data(list_name, list) == 1:
 			# map  the columns name according to moFF input requirements
-			data_ms2, list_name = map_ps2moff(df,'col_must_have_apex')
+			data_ms2, list_name = map_ps2moff(df)
 	## check if the field names are good
 	if check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_apex'))) == 1:
 		exit('ERROR minimal field requested are missing or wrong')
@@ -514,9 +517,14 @@ def main_apex_alone():
 		log.critical('RAW file  :  %s' % args.raw_list)
 
 	log.critical('Output file in :  %s', loc_output)
-	data_split = np.array_split(df, multiprocessing.cpu_count()  )
 
+	# multiprocessing.cpu_count()
+	data_split = np.array_split(df,  multiprocessing.cpu_count()  )
 
+	##--used for test
+	#data_split = np.array_split(df, 1)
+	#print data_split[0].shape
+	##used for test
 	log.critical('Starting Apex  .....')
 	name = os.path.basename(file_name).split('.')[0]
 
@@ -528,9 +536,10 @@ def main_apex_alone():
 	rt_list , id_list = scan_mzml ( args.raw_list )
 
 	#multiprocessing.cpu_count()
-	myPool = multiprocessing.Pool( multiprocessing.cpu_count()   )
-
-
+	myPool = multiprocessing.Pool(  multiprocessing.cpu_count()   )
+	## code below id for testing
+	#myPool = multiprocessing.Pool(10 )
+	## end testing
 	result = {}
 	offset = 0
 	start_time = time.time()
@@ -543,8 +552,12 @@ def main_apex_alone():
 	myPool.join()
 	log.critical('...apex terminated')
 	log.critical( 'Computational time (sec):  %4.4f ' % (time.time() -start_time))
+	print 'Time no result collect',  time.time() -start_time
+	start_time_2 = time.time()
 	save_moff_apex_result(data_split, result, loc_output, file_name)
+	#print 'Time no result collect 2',  time.time() -start_time_2
 	if args.pep_matrix == 1 :
+		# # TO DO manage the error with retunr -1 like in moff_all.py  master repo
 		state = compute_peptide_matrix(loc_output,args.tag_pepsum)
 		if state ==-1 :
 			log.critical ('Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')
