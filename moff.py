@@ -415,6 +415,9 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 		#log.critical('Apex module has detected mbr peptides')
 		#log.info('moff_rtWin_peak for matched peptide:   %4.4f ', s_w_match)
 
+	# assumes txic is in the same directory as moff.py
+	txic_executable_name="txic_json.exe"
+	txic_path = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])), txic_executable_name)
 
 	## to export a list of XIc
 	try:
@@ -428,9 +431,9 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 		if not flag_mzml :
 			# txic-28-9-separate-jsonlines.exe
 			if not flag_windows:
-				args_txic = shlex.split( "mono txic_json.exe " +  " -j " + temp.to_json( orient='records' ) + " -f " + loc,posix=True )
+				args_txic = shlex.split( "mono " + txic_path + " -j " + temp.to_json( orient='records' ) + " -f " + loc,posix=True )
 			else:
-				args_txic = shlex.split("txic_json.exe " + " -j " + temp.to_json(orient='records') + " -f " + loc, posix=False)
+				args_txic = shlex.split(txic_path + " -j " + temp.to_json(orient='records') + " -f " + loc, posix=False)
 			start_timelocal = time.time()
 			p = subprocess.Popen(args_txic, stdout=subprocess.PIPE)
 			output, err = p.communicate()
