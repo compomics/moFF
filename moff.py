@@ -111,10 +111,15 @@ def save_moff_apex_result(list_df, result, folder_output, name):
 
 
 
-def map_ps2moff(data):
+def map_ps2moff(data,type_mapping):
 	data.drop(data.columns[[0]], axis=1, inplace=True)
 	data.columns = data.columns.str.lower()
-	data.rename(columns={'sequence': 'peptide', 'measured charge': 'charge', 'theoretical mass': 'mass', 'protein(s)': 'prot', 'm/z': 'mz'}, inplace=True)
+	if type_mapping == 'col_must_have_mbr':
+		data.rename(columns={'sequence': 'peptide', 'modified sequence': 'mod_peptide', 'measured charge': 'charge',
+		                     'theoretical mass': 'mass', 'protein(s)': 'prot', 'm/z': 'mz'}, inplace=True)
+	if type_mapping == 'col_must_have_apex':
+		data.rename(columns={'sequence': 'peptide', 'measured charge': 'charge', 'theoretical mass': 'mass',
+		                     'protein(s)': 'prot', 'm/z': 'mz'}, inplace=True)
 	return data, data.columns.values.tolist()
 
 
