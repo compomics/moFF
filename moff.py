@@ -497,7 +497,7 @@ def main_apex_alone():
 	log.addHandler(ch)
 
 	config = ConfigParser.RawConfigParser()
-	config.read(os.path.join(os.path.dirname(sys.argv[0]), 'moff_setting.properties'))
+	config.read(os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])), 'moff_setting.properties'))
 
 	df = pd.read_csv(file_name, sep="\t")
 	#df = df.ix[0:100,:]
