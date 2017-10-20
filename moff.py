@@ -97,7 +97,7 @@ def save_moff_apex_result(list_df, result, folder_output, name):
 				xx.append( result[df_index].get()[0] )
 
 		#print len(xx)
-	
+
 		final_res = pd.concat(xx)
 		if 'index' in final_res.columns:
 			final_res.drop('index',axis=1,inplace=True )
@@ -171,10 +171,11 @@ def  mzML_get_all( temp,tol,loc,run,   rt_list1, runid_list1 ):
 	for index_ms2, row in temp.iterrows():
 		
 		data, status=pyMZML_xic_out(loc, float(tol / (10 ** 6)), row['ts'], row['te'], row['mz'],run, runid_list1,rt_list1 )
+		# status is evaluated only herenot used anymore
 		if status != -1 :
-			app_list.append(data) 
+			app_list.append(data)
 		else:
-			app_list.append(-1)
+			app_list.append(pd.DataFrame(columns=['rt','intensity']))
 	return app_list
 
 
@@ -212,6 +213,7 @@ def check_log_existence(file_to_check):
 	else:
 		return -1
 
+
 def check_output_folder_existence(loc_output ):
    if not os.path.exists(loc_output):
 	os.mkdir(loc_output)
@@ -243,7 +245,6 @@ def compute_log_LR (data_xic,index,v_max):
 
 
 
-## compute apex for mzML 
 
 
 def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_index):
@@ -409,12 +410,12 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 		#log.critical('Apex module has detected mbr peptides')
 		#log.info('moff_rtWin_peak for matched peptide:   %4.4f ', s_w_match)
 
-	
+
 	## to export a list of XIc
 	try:
 		temp=data_ms2[['mz','rt']].copy()
 	# strange cases
-	
+
 		temp.ix[:,'tol'] = int( tol)
 		temp['ts'] = (data_ms2['rt'] /60 ) - h_rt_w
 		temp['te'] = (data_ms2['rt'] /60  ) + h_rt_w

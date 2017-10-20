@@ -32,6 +32,7 @@ The version presented here is a commandline tool that can easily be adapted to a
   * If you use moFF as part of a publication, please include this reference.
 
 ---
+
 ## Minimum Requirements ##
 
 Required java version :
@@ -39,10 +40,10 @@ Required java version :
 
 Required python libraries :
 - Python 2.7
-- pandas  > 0.17.
+- pandas  > 0.20.
 - numpy > 1.10.0
-- argparse > 1.2.1
-- scikit-learn > 0.17
+- argparse > 1.2.1 
+- scikit-learn > 0.18
 - pymzML > 0.7.7
 
 
@@ -52,16 +53,16 @@ Required linux library:
 Required windows library:
 - .NET Framework 4.6.2
 
+
 Optional requirements :
 -When using PeptideShaker results as a source, a PeptideShaker installation (<http://compomics.github.io/projects/peptide-shaker.html>) needs to be availabe.
+ 
 
-
-During processing, moFF makes use of a third party algorithm (txic_thermo_fixed.exe) which allows for the parsing of the Thermo RAW data.
-txic_thermo_fixed.exe is based on .NET liabrary provided by Thremo that is able to access all raw file form Thermo machine.
+During processing, moFF makes use of a third party algorithm (txic or txic.exe) which allows for the parsing of the Thermo RAW data. 
+Txic is compatible with the raw outputfiles originating from any Orbitrap or triple quadrupole Thermo machine. However, Thermo Fusion instruments are currently not supported.
 
 
 [Top of page](#moff)
-
 
 ---
 
@@ -144,13 +145,15 @@ use `python moff.py -h`
   --rt_p     	      the time windows used to get the apex for the ms2 peptide/feature  (minutes). Default value is 0.4
   --rt_p_match 	      the time windows used to get the apex for machted features (minutes). Default value is 0.6
   --raw_repo          the folder containing the raw files
+  --peptide_summary   flag that allows have as output the peptided summary intensity file. Default is disable (0)
+  --tag_pep_sum_file  tag string that will be part of the  peptided summary intensity file name. Default value is moFF_run
   --output_folder     the target folder for the output (default is the input folder, raw_repo)
 ```
 For example :
 
-`python moff.mbr --inputtsv sample_folder/20080311_CPTAC6_07_6A005.txt  --raw_rep sample_folder/ --tol 1O --output_folder output_moff`
+`python moff.py --inputtsv sample_folder/20080311_CPTAC6_07_6A005.txt  --raw_repo sample_folder/ --tol 1O --output_folder output_moff --peptide_summary 1 `
 
-WARNING : the raw file names MUST be the same of the input file otherwise the script give you an error !
+WARNING : the raw file names MUST be the same of the input file otherwise the script gives you an error !
 NOTE: All the parameters related to the the time windows (rt_w,rt_p, rt_p_match) are basicaly the half of the entire time windows where the apex peak is searched or the XiC is retrieved.
 
 You can also specify directly the raw file using: 
@@ -180,17 +183,24 @@ use `python moff_all.py -h`
   	--weight_comb		combination weighting : 0 for no weight 1 for a weighted schema
   	--tol			the mass tollerance (ppm)
   	--rt_w			the rt windows for xic (minutes). Default value is  3  min
-	--rt_p			the time windows for the ms2 peptide/feature in apex (minutes). Default value is 0.2
-	--rt_p_match		the time windows for the matched features in apex ( minutes). Default value is 0.4
+	--rt_p			the time windows for the ms2 peptide/feature in apex (minutes). Default value is 1
+	--rt_p_match		the time windows for the matched features in apex ( minutes). Default value is 1.5
+	--peptide_summary   flag that allows have as output the peptided summary intensity file. Default is disable (0)
+  	--tag_pep_sum_file  tag string that will be part of the  peptided summary intensity file name. Default value is moFF_run
 	--raw_repo		the folder containing the raw files
 ```
-`python moff_all.py --inputF  sample_folder/   --raw_repo sample_folder/ --output_folder output_moff`
+For a correct rt windows, we suggest to set the rt_p value equal or slighly greater to the dynamic exclusion duration set in your machine.
+We suggest also to set the rt_p_match always slightly bigger than the rt windows used the MS2 fetures (rt_p )
+
+  
+
+`python moff_all.py --inputF  sample_folder/   --raw_repo sample_folder/ --tol 10  --output_folder output_moff --peptide_summary 1`
 
 The options are identifcal for both apex and MBR modules. The output for the latter (MBR) is stored in the folder sample_folder/mbr_output, while the former (apex) generates files in the specified output_moff folder. Log files for both algorithms are generated in the respective folders.
 
 You can also specify a list of input and raw files using:
 
-`python moff_all.py --inputtsv  sample_folder/input_file1.txt sample_folder/input_file2.txt   --inputraw sample_folder/input_file1.raw sample_folder/input_file2.raw --output_folder output_moff`
+`python moff_all.py --inputtsv  sample_folder/input_file1.txt sample_folder/input_file2.txt  --inputraw sample_folder/input_file1.raw sample_folder/input_file2.raw --tol 10 --output_folder output_moff --peptide_summary 1 `
 
 Using `--inputtsv | --inputraw`  you can not filterted the input file using `--sample --ext` like in the case with `--inputF | --raw_repo`
 
@@ -205,6 +215,7 @@ The output consists of :
 
 - a tab delimited file (with the same name of the input raw file) containing the apex intensity values and additional information (a)
 - a log file specific to the apex module (b) or the MBR module (c)
+- peptide summary intensity file (when peptide summary option is enabled) (d) 
 
 (a) Description of the fields added by moFF in the output file:
 
@@ -225,6 +236,8 @@ Parameter | Meaning
 (b) A log file is also provided containing the process output. 
 
 (c) A log file where all the information about all the trained linear model are displayed.
+
+(d) The peptide summary intensity is a tab delimited file where for each  peptide sequence the MS1 intensities are summed for all the occurences in each runs (aggregated by charge states and modification). In case you run the entire workflow this file will contains the summed intensity for all the runs, insted of just a selected run in case of the apex module. Along with peptide sequences also the protein ids are provided. The file could be used for downstream statistical analysis   
 
 NOTE : The log files and the output files are in the output folder specified by the user. 
 
