@@ -44,18 +44,18 @@ def compute_peptide_matrix(loc_output, log, tag_filename):
 	if not glob.glob(loc_output + '/*_moff_result.txt'):
 		return -1
 	for name in glob.glob(loc_output + '/*_moff_result.txt'):
-		# print os.path.basename(name)
+
 		if 'match_' in os.path.basename(name):
 			name_col.append('sumIntensity_' + os.path.basename(name).split('_match_moff_result.txt')[0])
 		else:
 			name_col.append('sumIntensity_' + os.path.basename(name).split('_moff_result.txt')[0])
 		data = pd.read_csv(name, sep="\t")
-		# Other possibile quality controll filter
-		##data = data[ data['lwhm'] != -1]
-		##data = data[data['rwhm'] != -1 ]
+
 		'''
-		data = data[data['variable modifications'].isnull()]
-		data = data[data['fixed modifications'].isnull()]
+		Other possibile quality controll filter
+		data = data[ data['lwhm'] != -1]
+		data = data[data['rwhm'] != -1 ]
+		
 		'''
 		data = data[data['intensity'] != -1]
 		data.sort_values('rt', ascending=True, inplace=True)
