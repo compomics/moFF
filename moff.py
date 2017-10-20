@@ -25,14 +25,7 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 
-"""
- input
-   - MS2 ID file
-   - tol
-   - half rt time window in minute
- output
-   - list of intensities..+
-"""
+
 
 TXIC_PATH = os.environ.get('TXIC_PATH', './')
 
@@ -112,10 +105,6 @@ def map_ps2moff(data,type_mapping):
 	return data, data.columns.values.tolist()
 
 
-'''
-input list of columns
-list of column names from PS default template loaded from .properties
-'''
 
 def check_ps_input_data(col_list, col_must_have):
 	for c_name in col_must_have:
@@ -125,6 +114,16 @@ def check_ps_input_data(col_list, col_must_have):
 	# succes
 	return True
 
+"""
+input: col_list   list of input column name
+        col_must_have list of column names requested
+
+output 1 if all the requested column name  are there
+       0 miss some of the requested column names
+
+
+General check is some of the requested field are present in the actually columns
+"""
 
 def check_columns_name(col_list, col_must_have):
 	for c_name in col_must_have:
@@ -161,7 +160,7 @@ def  mzML_get_all( temp,tol,loc,run,   rt_list1, runid_list1 ):
 	for index_ms2, row in temp.iterrows():
 
 		data, status=pyMZML_xic_out(loc, float(tol / (10 ** 6)), row['ts'], row['te'], row['mz'],run, runid_list1,rt_list1 )
-		# status is evaluated only herenot used anymore 
+		# status is evaluated only herenot used anymore
 		if status != -1 :
 			app_list.append(data)
 		else:
@@ -261,7 +260,7 @@ def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_in
                                         'SNR':-1,
                                         'log_L_R':-1,
                                         'log_int':-1})
- 
+
 	if data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0] >= 1:
 		#data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].to_csv('thermo_testXIC_'+str(c)+'.txt',index=False,sep='\t')
 		ind_v = data_xic.index
@@ -414,7 +413,7 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 	try:
 		temp=data_ms2[['mz','rt']].copy()
 	# strange cases
-		
+
 		temp.ix[:,'tol'] = int( tol)
 		temp['ts'] = (data_ms2['rt'] /60   ) - h_rt_w
 		temp['te'] = (data_ms2['rt'] /60 ) + h_rt_w
@@ -440,7 +439,7 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 		data_ms2[['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']] = data_ms2.apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index) , axis=1   )
 	except Exception as e:
 		traceback.print_exc()
-		print 
+		print
 		raise e
 
 	return  (data_ms2,1)
