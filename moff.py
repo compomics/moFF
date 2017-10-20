@@ -17,7 +17,6 @@ import multiprocessing
 import simplejson as json
 import traceback
 import pymzml
-
 import numpy as np
 import pandas as pd
 
@@ -415,9 +414,9 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 		#log.critical('Apex module has detected mbr peptides')
 		#log.info('moff_rtWin_peak for matched peptide:   %4.4f ', s_w_match)
 
-	# assumes txic is in the same directory as moff.py
+	# get txic path: assumes txic is in the same directory as moff.py
 	txic_executable_name="txic_json.exe"
-	txic_path = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])), txic_executable_name)
+	txic_path = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), txic_executable_name)
 
 	## to export a list of XIc
 	try:
@@ -500,7 +499,7 @@ def main_apex_alone():
 	log.addHandler(ch)
 
 	config = ConfigParser.RawConfigParser()
-	config.read(os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])), 'moff_setting.properties'))
+	config.read(os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), 'moff_setting.properties'))
 
 	df = pd.read_csv(file_name, sep="\t")
 	#df = df.ix[0:100,:]
