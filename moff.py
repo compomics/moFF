@@ -563,7 +563,7 @@ def main_apex_alone():
 	#print 'Time no result collect 2',  time.time() -start_time_2
 	if args.pep_matrix == 1 :
 		# # TO DO manage the error with retunr -1 like in moff_all.py  master repo
-		state = compute_peptide_matrix(loc_output,args.tag_pepsum)
+		state = compute_peptide_matrix(loc_output,log,args.tag_pepsum)
 		if state ==-1 :
 			log.critical ('Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')
 
