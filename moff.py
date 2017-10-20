@@ -255,7 +255,7 @@ def compute_log_LR (data_xic,index,v_max):
 def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_index):
 	c = x.name
 	data_xic = xic_array[c]
-	time_w= x['rt'] / 60
+	time_w= x['rt'] /60
 	if mbr_flag == 0:
 		log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f',(offset_index +c +2), x['mz'], time_w)
 		temp_w = s_w
@@ -423,7 +423,7 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 
 		temp.ix[:,'tol'] = int( tol)
 		temp['ts'] = (data_ms2['rt'] /60 ) - h_rt_w
-		temp['te'] = (data_ms2['rt'] /60  ) + h_rt_w
+		temp['te'] = (data_ms2['rt']  /60 ) + h_rt_w
 		temp.drop('rt',1,inplace=True )
 		if not flag_mzml :
 			# txic-28-9-separate-jsonlines.exe
@@ -461,10 +461,10 @@ def main_apex_alone():
 						required=True)
 	parser.add_argument('--rt_w', dest='rt_window', action='store', type=float, default=3,
 						help='specify rt window for xic (minute). Default value is 3 min', required=False)
-	parser.add_argument('--rt_p', dest='rt_p_window', action='store', type=float, default=0.2,
-						help='specify the time windows for the peak ( minute). Default value is 0.1 ', required=False)
-	parser.add_argument('--rt_p_match', dest='rt_p_window_match', action='store', type=float, default=0.4,
-						help='specify the time windows for the matched  peak ( minute). Default value is 0.4 ',
+	parser.add_argument('--rt_p', dest='rt_p_window', action='store', type=float, default=1,
+						help='specify the time windows for the peak ( minute). Default value is 1 minute ', required=False)
+	parser.add_argument('--rt_p_match', dest='rt_p_window_match', action='store', type=float, default=1.2,
+						help='specify the time windows for the matched  peak ( minute). Default value is 1.2 minute ',
 						required=False)
 	parser.add_argument('--raw_repo', dest='raw', action='store', help='specify the raw file repository folder',
 						required=False)
@@ -510,7 +510,7 @@ def main_apex_alone():
 		# here it controls if the input file is a PS export; if yes it maps the input in right moFF name
 		if check_ps_input_data(list_name, list) == 1:
 			# map  the columns name according to moFF input requirements
-			data_ms2, list_name = map_ps2moff(df)
+			data_ms2, list_name = map_ps2moff(df,'col_must_have_apex')
 	## check if the field names are good
 	if check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_apex'))) == 1:
 		exit('ERROR minimal field requested are missing or wrong')
