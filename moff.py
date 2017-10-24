@@ -44,18 +44,18 @@ def compute_peptide_matrix(loc_output, log, tag_filename):
 	if not glob.glob(loc_output + '/*_moff_result.txt'):
 		return -1
 	for name in glob.glob(loc_output + '/*_moff_result.txt'):
-		# print os.path.basename(name)
+
 		if 'match_' in os.path.basename(name):
 			name_col.append('sumIntensity_' + os.path.basename(name).split('_match_moff_result.txt')[0])
 		else:
 			name_col.append('sumIntensity_' + os.path.basename(name).split('_moff_result.txt')[0])
 		data = pd.read_csv(name, sep="\t")
-		# Other possibile quality controll filter
-		##data = data[ data['lwhm'] != -1]
-		##data = data[data['rwhm'] != -1 ]
+
 		'''
-		data = data[data['variable modifications'].isnull()]
-		data = data[data['fixed modifications'].isnull()]
+		Other possibile quality controll filter
+		data = data[ data['lwhm'] != -1]
+		data = data[data['rwhm'] != -1 ]
+		
 		'''
 		data = data[data['intensity'] != -1]
 		data.sort_values('rt', ascending=True, inplace=True)
@@ -111,10 +111,16 @@ def save_moff_apex_result(list_df, result, folder_output, name):
 
 
 
-def map_ps2moff(data):
+
+def map_ps2moff(data,type_mapping):
 	data.drop(data.columns[[0]], axis=1, inplace=True)
 	data.columns = data.columns.str.lower()
-	data.rename(columns={'sequence': 'peptide', 'measured charge': 'charge', 'theoretical mass': 'mass', 'protein(s)': 'prot', 'm/z': 'mz'}, inplace=True)
+	if type_mapping == 'col_must_have_mbr':
+		data.rename(columns={'sequence': 'peptide', 'modified sequence': 'mod_peptide', 'measured charge': 'charge',
+		                     'theoretical mass': 'mass', 'protein(s)': 'prot', 'm/z': 'mz'}, inplace=True)
+	if type_mapping == 'col_must_have_apex':
+		data.rename(columns={'sequence': 'peptide', 'measured charge': 'charge', 'theoretical mass': 'mass',
+		                     'protein(s)': 'prot', 'm/z': 'mz'}, inplace=True)
 	return data, data.columns.values.tolist()
 
 
@@ -254,7 +260,7 @@ def compute_log_LR (data_xic,index,v_max):
 def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_index):
 	c = x.name
 	data_xic = xic_array[c]
-	time_w= x['rt'] / 60
+	time_w= x['rt'] /60
 	if mbr_flag == 0:
 		log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f',(offset_index +c +2), x['mz'], time_w)
 		temp_w = s_w
@@ -422,7 +428,7 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 
 		temp.ix[:,'tol'] = int( tol)
 		temp['ts'] = (data_ms2['rt'] /60 ) - h_rt_w
-		temp['te'] = (data_ms2['rt'] /60  ) + h_rt_w
+		temp['te'] = (data_ms2['rt']  /60 ) + h_rt_w
 		temp.drop('rt',1,inplace=True )
 		if not flag_mzml :
 			# txic-28-9-separate-jsonlines.exe
@@ -458,10 +464,10 @@ def main_apex_alone():
 						required=True)
 	parser.add_argument('--rt_w', dest='rt_window', action='store', type=float, default=3,
 						help='specify rt window for xic (minute). Default value is 3 min', required=False)
-	parser.add_argument('--rt_p', dest='rt_p_window', action='store', type=float, default=0.2,
-						help='specify the time windows for the peak ( minute). Default value is 0.1 ', required=False)
-	parser.add_argument('--rt_p_match', dest='rt_p_window_match', action='store', type=float, default=0.4,
-						help='specify the time windows for the matched  peak ( minute). Default value is 0.4 ',
+	parser.add_argument('--rt_p', dest='rt_p_window', action='store', type=float, default=1,
+						help='specify the time windows for the peak ( minute). Default value is 1 minute ', required=False)
+	parser.add_argument('--rt_p_match', dest='rt_p_window_match', action='store', type=float, default=1.2,
+						help='specify the time windows for the matched  peak ( minute). Default value is 1.2 minute ',
 						required=False)
 	parser.add_argument('--raw_repo', dest='raw', action='store', help='specify the raw file repository folder',
 						required=False)
@@ -507,7 +513,7 @@ def main_apex_alone():
 		# here it controls if the input file is a PS export; if yes it maps the input in right moFF name
 		if check_ps_input_data(list_name, list) == 1:
 			# map  the columns name according to moFF input requirements
-			data_ms2, list_name = map_ps2moff(df)
+			data_ms2, list_name = map_ps2moff(df,'col_must_have_apex')
 	## check if the field names are good
 	if check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_apex'))) == 1:
 		exit('ERROR minimal field requested are missing or wrong')
@@ -560,7 +566,7 @@ def main_apex_alone():
 	#print 'Time no result collect 2',  time.time() -start_time_2
 	if args.pep_matrix == 1 :
 		# # TO DO manage the error with retunr -1 like in moff_all.py  master repo
-		state = compute_peptide_matrix(loc_output,args.tag_pepsum)
+		state = compute_peptide_matrix(loc_output,log,args.tag_pepsum)
 		if state ==-1 :
 			log.critical ('Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')
 

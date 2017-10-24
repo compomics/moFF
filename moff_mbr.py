@@ -52,19 +52,13 @@ def MD_removeOutliers(x, y, width):
         else:
             outliers.append(i)  # position of removed pair
     return (np.array(nx), np.array(ny), np.array(outliers))
-"""
-input x; test point data 
-      model vector of the model trained
-      err : vector this error of the trained model
-      weight_flag : flag for weihthing or not 
 
-output : predicted rt according with the schema choosen
 
-combination of rt predicted by each single model
-"""
+# combination of rt predicted by each single model
 def combine_model(x, model, err, weight_flag):
     x = x.values
     tot_err = np.sum(np.array(err)[np.where(~np.isnan(x))])
+
     app_sum = 0
     app_sum_2 = 0
     for ii in range(0, len(x)):
@@ -84,12 +78,6 @@ def combine_model(x, model, err, weight_flag):
 
 
 
-"""
-run the mbr in moFF : 
-        input  ms2 identified peptide   
-	
-        output csv file with the matched peptides added
-"""
 
 # run the mbr in moFF : input  ms2 identified peptide   output csv file with the matched peptides added
 def run_mbr(args):
@@ -234,7 +222,7 @@ def run_mbr(args):
         # log.info('Custom list of peptide used  provided by the user in %s', args.rt_feat_file)
         shared_pep_list = pd.read_csv(args.rt_feat_file, sep='\t')
         shared_pep_list['mass'] = shared_pep_list['mass'].map('{:.4f}'.format)
-        shared_pep_list['code'] = shared_pep_list['mod_peptide'].astype(str) #+ '_' + shared_pep_list['mass'].astype(str)
+        shared_pep_list['code'] = shared_pep_list['peptide'].astype(str) + '_' + shared_pep_list['mass'].astype(str)
         list_shared_pep = shared_pep_list['code']
         log.info('Custom list of peptide contains  %i ', list_shared_pep.shape[0])
 
@@ -308,7 +296,7 @@ def run_mbr(args):
     log.info('Combination of the  model  --------')
     log.info('Weighted combination  %s : ', 'Weighted' if int(args.w_comb) == 1 else 'Unweighted')
 
-    diff_field = np.setdiff1d(exp_t[0].columns, ['matched', 'peptide','mod_peptide', 'mass', 'mz', 'charge', 'prot', 'rt'])
+    diff_field = np.setdiff1d(exp_t[0].columns, ['matched', 'peptide', 'mass', 'mz', 'charge', 'prot', 'rt'])
 
     for jj in aa:
         pre_pep_save = []
