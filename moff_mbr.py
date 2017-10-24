@@ -9,6 +9,7 @@ import logging
 import os
 import re
 import sys
+import moff
 
 import numpy as np
 import pandas as pd
@@ -19,28 +20,9 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 
-def map_ps2moff(data):
-    data.drop(data.columns[[0]], axis=1, inplace=True)
-    data.columns = data.columns.str.lower()
-    data.rename(
-        columns={'sequence': 'peptide', 'modified sequence' :'mod_peptide'  ,'measured charge': 'charge', 'theoretical mass': 'mass', 'protein(s)': 'prot',
-                 'm/z': 'mz'}, inplace=True)
-    return data, data.columns.values.tolist()
 
 
-'''
-input list of columns
-list of column names from PS default template loaded from .properties
-'''
-def check_ps_input_data(input_column_name, list_col_ps_default):
-    input_column_name.sort()
-    list_col_ps_default.sort()
-    if list_col_ps_default == input_column_name:
-        # detected a default PS input file
-        return 1
-    else:
-        # not detected a default PS input file
-        return 0
+
 
 
 # filtering _outlier
@@ -70,9 +52,16 @@ def MD_removeOutliers(x, y, width):
         else:
             outliers.append(i)  # position of removed pair
     return (np.array(nx), np.array(ny), np.array(outliers))
+"""
+input x; test point data 
+      model vector of the model trained
+      err : vector this error of the trained model
+      weight_flag : flag for weihthing or not 
 
+output : predicted rt according with the schema choosen
 
-# combination of rt predicted by each single model
+combination of rt predicted by each single model
+"""
 def combine_model(x, model, err, weight_flag):
     x = x.values
     tot_err = np.sum(np.array(err)[np.where(~np.isnan(x))])
@@ -93,15 +82,14 @@ def combine_model(x, model, err, weight_flag):
         return float(app_sum) / float(np.where(~ np.isnan(x))[0].shape[0])
 
 
-# check columns read  from  a properties file
-def check_columns_name(col_list, col_must_have):
-    for c_name in col_must_have:
-        if not (c_name in col_list):
-            # fail
-            return False
-    # succes
-    return True
 
+
+"""
+run the mbr in moFF : 
+        input  ms2 identified peptide   
+	
+        output csv file with the matched peptides added
+"""
 
 # run the mbr in moFF : input  ms2 identified peptide   output csv file with the matched peptides added
 def run_mbr(args):
@@ -169,16 +157,16 @@ def run_mbr(args):
     exp_subset = []
     # list of the name of the mbr output
     exp_out_name = []
+
     if args.loc_in is None:
         for id_name in args.tsv_list:
             exp_set.append(id_name)
     else:
-	
-	for  item in os.listdir(args.loc_in):
-		log.critical(item) 
-		if os.path.isfile(os.path.join(args.loc_in, item)):
-			if os.path.join(args.loc_in, item).endswith('.' + args.ext):
-				exp_set.append(os.path.join(args.loc_in, item))
+        for item in os.listdir(args.loc_in):
+            log.critical(item)
+            if os.path.isfile(os.path.join(args.loc_in, item)):
+	            if os.path.join(args.loc_in, item).endswith('.' + args.ext):
+		            exp_set.append(os.path.join(args.loc_in, item))
 
                 ## sample optiion is valid only if  folder iin option is valid
     if (args.sample is not None) and (args.loc_in is not None):
@@ -200,19 +188,19 @@ def run_mbr(args):
         # get the lists of PS  defaultcolumns from properties file
         list_ps_def = ast.literal_eval(config.get('moFF', 'ps_default_export_v1'))
         # here it controls if the input file is a PS export; if yes it maps the input in right moFF name
-        if check_ps_input_data(list_name, list_ps_def) == 1:
+        if moff.check_ps_input_data(list_name, list_ps_def) == 1:
             log.critical('Detected input file from PeptideShaker export..: %s ', a)
             # map  the columns name according to moFF input requirements
-            data_moff, list_name = map_ps2moff(data_moff)
+            data_moff, list_name = moff.map_ps2moff(data_moff,'col_must_have_mbr')
             log.critical('Mapping columns names into the  the moFF requested column name..: %s ', a)
             # print data_moff.columns
-        if not check_columns_name(list_name, ast.literal_eval(config.get('moFF', 'col_must_have_mbr'))):
-            exit('ERROR minimal field requested are missing or wrong')
+        if  moff.check_columns_name(list_name, ast.literal_eval(config.get('moFF', 'col_must_have_mbr'))) == 1 :
+	        exit('ERROR minimal field requested are missing or wrong')
         data_moff['matched'] = 0
         data_moff['mass'] = data_moff['mass'].map('{:.4f}'.format)
 
         data_moff['code_unique'] = data_moff['mod_peptide'].astype(str) #+ '_' + data_moff['mass'].astype(str)
-        data_moff = data_moff.sort(columns='rt')
+        data_moff = data_moff.sort_values(by='rt')
         exp_t.append(data_moff)
         exp_out.append(data_moff)
 
@@ -336,8 +324,7 @@ def run_mbr(args):
                 add_pep_frame = add_pep_frame[['peptide','mod_peptide' ,'mass', 'mz', 'charge', 'prot', 'rt']]
                 # add_pep_frame['code_unique'] = '_'.join([add_pep_frame['peptide'], add_pep_frame['prot'], add_pep_frame['mass'].astype(str), add_pep_frame['charge'].astype(str)])
                 add_pep_frame['code_unique'] = add_pep_frame['mod_peptide'] + '_' + add_pep_frame['prot'] + '_' + '_' + add_pep_frame['charge'].astype(str)
-                add_pep_frame = add_pep_frame.groupby('code_unique', as_index=False)[
-                    'peptide','mod_peptide', 'mass', 'charge', 'mz', 'prot', 'rt'].aggregate(max)
+                add_pep_frame = add_pep_frame.groupby('code_unique', as_index=False)['peptide','mod_peptide', 'mass', 'charge', 'mz', 'prot', 'rt'].aggregate(max)
                 add_pep_frame = add_pep_frame[['code_unique','peptide', 'mod_peptide','mass', 'mz', 'charge', 'prot', 'rt']]
                 list_name = add_pep_frame.columns.tolist()
                 list_name = [w.replace('rt', 'rt_' + str(c_rt)) for w in list_name]
@@ -349,7 +336,7 @@ def run_mbr(args):
             test = pre_pep_save[0]
         else:
             test = reduce(
-                lambda left, right: pd.merge(left, right, on=['peptide','mod_peptide' ,'mass', 'mz', 'charge', 'prot'], how='outer'),
+                lambda left, right: pd.merge(left, right, on=['code_unique','peptide','mod_peptide' ,'mass', 'mz', 'charge', 'prot'], how='outer'),
                 pre_pep_save)
 
         # aggregated by code_unique,  to avoid duplicates
@@ -388,7 +375,7 @@ def run_mbr(args):
 
         log.info('Before adding %s contains %i ', exp_set[jj], exp_t[jj].shape[0])
         exp_out[jj] = pd.concat([exp_t[jj], test], join='outer', axis=0)
-	log.info('After MBR %s contains:  %i  peptides', exp_set[jj], exp_out[jj].shape[0])
+        log.info('After MBR %s contains:  %i  peptides', exp_set[jj], exp_out[jj].shape[0])
         log.critical('matched features   %i  MS2 features  %i ', exp_out[jj][exp_out[jj]['matched'] == 1].shape[0],
                      exp_out[jj][exp_out[jj]['matched'] == 0].shape[0])
         exp_out[jj].to_csv(
