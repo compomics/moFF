@@ -163,7 +163,10 @@ if __name__ == '__main__':
 		df = pd.read_csv(file_name,sep="\t")
 
 		data_split= np.array_split(df, num_CPU)
-
+                # small workaround to prevent max input line in Linux
+                if data_split[0].shape > 2500 :
+                    # increase the number of splitting a bit more than the CPUs in order to get splice smaller than 2500
+                    data_split = np.array_split(df,  (num_CPU + 8) )
 		log.critical('Starting Apex for %s ...',file_name)
 		log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
 		if args.raw_list is None:
