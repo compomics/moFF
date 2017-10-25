@@ -260,7 +260,7 @@ def compute_log_LR (data_xic,index,v_max):
 def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_index):
 	c = x.name
 	data_xic = xic_array[c]
-	time_w= x['rt'] /60
+	time_w= x['rt'] #/60
 	if mbr_flag == 0:
 		log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f',(offset_index +c +2), x['mz'], time_w)
 		temp_w = s_w
@@ -427,13 +427,13 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 	# strange cases
 
 		temp.ix[:,'tol'] = int( tol)
-		temp['ts'] = (data_ms2['rt'] /60 ) - h_rt_w
-		temp['te'] = (data_ms2['rt']  /60 ) + h_rt_w
+		temp['ts'] = (data_ms2['rt']  ) - h_rt_w
+		temp['te'] = (data_ms2['rt']   ) + h_rt_w
 		temp.drop('rt',1,inplace=True )
 		if not flag_mzml :
 			# txic-28-9-separate-jsonlines.exe
 			if not flag_windows:
-				args_txic = shlex.split( "mono txic_json.exe " +  " -j " + temp.to_json( orient='records' ) + " -f " + loc,posix=True )
+				args_txic = shlex.split( "mono txic_json.exe " +  " -j " + temp.to_json( orient='records' ) + " -f " + loc)
 			else:
 				args_txic = shlex.split("txic_json.exe " + " -j " + temp.to_json(orient='records') + " -f " + loc, posix=False)
 			start_timelocal = time.time()
@@ -453,7 +453,8 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 		traceback.print_exc()
 		print
 		raise e
-
+    
+        return (data_ms2,1)
 
 def main_apex_alone():
 	parser = argparse.ArgumentParser(description='moFF input parameter')
@@ -527,11 +528,12 @@ def main_apex_alone():
 	log.critical('Output file in :  %s', loc_output)
 
 	# multiprocessing.cpu_count()
-	data_split = np.array_split(df,  multiprocessing.cpu_count()  )
+	data_split = np.array_split(df,  multiprocessing.cpu_count() )
+        # small workaround to prevent max input line in Linux 
+        if data_split[0].shape > 2500 :
+                # increase the number of splitting a bit more than the CPUs in order to get splice smaller than 2500
+                data_split = np.array_split(df,  (multiprocessing.cpu_count()+8) )
 
-	##--used for test
-	#data_split = np.array_split(df, 1)
-	#print data_split[0].shape
 	##used for test
 	log.critical('Starting Apex  .....')
 	name = os.path.basename(file_name).split('.')[0]
