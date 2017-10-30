@@ -128,7 +128,7 @@ def run_mbr(args):
     w_mbr.setLevel(logging.INFO)
     log.addHandler(w_mbr)
 
-    moff_path = os.path.dirname(sys.argv[0])
+    moff_path = os.path.dirname(os.path.realpath(sys.argv[0]))
     config = ConfigParser.RawConfigParser()
     config.read(os.path.join(moff_path, 'moff_setting.properties'))
 
