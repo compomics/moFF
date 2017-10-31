@@ -7,5 +7,5 @@ RUN apt-get install git
 RUN echo "deb http://download.mono-project.com/repo/debian wheezy-apache24-compat main" | tee -a /etc/apt/sources.list.d/mono-xamarin.list
 RUN apt-get update
 RUN apt-get install -y mono-complete
-RUN git clone  -b multipr_rawfilereader  --single-branch https://github.com/compomics/moff /moFF
+RUN git clone  -b master  --single-branch https://github.com/compomics/moff /moFF
 WORKDIR /moFF

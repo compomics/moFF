@@ -1,24 +1,24 @@
 #!/usr/bin/env python
 
 import ConfigParser
-import StringIO
 import argparse
 import ast
 import bisect
+import glob
 import logging
+import multiprocessing
 import os as os
 import shlex
 import subprocess
 import sys
 import time
-import glob
-from sys import platform as _platform
-import multiprocessing
-import simplejson as json
 import traceback
-import pymzml
+from sys import platform as _platform
+
 import numpy as np
 import pandas as pd
+import pymzml
+import simplejson as json
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -516,10 +516,17 @@ def main_apex_alone():
 		# here it controls if the input file is a PS export; if yes it maps the input in right moFF name
 		if check_ps_input_data(list_name, list) == 1:
 			# map  the columns name according to moFF input requirements
-			data_ms2, list_name = map_ps2moff(df,'col_must_have_apex')
-	## check if the field names are good
-	if check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_apex'))) == 1:
-		exit('ERROR minimal field requested are missing or wrong')
+			if args.pep_matrix != 1:
+				data_ms2, list_name = map_ps2moff(df,'col_must_have_apex')
+			else:
+				data_ms2, list_name = map_ps2moff(df, 'col_must_have_mbr')
+	## check if the field names are good, in case of pep summary we need same req as in  mbr
+	if args.pep_matrix == 1:
+		if  check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_mbr'))) == 1 :
+			exit('ERROR minimal field requested are missing or wrong')
+	else:
+		if  check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_apx'))) == 1 :
+			exit('ERROR minimal field requested are missing or wrong')
 
 	log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
 	if args.raw_list is None:
