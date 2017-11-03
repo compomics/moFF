@@ -521,7 +521,7 @@ def main_apex_alone():
 		if  check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_mbr'))) == 1 :
 			exit('ERROR minimal field requested are missing or wrong')
 	else:
-		if  check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_apx'))) == 1 :
+		if  check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_apex'))) == 1 :
 			exit('ERROR minimal field requested are missing or wrong')
 
 	log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
