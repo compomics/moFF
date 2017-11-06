@@ -187,8 +187,8 @@ if __name__ == '__main__':
 		moff.check_output_folder_existence(loc_output)
 		#control if exist the same log file : avoid appending output
 		moff.check_log_existence(os.path.join(loc_output, name + '__moff.log'))
-
-
+                # this flag must be set to 0. it is 1 only in case moFF-Pride date and only in tha pex module
+                moff_pride_flag= 0
 		myPool = multiprocessing.Pool(num_CPU)
 
 		start_time= time.time()
@@ -196,7 +196,7 @@ if __name__ == '__main__':
 		offset = 0
 		for df_index in range(0,len(data_split)):
 
-			result[df_index] = myPool.apply_async(moff.apex_multithr,args = (data_split[df_index],name,raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,rt_list , id_list ))
+			result[df_index] = myPool.apply_async(moff.apex_multithr,args = (data_split[df_index],name,raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,rt_list , id_list , moff_pride_flag))
 			offset += len(data_split[df_index])
 
 		myPool.close()
