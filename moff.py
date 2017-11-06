@@ -256,10 +256,15 @@ def compute_log_LR (data_xic,index,v_max):
 
 
 
-def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_index):
+def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_index,moff_pride_flag ):
 	c = x.name
 	data_xic = xic_array[c]
-	time_w= x['rt'] #/60
+        if moff_pride_flag == 1:
+            # daling with rt in minutes , moffpride input data 
+            time_w= x['rt'] 
+        else:
+            ## standar cases rt must be in second
+	    time_w= x['rt'] /60
 	if mbr_flag == 0:
 		log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f',(offset_index +c +2), x['mz'], time_w)
 		temp_w = s_w
@@ -324,7 +329,7 @@ def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_in
 
 
 
-def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset_index,  rt_list , id_list ):
+def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset_index,  rt_list , id_list, moff_pride_flag ):
 	#setting logger for multiprocess
 	ch = logging.StreamHandler()
 	ch.setLevel(logging.ERROR)
@@ -429,12 +434,17 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 	# strange cases
 
 		temp.ix[:,'tol'] = int( tol)
-		temp['ts'] = (data_ms2['rt']  ) - h_rt_w
-		temp['te'] = (data_ms2['rt']   ) + h_rt_w
-		temp.drop('rt',1,inplace=True )
+                if moff_pride_flag == 1:
+                    temp['ts'] = (data_ms2['rt']  ) - h_rt_w
+                    temp['te'] = (data_ms2['rt']   ) + h_rt_w
+                else:
+                    temp['ts'] = (data_ms2['rt'] /60 ) - h_rt_w
+		    temp['te'] = (data_ms2['rt'] /60  ) + h_rt_w
+		
+                temp.drop('rt',1,inplace=True )
 		if not flag_mzml :
 			# txic-28-9-separate-jsonlines.exe
-			if not flag_windows:
+		        if not flag_windows:
 				args_txic = shlex.split( "mono " + txic_path + " -j " + temp.to_json( orient='records' ) + " -f " + loc,posix=True )
 			else:
 				args_txic = shlex.split(txic_path + " -j " + temp.to_json(orient='records') + " -f " + loc, posix=False)
@@ -450,7 +460,7 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 			xic_data =  mzML_get_all( temp,tol,loc, run_temp ,rt_list , id_list  )
 			#10p_noise    5p_noise  SNR     intensity  log_L_R    log_int  lwhm rt_peak  rwhm
 		data_ms2.reset_index(inplace=True)
-		data_ms2[['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']] = data_ms2.apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index) , axis=1   )
+		data_ms2[['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']] = data_ms2.apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index, moff_pride_flag ) , axis=1   )
 	except Exception as e:
 		traceback.print_exc()
 		print
@@ -497,6 +507,7 @@ def main_apex_alone():
 
 	loc_raw = args.raw
 	loc_output = args.loc_out
+
 	# set stream option for logger
 	ch = logging.StreamHandler()
 	ch.setLevel(logging.ERROR)
@@ -525,8 +536,15 @@ def main_apex_alone():
 		if  check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_mbr'))) == 1 :
 			exit('ERROR minimal field requested are missing or wrong')
 	else:
-		if  check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_apx'))) == 1 :
+		if  check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_apex'))) == 1  and  check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_moffpride'))) == 1 :
 			exit('ERROR minimal field requested are missing or wrong')
+        
+        # flag to check idf the input are from moffPride file.
+        # if so, rt is already in minutes
+        moff_pride_flag= 0 
+
+        if check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_moffpride'))) == 0 :
+            moff_pride_flag = 1 
 
 	log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
 	if args.raw_list is None:
@@ -564,7 +582,7 @@ def main_apex_alone():
 	start_time = time.time()
 	for df_index in range(0, len(data_split)):
 		result[df_index] = myPool.apply_async(apex_multithr, args=(
-		data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list ))
+		data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag ))
 		offset += len(data_split[df_index])
 
 	myPool.close()
