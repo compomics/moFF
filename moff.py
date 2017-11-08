@@ -36,6 +36,10 @@ log.setLevel(logging.DEBUG)
 TXIC_PATH = os.environ.get('TXIC_PATH', './')
 
 
+def clean_json_temp_file(loc_output):
+	for f in glob.glob(loc_output + "*.json"):
+		os.remove(f)
+	return 1
 def compute_peptide_matrix(loc_output, log, tag_filename):
 	name_col = []
 	name_col.append('prot')
@@ -260,11 +264,11 @@ def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_in
 	c = x.name
 	data_xic = xic_array[c]
         if moff_pride_flag == 1:
-            # daling with rt in minutes , moffpride input data 
-            time_w= x['rt'] 
+            # daling with rt in minutes , moffpride input data
+            time_w= x['rt']
         else:
             ## standar cases rt must be in second
-	    time_w= x['rt'] /60
+	        time_w= x['rt'] /60
 	if mbr_flag == 0:
 		log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f',(offset_index +c +2), x['mz'], time_w)
 		temp_w = s_w
@@ -434,20 +438,35 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 	# strange cases
 
 		temp.ix[:,'tol'] = int( tol)
-                if moff_pride_flag == 1:
-                    temp['ts'] = (data_ms2['rt']  ) - h_rt_w
-                    temp['te'] = (data_ms2['rt']   ) + h_rt_w
-                else:
-                    temp['ts'] = (data_ms2['rt'] /60 ) - h_rt_w
-		    temp['te'] = (data_ms2['rt'] /60  ) + h_rt_w
-		
-                temp.drop('rt',1,inplace=True )
+		if moff_pride_flag == 1:
+			temp['ts'] = (data_ms2['rt']  ) - h_rt_w
+			temp['te'] = (data_ms2['rt']   ) + h_rt_w
+		else:
+			temp['ts'] = (data_ms2['rt'] /60 ) - h_rt_w
+			temp['te'] = (data_ms2['rt'] /60  ) + h_rt_w
+		temp.drop('rt',1,inplace=True )
+
+
 		if not flag_mzml :
 			# txic-28-9-separate-jsonlines.exe
-		        if not flag_windows:
-				args_txic = shlex.split( "mono " + txic_path + " -j " + temp.to_json( orient='records' ) + " -f " + loc,posix=True )
+			if not flag_windows:
+				# Linux  to avoid cmd  string too long  and its error. the thresold is mainly base on  from empirical evaluation.
+				if len(temp.to_json(orient='records')) >= 50000:
+					with open(os.path.join(loc_output,multiprocessing.current_process().name +'.json'), 'w') as f:
+						f.write(temp.to_json(orient='records'))
+					args_txic = shlex.split(txic_path + " -jf " +  os.path.join(loc_output,multiprocessing.current_process().name + '.json')  + " -f " + loc, posix=False)
+				else:
+					#  small amount of char. in the request
+					args_txic = shlex.split( "mono " + txic_path + " -j " + temp.to_json( orient='records' ) + " -f " + loc,posix=True )
 			else:
-				args_txic = shlex.split(txic_path + " -j " + temp.to_json(orient='records') + " -f " + loc, posix=False)
+				# Windows to avoid cmd  string too long  and its error. the thresold is mainly base on  from empirical evaluation.
+				if len(temp.to_json(orient='records')) >= 10000:
+					with open(os.path.join(loc_output,multiprocessing.current_process().name +'.json'), 'w') as f:
+						f.write(temp.to_json(orient='records'))
+					args_txic = shlex.split(txic_path + " -jf " +  os.path.join(loc_output,multiprocessing.current_process().name + '.json')  + " -f " + loc, posix=False)
+				else:
+					#  small amount of char. in the request
+					args_txic = shlex.split(txic_path + " -j " + temp.to_json(orient='records') + " -f " + loc, posix=False)
 			start_timelocal = time.time()
 			p = subprocess.Popen(args_txic, stdout=subprocess.PIPE)
 			output, err = p.communicate()
@@ -465,7 +484,7 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 		traceback.print_exc()
 		print
 		raise e
-    
+
         return (data_ms2,1)
 
 def main_apex_alone():
@@ -538,13 +557,13 @@ def main_apex_alone():
 	else:
 		if  check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_apex'))) == 1  and  check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_moffpride'))) == 1 :
 			exit('ERROR minimal field requested are missing or wrong')
-        
+
         # flag to check idf the input are from moffPride file.
         # if so, rt is already in minutes
-        moff_pride_flag= 0 
+	moff_pride_flag= 0
 
-        if check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_moffpride'))) == 0 :
-            moff_pride_flag = 1 
+	if check_ps_input_data(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'moffpride_format'))) == 1 :
+		moff_pride_flag = 1
 
 	log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
 	if args.raw_list is None:
@@ -556,11 +575,12 @@ def main_apex_alone():
 
 	# multiprocessing.cpu_count()
 	data_split = np.array_split(df,  multiprocessing.cpu_count() )
-        # small workaround to prevent max input line in Linux 
+	'''
+        # small workaround to prevent max input line in Linux
         if data_split[0].shape > 2500 :
                 # increase the number of splitting a bit more than the CPUs in order to get splice smaller than 2500
                 data_split = np.array_split(df,  (multiprocessing.cpu_count()+8) )
-
+	'''
 	##used for test
 	log.critical('Starting Apex  .....')
 	name = os.path.basename(file_name).split('.')[0]
@@ -593,6 +613,7 @@ def main_apex_alone():
 	start_time_2 = time.time()
 	save_moff_apex_result(data_split, result, loc_output, file_name)
 	#print 'Time no result collect 2',  time.time() -start_time_2
+	clean_json_temp_file(loc_output)
 	if args.pep_matrix == 1 :
 		# # TO DO manage the error with retunr -1 like in moff_all.py  master repo
 		state = compute_peptide_matrix(loc_output,log,args.tag_pepsum)
