@@ -1,16 +1,15 @@
 #!/usr/bin/env python
-import numpy as np
-import pandas as pd
 import argparse
 import logging
-import os
 import multiprocessing
+import os
 import time
+
+import numpy as np
+import pandas as pd
+
 import moff
 import moff_mbr
-import traceback
-
-
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -19,20 +18,6 @@ log.setLevel(logging.DEBUG)
 
 
 
-def save_moff_result (list_df, result, folder_output, name  ):
-	xx=[]
-	for df_index in range(0,len(list_df)):
-		if result[df_index].get()[1] == -1:
-			exit ('Raw file not retrieved: wrong path or upper/low case mismatch')
-		else:
-			xx.append( result[df_index].get()[0])
-
-	final_res = pd.concat(xx)
-	#print final_res.shape
-	#print os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt")
-	final_res.to_csv( os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt"),sep="\t",index=False )
-
-	return (1)
 
 
 
@@ -163,7 +148,12 @@ if __name__ == '__main__':
 		df = pd.read_csv(file_name,sep="\t")
 
 		data_split= np.array_split(df, num_CPU)
-
+		'''
+		# small workaround to prevent max input line in Linux
+		if data_split[0].shape[0] > 2500 :
+			# increase the number of splitting a bit more than the CPUs in order to get splice smaller than 2500
+			data_split = np.array_split(df,  (num_CPU + 8) )
+		'''
 		log.critical('Starting Apex for %s ...',file_name)
 		log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
 		if args.raw_list is None:
@@ -184,8 +174,8 @@ if __name__ == '__main__':
 		moff.check_output_folder_existence(loc_output)
 		#control if exist the same log file : avoid appending output
 		moff.check_log_existence(os.path.join(loc_output, name + '__moff.log'))
-
-
+        # this flag must be set to 0. it is 1 only in case moFF-Pride date and only in tha pex module
+		moff_pride_flag= 0
 		myPool = multiprocessing.Pool(num_CPU)
 
 		start_time= time.time()
@@ -193,18 +183,19 @@ if __name__ == '__main__':
 		offset = 0
 		for df_index in range(0,len(data_split)):
 
-			result[df_index] = myPool.apply_async(moff.apex_multithr,args = (data_split[df_index],name,raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,rt_list , id_list ))
+			result[df_index] = myPool.apply_async(moff.apex_multithr,args = (data_split[df_index],name,raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,rt_list , id_list , moff_pride_flag))
 			offset += len(data_split[df_index])
 
 		myPool.close()
 		myPool.join()
-		print ' TIME multi thre. terminated', time.time() - start_time
+		#print ' TIME multi thre. terminated', time.time() - start_time
 		log.critical('...apex terminated in  %4.4f sec', time.time() - start_time )
-		save_moff_result (data_split, result, loc_output, file_name  )
-	log.critical('TOTAL time for apex %4.4f sec', time.time() - start_time)
-	c+=1
+		moff.save_moff_apex_result (data_split, result, loc_output, file_name  )
 
+		c+=1
 
+	moff.clean_json_temp_file(loc_output)
+	log.critical('TOTAL time for apex %4.4f sec', time.time() - start_time_total)
 	if args.pep_matrix == 1 :
 		state = moff.compute_peptide_matrix(args.loc_out,log,args.tag_pepsum)
 		if state == -1 :
