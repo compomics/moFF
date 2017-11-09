@@ -58,8 +58,7 @@ Optional requirements :
 -When using PeptideShaker results as a source, a PeptideShaker installation (<http://compomics.github.io/projects/peptide-shaker.html>) needs to be availabe.
  
 
-During processing, moFF makes use of a third party algorithm (txic or txic.exe) which allows for the parsing of the Thermo RAW data. 
-Txic is compatible with the raw outputfiles originating from any Orbitrap or triple quadrupole Thermo machine. However, Thermo Fusion instruments are currently not supported.
+During processing, moFF makes use of a third party algorithm (txic_json.exe or txic.exe) which allows for the parsing of the Thermo RAW data.
 
 
 [Top of page](#moff)
@@ -86,7 +85,7 @@ The MS2 identified peptides can be presented as a tab-delimited file containing 
  
 NOTE 1 : In case the tab-delimited file provided by the user contains fields that are not mentioned here (i.e petides length, search engines score) the algorithm will retain these in the final output. The peptide-spectrum-match sequence with its modications  and the protein id  and  informations are used only in the match-between-run module.
 
-NOTE 2 : Users can also provide the default PSM export provided by  PeptideShaker as source material for moFF.
+NOTE 2 : Users can also provide the default PSM export provided by PeptideShaker as source material for moFF.
 
 
 [Top of page](#moff)
