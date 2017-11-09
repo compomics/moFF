@@ -191,11 +191,11 @@ if __name__ == '__main__':
 		#print ' TIME multi thre. terminated', time.time() - start_time
 		log.critical('...apex terminated in  %4.4f sec', time.time() - start_time )
 		moff.save_moff_apex_result (data_split, result, loc_output, file_name  )
-		log.critical('TOTAL time for apex %4.4f sec', time.time() - start_time_total)
+
 		c+=1
 
 	moff.clean_json_temp_file(loc_output)
-
+	log.critical('TOTAL time for apex %4.4f sec', time.time() - start_time_total)
 	if args.pep_matrix == 1 :
 		state = moff.compute_peptide_matrix(args.loc_out,log,args.tag_pepsum)
 		if state == -1 :
