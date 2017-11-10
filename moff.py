@@ -145,13 +145,13 @@ def check_ps_input_data(input_column_name, list_col_ps_default):
 		return 0
 
 
-def check_columns_name(col_list, col_must_have):
+def check_columns_name(col_list, col_must_have,log):
 	for c_name in col_must_have:
 		if not (c_name in col_list):
 			# fail
-			print 'The following filed name is missing or wrong: ', c_name
-			return 1
-	# succes
+			log.critical('This information is missing : %s ', c_name)
+			return  1
+		# succes
 	return 0
 
 
@@ -538,32 +538,36 @@ def main_apex_alone():
 	df = pd.read_csv(file_name, sep="\t")
 	#df = df.ix[0:100,:]
 	## check and eventually tranf for PS template
-	if not 'matched' in df.columns:
-		# check if it is a PS file ,
-		list_name = df.columns.values.tolist()
-		# get the lists of PS  defaultcolumns from properties file
-		list = ast.literal_eval(config.get('moFF', 'ps_default_export_v1'))
-		# here it controls if the input file is a PS export; if yes it maps the input in right moFF name
-		if check_ps_input_data(list_name, list) == 1:
-			# map  the columns name according to moFF input requirements
-			if args.pep_matrix != 1:
-				data_ms2, list_name = map_ps2moff(df,'col_must_have_apex')
-			else:
-				data_ms2, list_name = map_ps2moff(df, 'col_must_have_mbr')
-	## check if the field names are good, in case of pep summary we need same req as in  mbr
-	if args.pep_matrix == 1:
-		if  check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_mbr'))) == 1 :
-			exit('ERROR minimal field requested are missing or wrong')
+	moff_pride_flag = 0
+
+	if check_ps_input_data(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'moffpride_format'))) == 1:
+		# if it is a moff_pride data I do not check aany other requirement
+		log.critical('moffPride input detected')
+		moff_pride_flag = 1
 	else:
-		if  check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_apex'))) == 1  and  check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_moffpride'))) == 1 :
-			exit('ERROR minimal field requested are missing or wrong')
+		if not 'matched' in df.columns:
+			# check if it is a PS file ,
+			list_name = df.columns.values.tolist()
+			# get the lists of PS  defaultcolumns from properties file
+			list = ast.literal_eval(config.get('moFF', 'ps_default_export_v1'))
+			# here it controls if the input file is a PS export; if yes it maps the input in right moFF name
+			if check_ps_input_data(list_name, list) == 1:
+				# map  the columns name according to moFF input requirements
+				if args.pep_matrix != 1:
+					data_ms2, list_name = map_ps2moff(df,'col_must_have_apex')
+				else:
+					data_ms2, list_name = map_ps2moff(df, 'col_must_have_mbr')
+		## check if the field names are good, in case of pep summary we need same req as in  mbr
+		if args.pep_matrix == 1:
+			if check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_mbr')),log) == 1 :
+				exit('ERROR minimal field requested are missing or wrong')
+		else:
+			if  check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_apex')),log) == 1   :
+				exit('ERROR minimal field requested are missing or wrong')
 
         # flag to check idf the input are from moffPride file.
         # if so, rt is already in minutes
-	moff_pride_flag= 0
 
-	if check_ps_input_data(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'moffpride_format'))) == 1 :
-		moff_pride_flag = 1
 
 	log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
 	if args.raw_list is None:

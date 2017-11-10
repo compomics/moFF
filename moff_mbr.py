@@ -9,12 +9,13 @@ import logging
 import os
 import re
 import sys
-import moff
 
 import numpy as np
 import pandas as pd
 from sklearn import linear_model
 from sklearn.metrics import mean_absolute_error
+
+import moff
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -182,7 +183,7 @@ def run_mbr(args):
             data_moff, list_name = moff.map_ps2moff(data_moff,'col_must_have_mbr')
             log.critical('Mapping columns names into the  the moFF requested column name..: %s ', a)
             # print data_moff.columns
-        if  moff.check_columns_name(list_name, ast.literal_eval(config.get('moFF', 'col_must_have_mbr'))) == 1 :
+        if  moff.check_columns_name(list_name, ast.literal_eval(config.get('moFF', 'col_must_have_mbr')),log) == 1 :
 	        exit('ERROR minimal field requested are missing or wrong')
         data_moff['matched'] = 0
         data_moff['mass'] = data_moff['mass'].map('{:.4f}'.format)
