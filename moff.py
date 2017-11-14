@@ -617,7 +617,7 @@ def main_apex_alone():
 	start_time_2 = time.time()
 	save_moff_apex_result(data_split, result, loc_output, file_name)
 	#print 'Time no result collect 2',  time.time() -start_time_2
-	clean_json_temp_file(loc_output)
+
 	if args.pep_matrix == 1 :
 		# # TO DO manage the error with retunr -1 like in moff_all.py  master repo
 		state = compute_peptide_matrix(loc_output,log,args.tag_pepsum)
