@@ -452,18 +452,18 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 			if not flag_windows:
 				# Linux  to avoid cmd  string too long  and its error. the thresold is mainly base on  from empirical evaluation.
 				if len(temp.to_json(orient='records')) >= 50000:
-					with open(os.path.join(loc_output,multiprocessing.current_process().name +'.json'), 'w') as f:
+					with open(os.path.join(loc_output,multiprocessing.current_process().name  +'_' + name_file + '.json'), 'w') as f:
 						f.write(temp.to_json(orient='records'))
-					args_txic = shlex.split(txic_path + " -jf " +  os.path.join(loc_output,multiprocessing.current_process().name + '.json')  + " -f " + loc, posix=False)
+					args_txic = shlex.split(txic_path + " -jf " +  os.path.join(loc_output,multiprocessing.current_process().name  +'_' + name_file  + '.json')  + " -f " + loc, posix=False)
 				else:
 					#  small amount of char. in the request
 					args_txic = shlex.split( "mono " + txic_path + " -j " + temp.to_json( orient='records' ) + " -f " + loc,posix=True )
 			else:
 				# Windows to avoid cmd  string too long  and its error. the thresold is mainly base on  from empirical evaluation.
 				if len(temp.to_json(orient='records')) >= 10000:
-					with open(os.path.join(loc_output,multiprocessing.current_process().name +'.json'), 'w') as f:
+					with open(os.path.join(loc_output,multiprocessing.current_process().name +  '_' + name_file + '.json'), 'w') as f:
 						f.write(temp.to_json(orient='records'))
-					args_txic = shlex.split(txic_path + " -jf " +  os.path.join(loc_output,multiprocessing.current_process().name + '.json')  + " -f " + loc, posix=False)
+					args_txic = shlex.split(txic_path + " -jf " +  os.path.join(loc_output,multiprocessing.current_process().name + '_' + name_file + '.json')  + " -f " + loc, posix=False)
 				else:
 					#  small amount of char. in the request
 					args_txic = shlex.split(txic_path + " -j " + temp.to_json(orient='records') + " -f " + loc, posix=False)
