@@ -55,10 +55,10 @@ Required windows library:
 
 
 Optional requirements :
--When using PeptideShaker results as a source, a PeptideShaker installation (<http://compomics.github.io/projects/peptide-shaker.html>) needs to be availabe.
+-when using PeptideShaker results as a source, a PeptideShaker installation (<http://compomics.github.io/projects/peptide-shaker.html>) needs to be availabe.
  
 
-During processing, moFF makes use of a third party algorithm (txic_json.exe or txic.exe) which allows for the parsing of the Thermo RAW data.
+During processing, moFF makes use of a third party algorithm (txic_json.exe) which allows for the parsing of the Thermo RAW data.
 
 
 [Top of page](#moff)
@@ -94,7 +94,7 @@ NOTE 2 : Users can also provide the default PSM export provided by PeptideShaker
 
 ## Sample data  ##
 
-The  *sample_folder* contains a resultset for 3 runs of the CPTAC study 6 (Paulovich, MCP Proteomics, 2010). These MS2  peptides were identified by MASCOT. The [raw files]( https://goo.gl/ukbpCI) for this study are required to apply moFF to the sample data.
+The  *sample_folder* contains a resultset for 3 runs of the CPTAC study 6 (Paulovich, MCP Proteomics, 2010). These MS2  peptides are identified by  X!Tandem and MSGF+ using SearchGUI and then processed by PeptidesShaker . The [raw files]( https://goo.gl/ukbpCI) for this study are required to apply moFF to the sample data.
 
 ---
 
@@ -141,8 +141,8 @@ use `python moff.py -h`
   --inputraw	      specify directly the  raw file
   --tol               the mass tollerance (ppm)
   --rt_w              the rt windows for xic (minutes). Default value is 3  min
-  --rt_p     	      the time windows used to get the apex for the ms2 peptide/feature  (minutes). Default value is 0.4
-  --rt_p_match 	      the time windows used to get the apex for machted features (minutes). Default value is 0.6
+  --rt_p     	      the time windows used to get the apex for the ms2 peptide/feature  (minutes). Default value is 1
+  --rt_p_match 	      the time windows used to get the apex for machted features (minutes). Default value is 1.5
   --raw_repo          the folder containing the raw files
   --peptide_summary   flag that allows have as output the peptided summary intensity file. Default is disable (0)
   --tag_pep_sum_file  tag string that will be part of the  peptided summary intensity file name. Default value is moFF_run
@@ -153,7 +153,11 @@ For example :
 `python moff.py --inputtsv sample_folder/20080311_CPTAC6_07_6A005.txt  --raw_repo sample_folder/ --tol 1O --output_folder output_moff --peptide_summary 1 `
 
 WARNING : the raw file names MUST be the same of the input file otherwise the script gives you an error !
-NOTE: All the parameters related to the the time windows (rt_w,rt_p, rt_p_match) are basicaly the half of the entire time windows where the apex peak is searched or the XiC is retrieved.
+
+NOTE: all the parameters related to the the time windows (rt_w,rt_p, rt_p_match) are basicaly the half of the entire time windows where the apex peak is searched or the XiC is retrieved. For a correct rt windows, we suggest to set the **rt_p** value equal or slighly greater to the __dynamic exclusion duration set in your machine.__
+We suggest also to set the rt_p_match always slightly bigger than tha values used for rt_p
+
+
 
 You can also specify directly the raw file using: 
 `python moff.py --inputtsv sample_folder/20080311_CPTAC6_07_6A005.txt  --inputraw sample_folder/20080311_CPTAC6_07_6A005.raw --tol 1O --output_folder output_moff`
@@ -188,14 +192,12 @@ use `python moff_all.py -h`
   	--tag_pep_sum_file  tag string that will be part of the  peptided summary intensity file name. Default value is moFF_run
 	--raw_repo		the folder containing the raw files
 ```
-For a correct rt windows, we suggest to set the rt_p value equal or slighly greater to the dynamic exclusion duration set in your machine.
-We suggest also to set the rt_p_match always slightly bigger than the rt windows used the MS2 fetures (rt_p )
 
-  
 
 `python moff_all.py --inputF  sample_folder/   --raw_repo sample_folder/ --tol 10  --output_folder output_moff --peptide_summary 1`
 
 The options are identifcal for both apex and MBR modules. The output for the latter (MBR) is stored in the folder sample_folder/mbr_output, while the former (apex) generates files in the specified output_moff folder. Log files for both algorithms are generated in the respective folders.
+
 
 You can also specify a list of input and raw files using:
 
@@ -203,7 +205,10 @@ You can also specify a list of input and raw files using:
 
 Using `--inputtsv | --inputraw`  you can not filterted the input file using `--sample --ext` like in the case with `--inputF | --raw_repo`
 
- mzML raw file  MUST be specified  using `--inputtsv | --inputraw`. The `--raw_repo` option is not available for mzML files.
+mzML raw file  MUST be specified  using `--inputtsv | --inputraw`. The `--raw_repo` option is not available for mzML files.
+
+NOTE: The consideration of retention time window parameters (rt_w,rt_p_rt_p) mentioned for apex module are stil valid also for the entire workflow
+
 
 [Top of page](#moff)
 
@@ -236,8 +241,14 @@ Parameter | Meaning
 
 (c) A log file where all the information about all the trained linear model are displayed.
 
-(d) The peptide summary intensity is a tab delimited file where for each  peptide sequence the MS1 intensities are summed for all the occurences in each runs (aggregated by charge states and modification). In case you run the entire workflow this file will contains the summed intensity for all the runs, insted of just a selected run in case of the apex module. Along with peptide sequences also the protein ids are provided. The file could be used for downstream statistical analysis   
+(d) The peptide summary intensity is a tab delimited file where for each peptide sequence MS1 intensities are summed for all the occurences in each run (aggregated by charge states and modification).
 
-NOTE : The log files and the output files are in the output folder specified by the user. 
+In case you run the entire workflow on an a settings that contains N runs, the size of the file (rows and columns) will be **M x (N+2)**, where M is number of peptides (across all the runs) and N are summed intensity columns plus the peptide sequence and the protein ids. In case of running only the apex module, the size of the file  will be on M x 3 (only one replicate is considered).
+
+If a peptide is shared across several proteins, the protein column will also contains all the shared protein ids usually separed by _;_ or _,_.
+In case a peptide is not quantified it has 0 as intensities. The peptide summary intensity could be used for downstream statistical analysis such as in MsQRob
+
+
+NOTE : The log files and the output files are in the output folder specified by the user.
 
 [Go to top of page](#moff)
