@@ -233,14 +233,13 @@ def check_output_folder_existence(loc_output ):
 
 
 
-
-def compute_log_LR (data_xic,index,v_max):
+def compute_log_LR (data_xic,index,v_max, disc):
 	log_time = [-1, -1]
 	c_left = 0
 	find_5 = False
 	stop = False
-	while c_left < (index - 1) and not stop:
-		if not find_5 and ( data_xic.ix[(index - 1) - c_left, 1] <= (0.5 * v_max)):
+	while c_left <= (index - 1) and not stop:
+		if not find_5 and ( data_xic.ix[(index - 1) - c_left, 1] <= ( disc * v_max)):
 			find_5 = True
 			log_time[0] = data_xic.ix[(index - 1) - c_left, 0] * 60
 			stop = True
@@ -249,7 +248,7 @@ def compute_log_LR (data_xic,index,v_max):
 	stop = False
 	r_left = 0
 	while ((index + 1) + r_left <  data_xic.shape[0] ) and not stop:
-		if not find_5 and data_xic.ix[(index + 1) + r_left, 1] <= (0.50 * v_max):
+		if not find_5 and data_xic.ix[(index + 1) + r_left, 1] <= (disc * v_max):
 			find_5 = True
 			log_time[1] = data_xic.ix[(index + 1) + r_left, 0] * 60
 			stop = True
@@ -305,9 +304,13 @@ def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_in
 	pnoise_5 = np.percentile(data_xic[(data_xic['rt'] > (time_w - h_rt_w )) & (data_xic['rt'] < (time_w + h_rt_w ))]['intensity'], 5 )
 	pnoise_10 = np.percentile( data_xic[(data_xic['rt'] > (time_w - h_rt_w )) & (data_xic['rt'] < (time_w + h_rt_w)  )]['intensity'], 10)
 	# find the lwhm and rwhm
-	time_point =  compute_log_LR (data_xic,pos_p[0],val_max)
+	time_point = compute_log_LR(data_xic, pos_p[0], val_max, 0.5)
+	if (time_point[0]*time_point[1] == 1) or (time_point[0]*time_point[1] < 0):
+		# Try a second time FWHM  computation with 0.7 * max intensity
+		time_point =  compute_log_LR (data_xic,pos_p[0],val_max,0.7)
+
 	if time_point[0]== -1 or  time_point[1] ==-1:
-		# keep the shape measure to -1
+		# keep the shape measure to -1 in case on txo point are -1
 		log_L_R=-1
 	else:
 			log_L_R= np.log2(abs( time_w  - time_point[0]) / abs( time_w - time_point[1]))
@@ -536,7 +539,7 @@ def main_apex_alone():
 	config.read(os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), 'moff_setting.properties'))
 
 	df = pd.read_csv(file_name, sep="\t")
-	#df = df.ix[0:100,:]
+	#df = df.ix[254:258,:]
 	## check and eventually tranf for PS template
 	moff_pride_flag = 0
 
