@@ -111,13 +111,13 @@ The  *sample_folder* contains a resultset for 3 runs of the CPTAC study 6 (Paulo
 
 use :  `python moff_mbr.py -h`
 ```
-	--inputF              the folder where the input files are located 
+  	--loc_in              the folder where the input files are located 
   	--sample	      filter based on regular expression to define the considered replicates
   	--ext                 file extention of the input file
-  	--log_file_name       filename for the log file
-  	--filt_width          width value for outlier filtering 
-  	--out_filt            filtering (on/off) of the outlier in the training set
-  	--weight_comb         combination weighting : 0 for no weight 1 for a weighted schema
+  	--log_label       filename for the log file
+  	--w_filt          width value for outlier filtering 
+  	--out_flag            filtering (on/off) of the outlier in the training set
+  	--w_comb         combination weighting : 0 for no weight 1 for a weighted schema
 ```
 
 `python moff_mbr.py --inputF sample_folder/` 
@@ -131,11 +131,11 @@ The files in *sample_folder/mbr_output* will be identical to the input files, bu
 
 In case of a different extension (.list, etc), please use :
 
-`python --inputF sample_folder/ --ext list ` (Provide the extension without the period ('.'))
+`python moff_mbr.py  --loc_in  sample_folder/ --ext list ` (Provide the extension without the period ('.'))
 
 In case of using only specific input files within the provided directory, please use a regular expression:
 
-`python --inputF sample_folder/  --sample *_6A` (This can be combined with the aforementioned syntax)
+`python moff_mbr.py --loc_in sample_folder/  --sample *_6A` (This can be combined with the aforementioned syntax)
 
 
 [Top of page](#moff)
@@ -146,32 +146,32 @@ In case of using only specific input files within the provided directory, please
 
 use `python moff.py -h`
 ```
-  --inputtsv         the input file with for MS2 peptides
-  --inputraw	      specify directly the  raw file
-  --tol               the mass tollerance (ppm)
-  --rt_w              the rt windows for xic (minutes). Default value is 3  min
-  --rt_p     	      the time windows used to get the apex for the ms2 peptide/feature  (minutes). Default value is 1
-  --rt_p_match 	      the time windows used to get the apex for machted features (minutes). Default value is 1.5
+  --tsv_list         the input file with for MS2 peptides
+  --raw_list	      specify directly the  raw file
+  --toll               the mass tollerance (ppm)
+  --xic_length              the rt windows for xic (minutes). Default value is 3  min
+  --rt_peak_win     	      the time windows used to get the apex for the ms2 peptide/feature  (minutes). Default value is 1
+  --rt_peak_win_match 	      the time windows used to get the apex for machted features (minutes). Default value is 1.5
   --raw_repo          the folder containing the raw files
   --peptide_summary   flag that allows have as output the peptided summary intensity file. Default is disable (0)
-  --tag_pep_sum_file  tag string that will be part of the  peptided summary intensity file name. Default value is moFF_run
-  --output_folder     the target folder for the output (default is the input folder, raw_repo)
+  --tag_pepsum  tag string that will be part of the  peptided summary intensity file name. Default value is moFF_run
+  --loc_out     the target folder for the output (default is the input folder, raw_repo)
 ```
 For example :
 
-`python moff.py --inputtsv sample_folder/20080311_CPTAC6_07_6A005.txt  --raw_repo sample_folder/ --tol 1O --output_folder output_moff --peptide_summary 1 `
+`python moff.py --tsv_list sample_folder/20080311_CPTAC6_07_6A005.txt  --raw_repo sample_folder/ --toll 1O --loc_out output_moff --peptide_summary 1 `
 
 WARNING : the raw file names MUST be the same of the input file otherwise the script gives you an error !
 
-NOTE: all the parameters related to the the time windows (rt_w,rt_p, rt_p_match) are basicaly the half of the entire time windows where the apex peak is searched or the XiC is retrieved. For a correct rt windows, we suggest to set the **rt_p** value equal or slighly greater to the __dynamic exclusion duration set in your machine.__
-We suggest also to set the rt_p_match always slightly bigger than tha values used for rt_p
+NOTE: all the parameters related to the the time windows (xic_lentgh,rt_peak_win, rt_peak_win_match) are basicaly the half of the entire time windows where the apex peak is searched or the XiC is retrieved. For a correct rt windows, we suggest to set the **rt_peak_win** value equal or slighly greater to the __dynamic exclusion duration set in your machine.__
+We suggest also to set the rt_peak_win_match  always slightly bigger than tha values used for rt_peak_win
 
 
 
 You can also specify directly the raw file using: 
-`python moff.py --inputtsv sample_folder/20080311_CPTAC6_07_6A005.txt  --inputraw sample_folder/20080311_CPTAC6_07_6A005.raw --tol 1O --output_folder output_moff`
+`python moff.py --tsv_list sample_folder/20080311_CPTAC6_07_6A005.txt  --raw_list sample_folder/20080311_CPTAC6_07_6A005.raw --toll 1O --loc_out  output_moff`
 
-WARNING: if the user need to use Thermo RAW file can specify them using   `--inputraw` or  `--raw_rep`. In case of **mzML** file the user can ONLY specify them using   `--inputraw`
+WARNING: if the user need to use Thermo RAW file can specify them using   `--raw_list` or  `--raw_repo`. In case of **mzML** file the user can ONLY specify them using   `--raw_list`
 
 
 
@@ -184,37 +184,39 @@ WARNING: if the user need to use Thermo RAW file can specify them using   `--inp
 
 use `python moff_all.py -h`
 ```
-	--inputF		the folder containing input files 
-	--inputtsv		specify the input file as a list separated by a space
-	--inputraw		specify the raw file as a list separated by space
+	--loc_in		the folder containing input files 
+	--tsv_list		specify the input file as a list separated by a space
+	--raw_list		specify the raw file as a list separated by space
   	--sample		filter based on regular expression to define the considered replicates
   	--ext			file extension for the input files
-  	--log_file_name		a label name to use for the log file
-  	--filt_width		width value for  the outlier  filtering 
-  	--out_filt		filtering (on/off) of the outlier in the training set
-  	--weight_comb		combination weighting : 0 for no weight 1 for a weighted schema
+  	--log_label		a label name to use for the log file
+  	--w_filt		width value for  the outlier  filtering 
+  	--out_flag		filtering (on/off) of the outlier in the training set
+  	--w_comb		combination weighting : 0 for no weight 1 for a weighted schema
   	--tol			the mass tollerance (ppm)
-  	--rt_w			the rt windows for xic (minutes). Default value is  3  min
-	--rt_p			the time windows for the ms2 peptide/feature in apex (minutes). Default value is 1
-	--rt_p_match		the time windows for the matched features in apex ( minutes). Default value is 1.5
-	--peptide_summary   flag that allows have as output the peptided summary intensity file. Default is disable (0)
-  	--tag_pep_sum_file  tag string that will be part of the  peptided summary intensity file name. Default value is moFF_run
+  	--xic_length			the rt windows for xic (minutes). Default value is  3  min
+	--rt_peak_win			the time windows for the ms2 peptide/feature in apex (minutes). Default value is 1
+	--rt_peak_win_match		the time windows for the matched features in apex ( minutes). Default value is 1.5
+	--peptide_summary	flag that allows have as output the peptided summary intensity file. Default is disable (0)
+  	--tag_pepsum  tag string that will be part of the  peptided summary intensity file name. Default value is moFF_run
 	--raw_repo		the folder containing the raw files
+	--loc_out		 the target folder for the output (default is the input folder, raw_repo)
+ 
 ```
 
 
-`python moff_all.py --inputF  sample_folder/   --raw_repo sample_folder/ --tol 10  --output_folder output_moff --peptide_summary 1`
+`python moff_all.py --loc_in  sample_folder/   --raw_repo sample_folder/ --toll 10  --loc_out output_moff --peptide_summary 1`
 
 The options are identifcal for both apex and MBR modules. The output for the latter (MBR) is stored in the folder sample_folder/mbr_output, while the former (apex) generates files in the specified output_moff folder. Log files for both algorithms are generated in the respective folders.
 
 
 You can also specify a list of input and raw files using:
 
-`python moff_all.py --inputtsv  sample_folder/input_file1.txt sample_folder/input_file2.txt  --inputraw sample_folder/input_file1.raw sample_folder/input_file2.raw --tol 10 --output_folder output_moff --peptide_summary 1 `
+`python moff_all.py --tsv_list  sample_folder/input_file1.txt sample_folder/input_file2.txt  --raw_list sample_folder/input_file1.raw sample_folder/input_file2.raw --toll 10 --loc_out output_moff --peptide_summary 1 `
 
-Using `--inputtsv | --inputraw`  you can not filterted the input file using `--sample --ext` like in the case with `--inputF | --raw_repo`
+Using `--tsv_list | --raw_list`  you can not filterted the input file using `--sample --ext` like in the case with `--loc_in | --raw_repo`
 
-mzML raw file  MUST be specified  using `--inputtsv | --inputraw`. The `--raw_repo` option is not available for mzML files.
+mzML raw file  MUST be specified  using `--tsv_list | --raw_list`. The `--raw_repo` option is not available for mzML files.
 
 NOTE: The consideration of retention time window parameters (rt_w,rt_p_rt_p) mentioned for apex module are stil valid also for the entire workflow
 
