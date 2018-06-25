@@ -34,7 +34,6 @@ def MahalanobisDist(x, y):
     x_diff = np.array([x_i - xy_mean[0] for x_i in x])
     y_diff = np.array([y_i - xy_mean[1] for y_i in y])
     diff_xy = np.transpose([x_diff, y_diff])
-
     md = []
     for i in range(len(diff_xy)):
         md.append(np.sqrt(np.dot(np.dot(np.transpose(diff_xy[i]), inv_covariance_xy), diff_xy[i])))
@@ -297,7 +296,7 @@ def run_mbr(args):
     log.info('Combination of the  model  --------')
     log.info('Weighted combination  %s : ', 'Weighted' if int(args.w_comb) == 1 else 'Unweighted')
 
-    diff_field = np.setdiff1d(exp_t[0].columns, ['matched', 'peptide', 'mass', 'mz', 'charge', 'prot', 'rt'])
+    diff_field = np.setdiff1d(exp_t[0].columns, ['matched','mod_peptide', 'peptide', 'mass', 'mz', 'charge', 'prot', 'rt'])
 
     for jj in aa:
         pre_pep_save = []
