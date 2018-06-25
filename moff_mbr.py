@@ -383,7 +383,7 @@ def run_mbr(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='moFF match between run input parameter')
 
-    parser.add_argument('--inputF', dest='loc_in', action='store',
+    parser.add_argument('--loc_in', dest='loc_in', action='store',
                         help='specify the folder of the input MS2 peptide files  REQUIRED]', required=True)
 
     parser.add_argument('--sample', dest='sample', action='store',
@@ -393,16 +393,16 @@ if __name__ == '__main__':
     parser.add_argument('--ext', dest='ext', action='store', default='txt',
                         help='specify the exstension of the input file (txt as default value)', required=False)
 
-    parser.add_argument('--log_file_name', dest='log_label', default='moFF', action='store',
+    parser.add_argument('--log_label', dest='log_label', default='moFF', action='store',
                         help='a label name for the log file (moFF_mbr.log as default log file name)', required=False)
 
-    parser.add_argument('--filt_width', dest='w_filt', action='store', default=2,
+    parser.add_argument('--w_filt', dest='w_filt', action='store', default=2,
                         help='width value of the filter (k * mean(Dist_Malahobi , k = 2 as default) ', required=False)
 
-    parser.add_argument('--out_filt', dest='out_flag', action='store', default=1,
+    parser.add_argument('--out_flag', dest='out_flag', action='store', default=1,
                         help='filter outlier in each rt time allignment (active as default)', required=False)
 
-    parser.add_argument('--weight_comb', dest='w_comb', action='store', default=0,
+    parser.add_argument('--w_comb', dest='w_comb', action='store', default=0,
                         help='weights for model combination combination : 0 for no weight (default) 1 weighted devised by model errors.',
                         required=False)
 
