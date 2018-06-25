@@ -184,9 +184,10 @@ WARNING: if the user need to use Thermo RAW file can specify them using   `--raw
 
 use `python moff_all.py -h`
 ```
+	--config_file		specify a moFF parameter file
 	--loc_in		the folder containing input files 
 	--tsv_list		specify the input file as a list separated by a space
-	--raw_list		specify the raw file as a list separated by space
+	--raw_list		specify the raw file/mzML file  as a list separated by space
   	--sample		filter based on regular expression to define the considered replicates
   	--ext			file extension for the input files
   	--log_label		a label name to use for the log file
@@ -217,6 +218,8 @@ You can also specify a list of input and raw files using:
 Using `--tsv_list | --raw_list`  you can not filterted the input file using `--sample --ext` like in the case with `--loc_in | --raw_repo`
 
 mzML raw file  MUST be specified  using `--tsv_list | --raw_list`. The `--raw_repo` option is not available for mzML files.
+
+You can all the parameters values in file and load them using  `--config_file`. For an explample see example_parameter_file.ini
 
 NOTE: The consideration of retention time window parameters (rt_w,rt_p_rt_p) mentioned for apex module are stil valid also for the entire workflow
 
