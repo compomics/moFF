@@ -4,6 +4,8 @@ import logging
 import multiprocessing
 import os
 import time
+import ConfigParser
+
 
 import numpy as np
 import pandas as pd
@@ -27,16 +29,39 @@ if __name__ == '__main__':
 
 	multiprocessing.freeze_support()
 
-	parser = argparse.ArgumentParser(description='moFF match between run and apex module input parameter')
+	parser_1 = argparse.ArgumentParser(description='moFF match between run and apex module input parameter', add_help = False   )
 
-	parser.add_argument('--inputF', dest='loc_in', action='store',
+	parser_1.add_argument('--config_file', dest='config_file', action='store',help='Specify a moFF parameter file ', required=False)
+	args, remaining_argv = parser_1.parse_known_args()
+	if args.config_file:
+		config = ConfigParser.SafeConfigParser( allow_no_value=True)
+		config.read([args.config_file])
+		moFF_parameters = dict(config.items("moFF_parameters"))
+		# check if loc_in  is set in the input file 
+		if not ( 'loc_in' in moFF_parameters.keys() and 'raw_repo' in moFF_parameters.keys()  ) :
+			moFF_parameters['tsv_list']  = moFF_parameters['tsv_list'].split(',')
+			moFF_parameters['raw_list']  = moFF_parameters['raw_list'].split(',')
+		moFF_parameters['toll']= float (moFF_parameters['toll'] )
+		moFF_parameters['xic_length']= float (moFF_parameters['xic_length'] )
+		moFF_parameters['rt_peak_win']= float (moFF_parameters['rt_peak_win'] )
+		moFF_parameters['rt_peak_win_match']= float (moFF_parameters['rt_peak_win_match'] )
+		moFF_parameters['peptide_summary']= float (moFF_parameters['peptide_summary'] )
+		moFF_parameters['w_comb']=int( moFF_parameters['w_comb'])
+		moFF_parameters['out_flag']=int( moFF_parameters['out_flag'])
+		moFF_parameters['w_filt']=float( moFF_parameters['w_filt'])
+	args_1, remaining_argv = parser_1.parse_known_args()
+
+	parser = argparse.ArgumentParser(parents=[parser_1],description=__doc__,formatter_class=argparse.RawDescriptionHelpFormatter, )
+
+
+	parser.add_argument('--loc_in', dest='loc_in', action='store',
 						help='specify the folder of the input MS2 peptide list files ', required=False)
 
-	parser.add_argument('--inputtsv', dest='tsv_list', action='store', nargs='*' ,
+	parser.add_argument('--tsv_list', dest='tsv_list', action='store', nargs='*' ,
 						help='specify the mzid file as a list ', required=False)
 
 
-	parser.add_argument('--inputraw', dest='raw_list', action='store',  nargs='*' ,
+	parser.add_argument('--raw_list', dest='raw_list', action='store',  nargs='*' ,
 						help='specify the raw file as a list ', required=False)
 
 	parser.add_argument('--sample', dest='sample', action='store',
@@ -45,66 +70,70 @@ if __name__ == '__main__':
 	parser.add_argument('--ext', dest='ext', action='store', default='txt',
 						help='specify the file extentention of the input like ', required=False)
 
-	parser.add_argument('--log_file_name', dest='log_label', action='store', default='moFF',
+	parser.add_argument('--log_label', dest='log_label', action='store', default='moFF',
 						help='a label name to use for the log file', required=False)
 
-	parser.add_argument('--filt_width', dest='w_filt', action='store', default=2,
+	parser.add_argument('--w_filt', dest='w_filt', action='store', default=2,
 						help='width value of the filter  k * mean(Dist_Malahobis)', required=False)
 
-	parser.add_argument('--out_filt', dest='out_flag', action='store', default=1,
+	parser.add_argument('--out_flag', dest='out_flag', action='store', default=1,
 						help='filter outlier in each rt time allignment', required=False)
 
-	parser.add_argument('--weight_comb', dest='w_comb', action='store', default=0,
+	parser.add_argument('--w_comb', dest='w_comb', action='store', default=0,
 						help='weights for model combination combination : 0 for no weight  1 weighted devised by trein err of the model.',
 						required=False)
 
-	# parser.add_argument('--input', dest='name', action='store',help='specify input list of MS2 peptides ', required=True)
 
-	parser.add_argument('--tol', dest='toll', action='store', type=float, help='specify the tollerance  parameter in ppm',
-						required=True)
+	parser.add_argument('--toll', dest='toll', action='store', type=float, help='specify the tollerance  parameter in ppm',
+						required=False)
 
-	parser.add_argument('--rt_w', dest='rt_window', action='store', type=float, default=3,
+	parser.add_argument('--xic_length', dest='xic_length', action='store', type=float, default=3,
 						help='specify rt window for xic (minute). Default value is 3 min', required=False)
 
-	parser.add_argument('--rt_p', dest='rt_p_window', action='store', type=float, default=1,
+	parser.add_argument('--rt_peak_win', dest='rt_peak_win', action='store', type=float, default=1,
 						help='specify the time windows for the peak ( minute). Default value is 1 minute ', required=False)
 
-	parser.add_argument('--rt_p_match', dest='rt_p_window_match', action='store', type=float, default=1,
+	parser.add_argument('--rt_peak_win_match', dest='rt_peak_win_match', action='store', type=float, default=1,
 						help='specify the time windows for the matched peptide peak ( minute). Default value is 1.2 minute ',
 						required=False)
 
-	parser.add_argument('--raw_repo', dest='raw', action='store', help='specify the raw file repository ', required=False)
+	parser.add_argument('--raw_repo', dest='raw_repo', action='store', help='specify the raw file repository ', required=False)
 
-	parser.add_argument('--output_folder', dest='loc_out', action='store', default='', help='specify the folder output',
+	parser.add_argument('--loc_out', dest='loc_out', action='store', default='', help='specify the folder output',
 						required=False)
 
 	parser.add_argument('--rt_feat_file', dest='rt_feat_file', action='store',
 						help='specify the file that contains the features to use in the match-between-run RT prediction ',
 						required=False)
 
-	parser.add_argument('--peptide_summary', dest='pep_matrix', action='store',type=int,default= 0,
+	parser.add_argument('--peptide_summary', dest='peptide_summary', action='store',type=int,default= 0,
 						help='sumarize all the peptide intesity in one tab-delited file ',
 						required=False)
 
-	parser.add_argument('--tag_pep_sum_file', dest='tag_pepsum', action='store',type=str,default= 'moFF_run', help='a tag that is used in the peptide summary file name',required=False)
+	parser.add_argument('--tag_pepsum', dest='tag_pepsum', action='store',type=str,default= 'moFF_run', help='a tag that is used in the peptide summary file name',required=False)
+	if args.config_file:
+		parser.set_defaults(**moFF_parameters)
+		args = parser.parse_args(remaining_argv)
+	else: 
+		args = parser.parse_args()
 
-	args = parser.parse_args()
+	print args
 
 	## init globa logger
 	ch = logging.StreamHandler()
 	ch.setLevel(logging.ERROR)
 	log.addHandler(ch)
 
-	if (args.tsv_list is None) and  (args.loc_in is None) and  (args.raw_list is None) and (args.raw is None) :
+	if (args.tsv_list is None) and  (args.loc_in is None) and  (args.raw_list is None) and (args.raw_repo is None) :
 		exit('you must specify the input and raw files ')
-	if (args.tsv_list is not None) and  (args.loc_in is not None) and  (args.raw_list is not None) and (args.raw is not None) :
+	if (args.tsv_list is not None) and  (args.loc_in is not None) and  (args.raw_list is not None) and (args.raw_repo is not None) :
 		 exit('you must specify the input and raw files or unsing: --inputtsv and --rawlist or --inputF and --rawrepo ')
 	else:
 		if ((args.tsv_list is None ) and (args.raw_list is not None) ) or ((args.tsv_list is not  None ) and (args.raw_list is  None) ):
 			exit('Missing information: using --inputtsv you must specify the raw file with --inputraw ')
-		if ((args.loc_in is None ) and (args.raw is not None) ) or ((args.loc_in is not  None ) and (args.raw is  None) ) :
+		if ((args.loc_in is None ) and (args.raw_repo is not None) ) or ((args.loc_in is not  None ) and (args.raw_repo is  None) ) :
 			exit('Missing information: using --inputF you must specify the raw file with --raw_repo ')
-
+	#exit('debug config file ' )
 
 	log.critical('Matching between run module (mbr)')
 
@@ -131,16 +160,16 @@ if __name__ == '__main__':
 	start_time_total = time.time()
 	for file_name in mbr_list_loc:
 		tol = args.toll
-		h_rt_w = args.rt_window
-		s_w = args.rt_p_window
-		s_w_match = args.rt_p_window_match
+		h_rt_w = args.xic_length
+		s_w = args.rt_peak_win
+		s_w_match = args.rt_peak_win_match
 		if args.tsv_list is not None:
 		## list of the raw file and their path
 			raw_list = args.raw_list[c]
 		else:
 			raw_list = None
 
-		loc_raw = args.raw
+		loc_raw = args.raw_repo
 		loc_output = args.loc_out
 
 
@@ -191,12 +220,12 @@ if __name__ == '__main__':
 		#print ' TIME multi thre. terminated', time.time() - start_time
 		log.critical('...apex terminated in  %4.4f sec', time.time() - start_time )
 		moff.save_moff_apex_result (data_split, result, loc_output, file_name  )
-
+		moff.clean_json_temp_file(loc_output)
 		c+=1
 
-	moff.clean_json_temp_file(loc_output)
+	#moff.clean_json_temp_file(loc_output)
 	log.critical('TOTAL time for apex %4.4f sec', time.time() - start_time_total)
-	if args.pep_matrix == 1 :
+	if args.peptide_summary == 1 :
 		state = moff.compute_peptide_matrix(args.loc_out,log,args.tag_pepsum)
 		if state == -1 :
 			log.critical ('Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')
