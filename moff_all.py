@@ -39,8 +39,11 @@ if __name__ == '__main__':
 		moFF_parameters = dict(config.items("moFF_parameters"))
 		# check if loc_in  is set in the input file 
 		if not ( 'loc_in' in moFF_parameters.keys() and 'raw_repo' in moFF_parameters.keys()  ) :
-			moFF_parameters['tsv_list']  = moFF_parameters['tsv_list'].split(',')
-			moFF_parameters['raw_list']  = moFF_parameters['raw_list'].split(',')
+			moFF_parameters['tsv_list']  = moFF_parameters['tsv_list'].split(' ')
+		if not ( 'raw_repo' in moFF_parameters.keys()):
+			moFF_parameters['raw_list']  = moFF_parameters['raw_list'].split(' ')
+		if not ('toll' in moFF_parameters.keys()):
+			exit('you must specify the tollerance in the configuration file ')
 		moFF_parameters['toll']= float (moFF_parameters['toll'] )
 		moFF_parameters['xic_length']= float (moFF_parameters['xic_length'] )
 		moFF_parameters['rt_peak_win']= float (moFF_parameters['rt_peak_win'] )
@@ -112,27 +115,30 @@ if __name__ == '__main__':
 
 	parser.add_argument('--tag_pepsum', dest='tag_pepsum', action='store',type=str,default= 'moFF_run', help='a tag that is used in the peptide summary file name',required=False)
 	if args.config_file:
+		# load from config file and load the remaining parametes
 		parser.set_defaults(**moFF_parameters)
 		args = parser.parse_args(remaining_argv)
 	else: 
+		# normal case for the input parsing
 		args = parser.parse_args()
 
-	print args
 
-	## init globa logger
+	## init global logger
 	ch = logging.StreamHandler()
 	ch.setLevel(logging.ERROR)
 	log.addHandler(ch)
 
+	if args.toll is None:
+		exit('you must specify the tollerance in ppm ')
 	if (args.tsv_list is None) and  (args.loc_in is None) and  (args.raw_list is None) and (args.raw_repo is None) :
 		exit('you must specify the input and raw files ')
 	if (args.tsv_list is not None) and  (args.loc_in is not None) and  (args.raw_list is not None) and (args.raw_repo is not None) :
-		 exit('you must specify the input and raw files or unsing: --inputtsv and --rawlist or --inputF and --rawrepo ')
+		 exit('you must specify the input and raw files or using: --tsv_list and --raw_list or --loc_in and --raw_repo ')
 	else:
 		if ((args.tsv_list is None ) and (args.raw_list is not None) ) or ((args.tsv_list is not  None ) and (args.raw_list is  None) ):
-			exit('Missing information: using --inputtsv you must specify the raw file with --inputraw ')
+			exit('Missing information: using --tsv_list you must specify the raw file with --raw_list ')
 		if ((args.loc_in is None ) and (args.raw_repo is not None) ) or ((args.loc_in is not  None ) and (args.raw_repo is  None) ) :
-			exit('Missing information: using --inputF you must specify the raw file with --raw_repo ')
+			exit('Missing information: using --loc_in you must specify the raw file with --raw_repo ')
 	#exit('debug config file ' )
 
 	log.critical('Matching between run module (mbr)')
