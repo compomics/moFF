@@ -146,16 +146,16 @@ In case of using only specific input files within the provided directory, please
 
 use `python moff.py -h`
 ```
-  --tsv_list         the input file with for MS2 peptides
-  --raw_list	      specify directly the  raw file
-  --toll               the mass tollerance (ppm)
-  --xic_length              the rt windows for xic (minutes). Default value is 3  min
-  --rt_peak_win     	      the time windows used to get the apex for the ms2 peptide/feature  (minutes). Default value is 1
-  --rt_peak_win_match 	      the time windows used to get the apex for machted features (minutes). Default value is 1.5
-  --raw_repo          the folder containing the raw files
-  --peptide_summary   flag that allows have as output the peptided summary intensity file. Default is disable (0)
-  --tag_pepsum  tag string that will be part of the  peptided summary intensity file name. Default value is moFF_run
-  --loc_out     the target folder for the output (default is the input folder, raw_repo)
+  --tsv_list	the input file with for MS2 peptides
+  --raw_list	specify directly the  raw file
+  --toll	the mass tollerance (ppm)
+  --xic_length	the rt windows for xic (minutes). Default value is 3  min
+  --rt_peak_win	the time windows used to get the apex for the ms2 peptide/feature  (minutes). Default value is 1
+  --rt_peak_win_match 	the time windows used to get the apex for machted features (minutes). Default value is 1
+  --raw_repo	the folder containing all the raw files
+  --peptide_summary	flag that allows have as output the peptided summary intensity file. Default is disable (0)
+  --tag_pepsum	tag string that will be part of the  peptided summary intensity file name. Default value is moFF_run
+  --loc_out	the target folder for the output (default is the input folder, raw_repo)
 ```
 For example :
 
@@ -195,9 +195,9 @@ use `python moff_all.py -h`
   	--out_flag		filtering (on/off) of the outlier in the training set
   	--w_comb		combination weighting : 0 for no weight 1 for a weighted schema
   	--tol			the mass tollerance (ppm)
-  	--xic_length			the rt windows for xic (minutes). Default value is  3  min
-	--rt_peak_win			the time windows for the ms2 peptide/feature in apex (minutes). Default value is 1
-	--rt_peak_win_match		the time windows for the matched features in apex ( minutes). Default value is 1.5
+  	--xic_length		the rt windows for xic (minutes). Default value is  3  min
+	--rt_peak_win		the time windows for the ms2 peptide/feature in apex (minutes). Default value is 1
+	--rt_peak_win_match	the time windows for the matched features in apex ( minutes). Default value is 1.5
 	--peptide_summary	flag that allows have as output the peptided summary intensity file. Default is disable (0)
   	--tag_pepsum  tag string that will be part of the  peptided summary intensity file name. Default value is moFF_run
 	--raw_repo		the folder containing the raw files
@@ -219,9 +219,9 @@ Using `--tsv_list | --raw_list`  you can not filterted the input file using `--s
 
 mzML raw file  MUST be specified  using `--tsv_list | --raw_list`. The `--raw_repo` option is not available for mzML files.
 
-You can all the parameters values in file and load them using  `--config_file`. For an explample see example_parameter_file.ini
+You can set all the parameters values in a file and load them using  `--config_file`. For an exaple see `example_parameter_file.ini`
 
-NOTE: The consideration of retention time window parameters (rt_w,rt_p_rt_p) mentioned for apex module are stil valid also for the entire workflow
+NOTE: The consideration of retention time window parameters (xic_length,rt_peak_win,rt_peak_win_match) mentioned for apex module are stil valid also for the entire workflow
 
 
 [Top of page](#moff)
