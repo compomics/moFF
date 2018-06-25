@@ -492,25 +492,25 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 
 def main_apex_alone():
 	parser = argparse.ArgumentParser(description='moFF input parameter')
-	parser.add_argument('--inputtsv', dest='name', action='store',
+	parser.add_argument('--tsv_list', dest='name', action='store',
 						help='specify the input file with the MS2 peptides/features', required=True)
-	parser.add_argument('--inputraw', dest='raw_list', action='store', help='specify directly raw file', required=False)
-	parser.add_argument('--tol', dest='toll', action='store', type=float, help='specify the tollerance parameter in ppm',
+	parser.add_argument('--raw_list', dest='raw_list', action='store', help='specify directly raw file', required=False)
+	parser.add_argument('--toll', dest='toll', action='store', type=float, help='specify the tollerance parameter in ppm',
 						required=True)
-	parser.add_argument('--rt_w', dest='rt_window', action='store', type=float, default=3,
+	parser.add_argument('--xic_length', dest='xic_length', action='store', type=float, default=3,
 						help='specify rt window for xic (minute). Default value is 3 min', required=False)
-	parser.add_argument('--rt_p', dest='rt_p_window', action='store', type=float, default=1,
+	parser.add_argument('--rt_peak_win', dest='rt_peak_win', action='store', type=float, default=1,
 						help='specify the time windows for the peak ( minute). Default value is 1 minute ', required=False)
-	parser.add_argument('--rt_p_match', dest='rt_p_window_match', action='store', type=float, default=1.2,
+	parser.add_argument('--rt_peak_win_match', dest='rt_peak_win_match', action='store', type=float, default=1.2,
 						help='specify the time windows for the matched  peak ( minute). Default value is 1.2 minute ',
 						required=False)
-	parser.add_argument('--raw_repo', dest='raw', action='store', help='specify the raw file repository folder',
+	parser.add_argument('--raw_repo', dest='raw_repo', action='store', help='specify the raw file repository folder',
 						required=False)
-	parser.add_argument('--output_folder', dest='loc_out', action='store', default='', help='specify the folder output',
+	parser.add_argument('--loc_out', dest='loc_out', action='store', default='', help='specify the folder output',
 						required=False)
-	parser.add_argument('--peptide_summary', dest='pep_matrix', action='store', type=int, default=0, help='summarize all the peptide intesity in one tab-delited file ',required=False)
+	parser.add_argument('--peptide_summary', dest='peptide_summary', action='store', type=int, default=0, help='summarize all the peptide intesity in one tab-delited file ',required=False)
 
-	parser.add_argument('--tag_pep_sum_file', dest='tag_pepsum', action='store', type=str, default='moFF_run', help='a tag that is used in the peptide summary file name', required=False)
+	parser.add_argument('--tag_pepsum', dest='tag_pepsum', action='store', type=str, default='moFF_run', help='a tag that is used in the peptide summary file name', required=False)
 
 
 	args = parser.parse_args()
@@ -523,11 +523,11 @@ def main_apex_alone():
 
 	file_name = args.name
 	tol = args.toll
-	h_rt_w = args.rt_window
-	s_w = args.rt_p_window
-	s_w_match = args.rt_p_window_match
+	h_rt_w = args.xic_length
+	s_w = args.rt_peak_win
+	s_w_match = args.rt_peak_win_match
 
-	loc_raw = args.raw
+	loc_raw = args.raw_repo
 	loc_output = args.loc_out
 
 	# set stream option for logger
@@ -539,7 +539,6 @@ def main_apex_alone():
 	config.read(os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), 'moff_setting.properties'))
 
 	df = pd.read_csv(file_name, sep="\t")
-	#df = df.ix[254:258,:]
 	## check and eventually tranf for PS template
 	moff_pride_flag = 0
 
@@ -556,12 +555,12 @@ def main_apex_alone():
 			# here it controls if the input file is a PS export; if yes it maps the input in right moFF name
 			if check_ps_input_data(list_name, list) == 1:
 				# map  the columns name according to moFF input requirements
-				if args.pep_matrix != 1:
+				if args.peptide_summary != 1:
 					data_ms2, list_name = map_ps2moff(df,'col_must_have_apex')
 				else:
 					data_ms2, list_name = map_ps2moff(df, 'col_must_have_mbr')
 		## check if the field names are good, in case of pep summary we need same req as in  mbr
-		if args.pep_matrix == 1:
+		if args.peptide_summary == 1:
 			if check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_mbr')),log) == 1 :
 				exit('ERROR minimal field requested are missing or wrong')
 		else:
@@ -582,12 +581,6 @@ def main_apex_alone():
 
 	# multiprocessing.cpu_count()
 	data_split = np.array_split(df,  multiprocessing.cpu_count() )
-	'''
-        # small workaround to prevent max input line in Linux
-        if data_split[0].shape > 2500 :
-                # increase the number of splitting a bit more than the CPUs in order to get splice smaller than 2500
-                data_split = np.array_split(df,  (multiprocessing.cpu_count()+8) )
-	'''
 	##used for test
 	log.critical('Starting Apex  .....')
 	name = os.path.basename(file_name).split('.')[0]
@@ -621,7 +614,7 @@ def main_apex_alone():
 	save_moff_apex_result(data_split, result, loc_output, file_name)
 	#print 'Time no result collect 2',  time.time() -start_time_2
 
-	if args.pep_matrix == 1 :
+	if args.peptide_summary == 1 :
 		# # TO DO manage the error with retunr -1 like in moff_all.py  master repo
 		state = compute_peptide_matrix(loc_output,log,args.tag_pepsum)
 		if state ==-1 :
