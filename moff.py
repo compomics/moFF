@@ -395,20 +395,29 @@ def  filtering_match_peak(input_data , estimate_flag,moff_pride_flag,log,  thr_q
 			# to minute
 			new_point =  input_data.ix[0,'rt_peak'] / 60
 		###--
-		input_data.iloc[1:2,11:20] =  input_data.iloc[1:2,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.3,0.3,offset_index, moff_pride_flag,-1,c_count  ) , axis=1 )
-		input_data.iloc[2:3,11:20] =  input_data.iloc[2:3,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.3,0.3,offset_index, moff_pride_flag,-1,c_count  ) , axis=1 )
-		input_data.iloc[3:4,11:20] =  input_data.iloc[3:4,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.3,0.3,offset_index, moff_pride_flag,-1,c_count  ) , axis=1 )
+		input_data.iloc[1:2,11:20] =  input_data.iloc[1:2,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.3,0.3,offset_index, moff_pride_flag,new_point,c_count  ) , axis=1 )
+		input_data.iloc[2:3,11:20] =  input_data.iloc[2:3,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.3,0.3,offset_index, moff_pride_flag,new_point,c_count  ) , axis=1 )
+		input_data.iloc[3:4,11:20] =  input_data.iloc[3:4,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.3,0.3,offset_index, moff_pride_flag,new_point,c_count  ) , axis=1 )
+		
 		# check isotope 2-3
 		if (input_data.ix[1:3,'log_L_R'] != -1).all() : 
+				
 				mad_diff_int, rank_spearman, mad_rt =  compute_match_peak_quality_measure( input_data.iloc[0:3,:], moff_pride_flag,log )
-				if  (mad_rt < thr_q2 and rank_spearman > 0.8):
-					# check isotope -1 
-					if  input_data.ix[3,'log_L_R'] != -1: 
+				if estimate_flag == 1:
+					if input_data.ix[3,'log_L_R'] == -1:
+						print 'xxx missing wrong iso'
+						return pd.Series({'Erro_RelIntensity_TheoExp': mad_diff_int, 'rankcorr': rank_spearman,'RT_drift': mad_rt ,'delta_rt': -1 ,'delta_log_int': -1})
+					else:
 						delta_rt_wrong_iso =  abs(input_data.ix[3,'rt_peak'] - input_data.ix[0:3,'rt_peak'].mean())
-						delta_log_int =  input_data.ix[3,'intensity'] / input_data.ix[0,'intensity'] 
-						if estimate_flag ==1:
-							return pd.Series({'Erro_RelIntensity_TheoExp': mad_diff_int, 'rankcorr': rank_spearman,'RT_drift': mad_rt ,'delta_rt': delta_rt_wrong_iso ,'delta_log_int': delta_log_int,})
-						else:
+						delta_log_int =  input_data.ix[3,'log_int'] / input_data.ix[0,'log_int']
+						print 'yyy find wrong iso', delta_log_int , delta_rt_wrong_iso
+						return pd.Series({'Erro_RelIntensity_TheoExp': mad_diff_int, 'rankcorr': rank_spearman,'RT_drift': mad_rt ,'delta_rt': delta_rt_wrong_iso ,'delta_log_int': delta_log_int})
+				else :
+					if  (mad_rt < thr_q2 and rank_spearman > 0.8):
+					# check isotope -1 
+						if  input_data.ix[3,'log_L_R'] != -1: 
+							delta_rt_wrong_iso =  abs(input_data.ix[3,'rt_peak'] - input_data.ix[0:3,'rt_peak'].mean())
+							delta_log_int =  input_data.ix[3,'intensity'] / input_data.ix[0,'intensity'] 
 							if (delta_rt_wrong_iso  < thr_q2 and delta_log_int  >  err_ratio_int):
 								# elimina overlapping peptide isotope
 								log.info('%s --> Not valid isotope evelope  overlapping detected -->  --  MAD RT  %r  -- rankCorr %r ', input_data['peptide'].unique()[0], mad_rt , rank_spearman)
@@ -416,16 +425,13 @@ def  filtering_match_peak(input_data , estimate_flag,moff_pride_flag,log,  thr_q
 							else:
 								log.info('%s --> Valid isotope evelope detected after overlaping checkin -->  --  MAD RT  %r  -- rankCorr %r ', input_data['peptide'].unique()[0], mad_rt , rank_spearman)
 								return input_data.loc[input_data['ratio_iso'].idxmax(axis=1), ['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']]
-					else:
-						if estimated_flag == 1 :
-							return pd.Series({'Erro_RelIntensity_TheoExp': mad_diff_int, 'rankcorr': rank_spearman,'RT_drift': mad_rt ,'delta_rt': -1 ,'delta_log_int': -1})
 						else:
 							log.info('%s --> Valid isotope evelope detected and no overlaping detected -->  --  MAD RT  %r  -- rankCorr %r ', input_data['peptide'].unique()[0], mad_rt , rank_spearman)
 							return input_data.loc[input_data['ratio_iso'].idxmax(axis=1), ['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']]
-				else:
+					else:
 					# not pass the thr. leveli
-					log.info('%s --> Not valid isotope evelope detected  -->  --  MAD RT  %r  -- rankCorr %r ', input_data['peptide'].unique()[0], mad_rt , rank_spearman)
-					return pd.Series({'intensity': -1, 'rt_peak': -1,'lwhm': -1 ,'rwhm': -1 ,'5p_noise': -1,'10p_noise': -1,'SNR': -1,'log_L_R': -1,'log_int': -1 })
+						log.info('%s --> Not valid isotope evelope detected  -->  --  MAD RT  %r  -- rankCorr %r ', input_data['peptide'].unique()[0], mad_rt , rank_spearman)
+						return pd.Series({'intensity': -1, 'rt_peak': -1,'lwhm': -1 ,'rwhm': -1 ,'5p_noise': -1,'10p_noise': -1,'SNR': -1,'log_L_R': -1,'log_int': -1 })
 		else:
 			# I have only the 1st valid isotope peak  but not the second
 			log.info('%s --> not enough isotope peak detected only  %r over 3(/4) detected ', input_data['peptide'].unique()[0], input_data[input_data['log_L_R']!= -1].shape[0]  )
@@ -445,7 +451,7 @@ def  filtering_match_peak(input_data , estimate_flag,moff_pride_flag,log,  thr_q
 
 
 
-def apex_multithr_matched_peak(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset_index,  rt_list , id_list, moff_pride_flag ,ptm_map,estimate_flag, rt_drif, err_ratio_int ):
+def apex_multithr_matched_peak(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset_index,  rt_list , id_list, moff_pride_flag ,ptm_map,estimate_flag, rt_drift, err_ratio_int ):
 	# ---
 		#WARNING : you must call thi routine with anoter name this is just for quist debug
 	# ---
@@ -832,7 +838,7 @@ def main_apex_alone():
 						required=True)
 	parser.add_argument('--xic_length', dest='xic_length', action='store', type=float, default=3,
 						help='specify rt window for xic (minute). Default value is 3 min', required=False)
-	parser.add_argument('--rt_peak_win', dest='rt_peak_window', action='store', type=float, default=1,
+	parser.add_argument('--rt_peak_win', dest='rt_peak_win', action='store', type=float, default=1,
 						help='specify the time windows for the peak ( minute). Default value is 1 minute ', required=False)
 	parser.add_argument('--rt_peak_win_match', dest='rt_peak_win_match', action='store', type=float, default=1.2,
 						help='specify the time windows for the matched  peak ( minute). Default value is 1.2 minute ',
@@ -851,9 +857,9 @@ def main_apex_alone():
 
 	args = parser.parse_args()
 
-	if (args.raw_list is None) and (args.raw is None):
+	if (args.raw_list is None) and (args.raw_repo is None):
 		exit('you must specify and raw files  with --raw_list (file name) or --raw_repo (folder)')
-	if (args.raw_list is not None) and (args.raw is not None):
+	if (args.raw_list is not None) and (args.raw_repo is not None):
 		exit('you must specify raw files using only one options --raw_list (file name) or --raw_repo (folder) ')
 
 
@@ -896,7 +902,7 @@ def main_apex_alone():
 				else:
 					data_ms2, list_name = map_ps2moff(df, 'col_must_have_mbr')
 		## check if the field names are good, in case of pep summary we need same req as in  mbr
-		if args.pep_matrix == 1:
+		if args.peptide_summary == 1:
 			if check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_mbr')),log) == 1 :
 				exit('ERROR minimal field requested are missing or wrong')
 		else:
@@ -922,7 +928,7 @@ def main_apex_alone():
 	
 	rt_list , id_list = scan_mzml ( args.raw_list )
 	## sampling
-	if args.match_filt == 1 :
+	if args.match_filter == 1 :
 	#filtering
 		# load ptm file 
 		# ptm file MUST be located in the moFF folder
@@ -937,7 +943,7 @@ def main_apex_alone():
 		log.critical( 'quality threhsold estimated : MAD_retetion_time  %r  Ratio Int. FakeIsotope/1estIsotope: %r '% ( rt_drift ,error_ratio))
 		log.critical( 'starting MS2 peaks..')
 		myPool = multiprocessing.Pool(  multiprocessing.cpu_count()  )
-		data_split = np.array_split(df[df['matched']==0 ] , multiprocessing.cpu_count()  )
+		data_split = np.array_split(df[df['matched']==0 ].head(130) , multiprocessing.cpu_count()  )
 		result = {}
 		offset = 0
 		for df_index in range(0, len(data_split)):
@@ -947,7 +953,7 @@ def main_apex_alone():
 		ms2_data = save_moff_apex_result( data_split, result, loc_output )
 		log.critical( 'starting matched peaks...')
 		log.critical( 'initial # matched peaks: %r', df[ df['matched']==1].shape )
-		data_split = np.array_split(df[ df['matched']==1 ]   , multiprocessing.cpu_count()  )
+		data_split = np.array_split(df[ df['matched']==1 ].head(130)   , multiprocessing.cpu_count()  )
 		result = {}
 		offset = 0
 		for df_index in range(0, len(data_split)):
@@ -983,7 +989,7 @@ def main_apex_alone():
 		start_time_2 = time.time()
 		save_moff_apex_result(data_split, result, loc_output, file_name)
 
-	if args.pep_matrix == 1 :
+	if args.peptide_summary == 1 :
 		# # TO DO manage the error with retunr -1 like in moff_all.py  master repo
 		state = compute_peptide_matrix(loc_output,log,args.tag_pepsum)
 		if state ==-1 :
