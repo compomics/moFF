@@ -399,15 +399,15 @@ def  filtering_match_peak(input_data , estimate_flag,moff_pride_flag,log,  thr_q
 		input_data.iloc[2:3,11:20] =  input_data.iloc[2:3,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.3,0.3,offset_index, moff_pride_flag,-1,c_count  ) , axis=1 )
 		input_data.iloc[3:4,11:20] =  input_data.iloc[3:4,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.3,0.3,offset_index, moff_pride_flag,-1,c_count  ) , axis=1 )
 		# check isotope 2-3
-		if input_data.ix[1:3,'log_L_R'] != -1.all() : 
-				 mad_diff_int, rank_spearman, mad_rt =  compute_match_peak_quality_measure( input_data.iloc[0:3,:], moff_pride_flag,log )
+		if (input_data.ix[1:3,'log_L_R'] != -1).all() : 
+				mad_diff_int, rank_spearman, mad_rt =  compute_match_peak_quality_measure( input_data.iloc[0:3,:], moff_pride_flag,log )
 				if  (mad_rt < thr_q2 and rank_spearman > 0.8):
 					# check isotope -1 
 					if  input_data.ix[3,'log_L_R'] != -1: 
 						delta_rt_wrong_iso =  abs(input_data.ix[3,'rt_peak'] - input_data.ix[0:3,'rt_peak'].mean())
 						delta_log_int =  input_data.ix[3,'intensity'] / input_data.ix[0,'intensity'] 
 						if estimate_flag ==1:
-							-return pd.Series({'Erro_RelIntensity_TheoExp': mad_diff_int, 'rankcorr': rank_spearman,'RT_drift': mad_rt ,'delta_rt': delta_rt_wrong_iso ,'delta_log_int': delta_log_int,})
+							return pd.Series({'Erro_RelIntensity_TheoExp': mad_diff_int, 'rankcorr': rank_spearman,'RT_drift': mad_rt ,'delta_rt': delta_rt_wrong_iso ,'delta_log_int': delta_log_int,})
 						else:
 							if (delta_rt_wrong_iso  < thr_q2 and delta_log_int  >  err_ratio_int):
 								# elimina overlapping peptide isotope
@@ -558,7 +558,7 @@ def apex_multithr_matched_peak(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s
 			#print '--  ---'
 			## for MQ sequence is (mod_tag )
 			# for PS sequenc eis <mod_tag> 
-			'''
+			
 			if not ( '(' in row.mod_peptide):
 				#  only fixed mod
 				comps = Counter(list(chain(*[list(std_aa_comp[aa].elements()) for aa in row.peptide])))
@@ -572,21 +572,21 @@ def apex_multithr_matched_peak(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s
 					comps["N"] += (ptm_map['cC']['deltaChem'][2] * fix_mod_count)
 					comps["O"] += (ptm_map['cC']['deltaChem'][3] * fix_mod_count)
 			else: 
-			'''
+			
 			#print 'still to do it '
-			comps = Counter(list(chain(*[list(std_aa_comp[aa].elements()) for aa in row.peptide])))
-			for ptm in ptm_map.keys() :
-				ptm_c = row.mod_peptide.count(ptm)
+				comps = Counter(list(chain(*[list(std_aa_comp[aa].elements()) for aa in row.peptide])))
+				for ptm in ptm_map.keys() :
+					ptm_c = row.mod_peptide.count(ptm)
 				#ptm_c =  sum(ptm in s for s in row.mod_peptide)
-				if ptm_c  >=1:
+					if ptm_c  >=1:
 					#print ptm
-					comps["H"] += (ptm_map[ptm]['deltaChem'][0] * ptm_c )
-					comps["C"] += (ptm_map[ptm]['deltaChem'][1] * ptm_c)
-					comps["N"] += (ptm_map[ptm]['deltaChem'][2] * ptm_c)
-					comps["O"] += (ptm_map[ptm]['deltaChem'][3] * ptm_c)
+						comps["H"] += (ptm_map[ptm]['deltaChem'][0] * ptm_c )
+						comps["C"] += (ptm_map[ptm]['deltaChem'][1] * ptm_c)
+						comps["N"] += (ptm_map[ptm]['deltaChem'][2] * ptm_c)
+						comps["O"] += (ptm_map[ptm]['deltaChem'][3] * ptm_c)
 						
-			comps["H"] += 2
-			comps["O"] += 1
+				comps["H"] += 2
+				comps["O"] += 1
 			#print 'Modified COMPS',comps 
 			theoretical_isotopic_cluster = isotopic_variants(comps, charge=  int(round (  row.mass / float( row.mz)))   ,npeaks=3)
 			mz_iso = [ peak.mz  for peak in theoretical_isotopic_cluster ]
@@ -827,49 +827,6 @@ def main_apex_alone():
 	parser = argparse.ArgumentParser(description='moFF input parameter')
 	parser.add_argument('--tsv_list', dest='name', action='store',
 						help='specify the input file with the MS2 peptides/features', required=True)
-                data_ms2[['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']] = data_ms2.apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index, moff_pride_flag,-1, -1 ) , axis=1   )
-        except Exception as e:
-                traceback.print_exc()
-                print
-                raise e
-
-        return (data_ms2,1)
-
-
-def main_apex_alone():
-                data_ms2[['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']] = data_ms2.apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index, moff_pride_flag,-1, -1 ) , axis=1   )
-        except Exception as e:
-                traceback.print_exc()
-                print
-                raise e
-
-        return (data_ms2,1)
-
-
-def main_apex_alone():
-                data_ms2[['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']] = data_ms2.apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index, moff_pride_flag,-1, -1 ) , axis=1   )
-        except Exception as e:
-                traceback.print_exc()
-                print
-                raise e
-
-        return (data_ms2,1)
-
-
-def main_apex_alone():
-                data_ms2[['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']] = data_ms2.apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index, moff_pride_flag,-1, -1 ) , axis=1   )
-        except Exception as e:
-                traceback.print_exc()
-                print
-                raise e
-
-        return (data_ms2,1)
-
-
-def main_apex_alone():
-	parser = argparse.ArgumentParser(description='moFF input parameter')
-	parser.add_argument('--tsv_list', dest='name', action='store',
-						help='specify the input file with the MS2 peptides/features', required=True)
 	parser.add_argument('--raw_list', dest='raw_list', action='store', help='specify directly raw file', required=False)
 	parser.add_argument('--toll', dest='toll', action='store', type=float, help='specify the tollerance parameter in ppm',
 						required=True)
@@ -886,11 +843,7 @@ def main_apex_alone():
 						required=False)
 	parser.add_argument('--peptide_summary', dest='peptide_summary', action='store', type=int, default=0, help='summarize all the peptide intesity in one tab-delited file ',required=False)
 	parser.add_argument('--match_filter', dest='match_filter', action='store', type=int, default=0, help='filtering on the matched peak .default 0',required=False)
-	parser.add_argument('--peptide_summary', dest='peptide_summary', action='store', type=int, default=0, help='summarize all the peptide intesity in one tab-delited file ',required=False)
-	parser.add_argument('--match_filter', dest='match_filter', action='store', type=int, default=0, help='filtering on the matched peak .default 0',required=False)
-	parser.add_argument('--peptide_summary', dest='peptide_summary', action='store', type=int, default=0, help='summarize all the peptide intesity in one tab-delited file ',required=False)
-	parser.add_argument('--match_filter', dest='match_filter', action='store', type=int, default=0, help='filtering on the matched peak .default 0',required=False)
-	-parser.add_argument('--ptm_file', dest='ptm_file', action='store', default='ptm_setting.json' help='name of json ptm file. default file ptm_setting.json ',required=False)
+	parser.add_argument('--ptm_file', dest='ptm_file', action='store', default='ptm_setting.json', help='name of json ptm file. default file ptm_setting.json ',required=False)
 	parser.add_argument('--quantile_thr_filtering', dest='quantile_thr_filtering', action='store', type=float, default=0.75, help='quantile value used to computed the filtering threshold for the matched peak .default 0.75',required=False)
 	parser.add_argument('--sample_size', dest='sample_size', action='store', type=float, default=0.05, help='percentage of MS2 peptide used to estimated the threshold',required=False)
 	parser.add_argument('--tag_pepsum', dest='tag_pepsum', action='store', type=str, default='moFF_run', help='a tag that is used in the peptide summary file name', required=False)
