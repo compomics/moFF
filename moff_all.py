@@ -4,10 +4,10 @@ import logging
 import multiprocessing
 import os
 import time
-
+import json
 import numpy as np
 import pandas as pd
-
+import sys
 import moff
 import moff_mbr
 
@@ -37,7 +37,7 @@ if __name__ == '__main__':
 
 
 	parser.add_argument('--inputraw', dest='raw_list', action='store',  nargs='*' ,
-						help='specify the raw file as a list ', required=False)
+					help='specify the raw file as a list ', required=False)
 
 	parser.add_argument('--sample', dest='sample', action='store',
 						help='specify witch replicated to use for mbr reg_exp are valid ', required=False)
@@ -114,7 +114,21 @@ if __name__ == '__main__':
 	num_CPU=multiprocessing.cpu_count()
 
 
-	res_state,mbr_list_loc = moff_mbr.run_mbr(args)
+	#res_state,mbr_list_loc = moff_mbr.run_mbr(args)
+	
+	##--- debug version-- just to run CPTAC without running mbr
+	res_state= 1
+	mbr_list_loc =[]
+	
+	
+	for item in os.listdir(args.loc_in):
+            log.critical(item)
+            if os.path.isfile(os.path.join(args.loc_in, item)):
+                    if os.path.join(args.loc_in, item).endswith('.' + args.ext):
+                             mbr_list_loc.append(os.path.join(args.loc_in, item))
+	
+	###---	
+	
 	if res_state == -1:
 		exit('An error is occurred during the writing of the mbr file')
 	if args.tsv_list is not None:
@@ -127,8 +141,10 @@ if __name__ == '__main__':
 		folder = os.path.join(args.loc_in, 'mbr_output')
 
 	log.critical('Apex module... ')
+	
 	c=0
 	start_time_total = time.time()
+	
 	for file_name in mbr_list_loc:
 		tol = args.toll
 		h_rt_w = args.rt_window
@@ -147,13 +163,8 @@ if __name__ == '__main__':
 		## add multi thredign option
 		df = pd.read_csv(file_name,sep="\t")
 
-		data_split= np.array_split(df, num_CPU)
-		'''
-		# small workaround to prevent max input line in Linux
-		if data_split[0].shape[0] > 2500 :
-			# increase the number of splitting a bit more than the CPUs in order to get splice smaller than 2500
-			data_split = np.array_split(df,  (num_CPU + 8) )
-		'''
+		#data_split= np.array_split(df, num_CPU)
+		
 		log.critical('Starting Apex for %s ...',file_name)
 		log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
 		if args.raw_list is None:
@@ -163,6 +174,10 @@ if __name__ == '__main__':
 		log.critical('Output file in :  %s', loc_output)
 		if 'matched' in df.columns:
 			log.critical('Apex module has detected mbr peptides')
+			with open(  os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])),'ptm_setting_mq.json')  ) as data_file:
+				ptm_map = json.load(data_file)
+        		## add same safety checks len > 1
+
 
 		#print 'Original input size', df.shape
 		name = os.path.basename(file_name).split('.')[0]
@@ -173,28 +188,68 @@ if __name__ == '__main__':
 		#control id the folder exist
 		moff.check_output_folder_existence(loc_output)
 		#control if exist the same log file : avoid appending output
+		
 		moff.check_log_existence(os.path.join(loc_output, name + '__moff.log'))
         # this flag must be set to 0. it is 1 only in case moFF-Pride date and only in tha pex module
-		moff_pride_flag= 0
+		moff_pride_flag= 1
+		
+
+		rt_drift, thr1,error_ratio =  moff.estimate_parameter( df, name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,  rt_list , id_list,  moff_pride_flag, ptm_map,log   )
+		#rt_drift = 6
+		#thr1= -1
+		#error_ratio = 0.90
+		log.critical( 'quality threhsold evaluated  : MAD_retetion_time  %r  Ratio Int. FakeIsotope/1estIsotope: %r '% ( rt_drift ,error_ratio))
+		log.critical( 'starting MS2 peaks..')
+		#rt_drift = -1
+		#thr1=-1
+		#print rt_drift, thr1
+		
 		myPool = multiprocessing.Pool(num_CPU)
 
-		start_time= time.time()
-		result = {}
-		offset = 0
-		for df_index in range(0,len(data_split)):
+		### new to stuff to set it 
+		log.critical('MS2 Peak size: %r' %  df[df['matched']==0 ].shape[0])
+		data_split = np.array_split(df[df['matched']==0 ],  multiprocessing.cpu_count())
+		print len(data_split)
+        	result = {}
+        	offset = 0
+        	start_time = time.time()
+        	for df_index in range(0, len(data_split)):
 
-			result[df_index] = myPool.apply_async(moff.apex_multithr,args = (data_split[df_index],name,raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,rt_list , id_list , moff_pride_flag))
+                	result[df_index] = myPool.apply_async(moff.apex_multithr, args=( data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag  )   )
 			offset += len(data_split[df_index])
 
-		myPool.close()
-		myPool.join()
-		#print ' TIME multi thre. terminated', time.time() - start_time
-		log.critical('...apex terminated in  %4.4f sec', time.time() - start_time )
-		moff.save_moff_apex_result (data_split, result, loc_output, file_name  )
+        	ms2_data= moff.save_moff_apex_result(data_split, result, loc_output)
+		log.critical('Matched Peak size: %r' %  df[df['matched']==1].shape[0] )
 
+        	data_split = np.array_split(df[df['matched']==1 ],  multiprocessing.cpu_count())
+        	result = {}
+        	offset = 0
+        	start_time = time.time()
+		for df_index in range(0, len(data_split)):
+
+                	result[df_index] = myPool.apply_async(moff.apex_multithr_matched_peak, args=( data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag, ptm_map,0 , rt_drift, thr1 ,error_ratio    ))
+			offset += len(data_split[df_index])
+
+        	myPool.close()
+        	myPool.join()
+
+
+        	log.critical('...apex terminated')
+        	log.critical( 'Computational time (sec):  %4.4f ' % (time.time() -start_time))
+        	print 'Time no result collect',  time.time() -start_time
+        	start_time_2 = time.time()
+        	matched_peak= moff.save_moff_apex_result(data_split, result, loc_output)
+		log.critical('Matched Peak after filtering size: %r' %  matched_peak[matched_peak['matched']==1].shape[0] )
+        	# concat
+        	final_res = pd.concat([ms2_data,matched_peak])
+        	final_res.to_csv(os.path.join(loc_output, os.path.basename(name).split('.')[0] + "_moff_result.txt"), sep="\t",index=False)
+		
+		moff.clean_json_temp_file(loc_output)
+				
 		c+=1
-
-	moff.clean_json_temp_file(loc_output)
+	
+	#moff.clean_json_temp_file(loc_output)
+	
 	log.critical('TOTAL time for apex %4.4f sec', time.time() - start_time_total)
 	if args.pep_matrix == 1 :
 		state = moff.compute_peptide_matrix(args.loc_out,log,args.tag_pepsum)
