@@ -353,7 +353,6 @@ def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_in
 
 
 def estimate_parameter( df , name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,  rt_list , id_list, moff_pride_flag ,ptm_map,   log,sample_size, quantile_value  ):
-	setting_mild=True
 	myPool = multiprocessing.Pool(  multiprocessing.cpu_count()   )
 	sample= df[df['matched']==0 ].sample(frac=sample_size)
 	log.critical('Estimate parameters using %r MS2 peptides randomly sampled' % sample.shape[0] )
@@ -381,11 +380,31 @@ def compute_match_peak_quality_measure( input_data, moff_pride_flag,log ):
 	mad_rt = np.mean(abs( input_data['rt_peak']  -  input_data['rt_peak'].mean() ))
 	return ( mad_diff_int, rank_spearman, mad_rt )
 
+def  estimate_on_match_peak(input_data , estimate_flag,moff_pride_flag,log,  thr_q2,err_ratio_int,xic_data , mbr_flag ,h_rt_w,s_w,s_w_match,offset_index  ,  c_count ):
+	input_data.iloc[0:1,11:20] =  input_data.iloc[0:1,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index, moff_pride_flag,-1,c_count  ) , axis=1 )
+	if input_data.ix[0,'log_L_R'] != -1 :
+		if moff_pride_flag == 0 :
+			new_point =  input_data.ix[0,'rt_peak']
+		else:
+		# to minute
+			new_point =  input_data.ix[0,'rt_peak'] / 60
+		input_data.iloc[1:4,11:20] =  input_data.iloc[1:4,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.3,0.3,offset_index, moff_pride_flag,new_point,c_count  ) , axis=1 )
+		if  (input_data.ix[0:2,'log_L_R'] != -1).all():
+			mad_diff_int, rank_spearman, mad_rt =  compute_match_peak_quality_measure( input_data.iloc[0:3,:], moff_pride_flag,log )
+			print input_data
+			print mad_diff_int, rank_spearman, mad_rt
+			if input_data.ix[3,'log_L_R'] == -1:
+			#print 'xxx missing wrong iso'
+				return pd.Series({'Erro_RelIntensity_TheoExp': mad_diff_int, 'rankcorr': rank_spearman,'RT_drift': mad_rt ,'delta_rt': -1 ,'delta_log_int': -1})
+			else:
+				delta_rt_wrong_iso =  abs(input_data.ix[3,'rt_peak'] - input_data.ix[0:3,'rt_peak'].mean())
+				delta_log_int =  input_data.ix[3,'log_int'] / input_data.ix[0,'log_int']
+			#print 'yyy find wrong iso', delta_log_int , delta_rt_wrong_iso
+				return pd.Series({'Erro_RelIntensity_TheoExp': mad_diff_int, 'rankcorr': rank_spearman,'RT_drift': mad_rt ,'delta_rt': delta_rt_wrong_iso ,'delta_log_int': delta_log_int})
 
 
-['Erro_RelIntensity_TheoExp','rankcorr','RT_drift','delta_rt','delta_log_int' ]
 
-	
+
 def  filtering_match_peak(input_data , estimate_flag,moff_pride_flag,log,  thr_q2,err_ratio_int,xic_data , mbr_flag ,h_rt_w,s_w,s_w_match,offset_index  ,  c_count ): 
 	input_data.iloc[0:1,11:20] =  input_data.iloc[0:1,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index, moff_pride_flag,-1,c_count  ) , axis=1 )
 	if input_data.ix[0,'log_L_R'] != -1 :
@@ -394,7 +413,7 @@ def  filtering_match_peak(input_data , estimate_flag,moff_pride_flag,log,  thr_q
 		else:
 			# to minute
 			new_point =  input_data.ix[0,'rt_peak'] / 60
-		###--
+
 		input_data.iloc[1:2,11:20] =  input_data.iloc[1:2,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.3,0.3,offset_index, moff_pride_flag,new_point,c_count  ) , axis=1 )
 		input_data.iloc[2:3,11:20] =  input_data.iloc[2:3,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.3,0.3,offset_index, moff_pride_flag,new_point,c_count  ) , axis=1 )
 		input_data.iloc[3:4,11:20] =  input_data.iloc[3:4,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.3,0.3,offset_index, moff_pride_flag,new_point,c_count  ) , axis=1 )
@@ -405,19 +424,20 @@ def  filtering_match_peak(input_data , estimate_flag,moff_pride_flag,log,  thr_q
 				mad_diff_int, rank_spearman, mad_rt =  compute_match_peak_quality_measure( input_data.iloc[0:3,:], moff_pride_flag,log )
 				if estimate_flag == 1:
 					if input_data.ix[3,'log_L_R'] == -1:
-						print 'xxx missing wrong iso'
+						#print 'xxx missing wrong iso'
 						return pd.Series({'Erro_RelIntensity_TheoExp': mad_diff_int, 'rankcorr': rank_spearman,'RT_drift': mad_rt ,'delta_rt': -1 ,'delta_log_int': -1})
 					else:
 						delta_rt_wrong_iso =  abs(input_data.ix[3,'rt_peak'] - input_data.ix[0:3,'rt_peak'].mean())
 						delta_log_int =  input_data.ix[3,'log_int'] / input_data.ix[0,'log_int']
-						print 'yyy find wrong iso', delta_log_int , delta_rt_wrong_iso
+						#print 'yyy find wrong iso', delta_log_int , delta_rt_wrong_iso
 						return pd.Series({'Erro_RelIntensity_TheoExp': mad_diff_int, 'rankcorr': rank_spearman,'RT_drift': mad_rt ,'delta_rt': delta_rt_wrong_iso ,'delta_log_int': delta_log_int})
 				else :
 					if  (mad_rt < thr_q2 and rank_spearman > 0.8):
 					# check isotope -1 
+						
 						if  input_data.ix[3,'log_L_R'] != -1: 
 							delta_rt_wrong_iso =  abs(input_data.ix[3,'rt_peak'] - input_data.ix[0:3,'rt_peak'].mean())
-							delta_log_int =  input_data.ix[3,'intensity'] / input_data.ix[0,'intensity'] 
+							delta_log_int =  input_data.ix[3,'log_int'] / input_data.ix[0,'log_int'] 
 							if (delta_rt_wrong_iso  < thr_q2 and delta_log_int  >  err_ratio_int):
 								# elimina overlapping peptide isotope
 								log.info('%s --> Not valid isotope evelope  overlapping detected -->  --  MAD RT  %r  -- rankCorr %r ', input_data['peptide'].unique()[0], mad_rt , rank_spearman)
@@ -665,7 +685,7 @@ def apex_multithr_matched_peak(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s
 			if estimate_flag==0:
 				data_ms2.iloc[c_count, data_ms2.columns.get_indexer(['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm' ]) ] = filtering_match_peak( working_df,estimate_flag,   moff_pride_flag,log,   rt_drift, err_ratio_int, xic_data , mbr_flag  , h_rt_w,s_w,s_w_match,offset_index  ,  c_count )
 			else:
-				data_ms2.iloc[c_count, data_ms2.columns.get_indexer(['Erro_RelIntensity_TheoExp','rankcorr','RT_drift','delta_rt','delta_log_int' ]) ] = filtering_match_peak( working_df,estimate_flag,   moff_pride_flag,log,   rt_drift, err_ratio_int,xic_data , mbr_flag  , h_rt_w,s_w,s_w_match,offset_index  ,  c_count )
+				data_ms2.iloc[c_count, data_ms2.columns.get_indexer(['Erro_RelIntensity_TheoExp','rankcorr','RT_drift','delta_rt','delta_log_int' ]) ] =  estimate_on_match_peak( working_df,estimate_flag,   moff_pride_flag,log,   rt_drift, err_ratio_int,xic_data , mbr_flag  , h_rt_w,s_w,s_w_match,offset_index  ,  c_count )
 		if estimate_flag != 1:
 			data_ms2 =  data_ms2[ (data_ms2[ ['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm' ]  ] != -1 ).all(1)]
 	except Exception as e:
@@ -942,8 +962,9 @@ def main_apex_alone():
 		#error_ratio = 0.90
 		log.critical( 'quality threhsold estimated : MAD_retetion_time  %r  Ratio Int. FakeIsotope/1estIsotope: %r '% ( rt_drift ,error_ratio))
 		log.critical( 'starting MS2 peaks..')
+		exit('-- --/')
 		myPool = multiprocessing.Pool(  multiprocessing.cpu_count()  )
-		data_split = np.array_split(df[df['matched']==0 ].head(130) , multiprocessing.cpu_count()  )
+		data_split = np.array_split(df[df['matched']==0 ] , multiprocessing.cpu_count()  )
 		result = {}
 		offset = 0
 		for df_index in range(0, len(data_split)):
@@ -953,7 +974,7 @@ def main_apex_alone():
 		ms2_data = save_moff_apex_result( data_split, result, loc_output )
 		log.critical( 'starting matched peaks...')
 		log.critical( 'initial # matched peaks: %r', df[ df['matched']==1].shape )
-		data_split = np.array_split(df[ df['matched']==1 ].head(130)   , multiprocessing.cpu_count()  )
+		data_split = np.array_split(df[ df['matched']==1 ]   , multiprocessing.cpu_count()  )
 		result = {}
 		offset = 0
 		for df_index in range(0, len(data_split)):
