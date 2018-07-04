@@ -421,37 +421,26 @@ def  filtering_match_peak(input_data , estimate_flag,moff_pride_flag,log,  thr_q
 		# check isotope 2-3
 		if (input_data.ix[1:3,'log_L_R'] != -1).all() : 
 				
-				mad_diff_int, rank_spearman, mad_rt =  compute_match_peak_quality_measure( input_data.iloc[0:3,:], moff_pride_flag,log )
-				if estimate_flag == 1:
-					if input_data.ix[3,'log_L_R'] == -1:
-						#print 'xxx missing wrong iso'
-						return pd.Series({'Erro_RelIntensity_TheoExp': mad_diff_int, 'rankcorr': rank_spearman,'RT_drift': mad_rt ,'delta_rt': -1 ,'delta_log_int': -1})
-					else:
-						delta_rt_wrong_iso =  abs(input_data.ix[3,'rt_peak'] - input_data.ix[0:3,'rt_peak'].mean())
-						delta_log_int =  input_data.ix[3,'log_int'] / input_data.ix[0,'log_int']
-						#print 'yyy find wrong iso', delta_log_int , delta_rt_wrong_iso
-						return pd.Series({'Erro_RelIntensity_TheoExp': mad_diff_int, 'rankcorr': rank_spearman,'RT_drift': mad_rt ,'delta_rt': delta_rt_wrong_iso ,'delta_log_int': delta_log_int})
-				else :
-					if  (mad_rt < thr_q2 and rank_spearman > 0.8):
-					# check isotope -1 
-						
-						if  input_data.ix[3,'log_L_R'] != -1: 
-							delta_rt_wrong_iso =  abs(input_data.ix[3,'rt_peak'] - input_data.ix[0:3,'rt_peak'].mean())
-							delta_log_int =  input_data.ix[3,'log_int'] / input_data.ix[0,'log_int'] 
-							if (delta_rt_wrong_iso  < thr_q2 and delta_log_int  >  err_ratio_int):
-								# elimina overlapping peptide isotope
-								log.info('%s --> Not valid isotope evelope  overlapping detected -->  --  MAD RT  %r  -- rankCorr %r ', input_data['peptide'].unique()[0], mad_rt , rank_spearman)
-								return pd.Series({'intensity': -1, 'rt_peak': -1,'lwhm': -1 ,'rwhm': -1 ,'5p_noise': -1,'10p_noise': -1,'SNR': -1,'log_L_R': -1,'log_int': -1 })
-							else:
-								log.info('%s --> Valid isotope evelope detected after overlaping checkin -->  --  MAD RT  %r  -- rankCorr %r ', input_data['peptide'].unique()[0], mad_rt , rank_spearman)
-								return input_data.loc[input_data['ratio_iso'].idxmax(axis=1), ['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']]
-						else:
-							log.info('%s --> Valid isotope evelope detected and no overlaping detected -->  --  MAD RT  %r  -- rankCorr %r ', input_data['peptide'].unique()[0], mad_rt , rank_spearman)
-							return input_data.loc[input_data['ratio_iso'].idxmax(axis=1), ['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']]
-					else:
-					# not pass the thr. leveli
-						log.info('%s --> Not valid isotope evelope detected  -->  --  MAD RT  %r  -- rankCorr %r ', input_data['peptide'].unique()[0], mad_rt , rank_spearman)
+			mad_diff_int, rank_spearman, mad_rt =  compute_match_peak_quality_measure( input_data.iloc[0:3,:], moff_pride_flag,log )
+			if  (mad_rt < thr_q2 and rank_spearman > 0.8):
+			# check isotope -1 
+				if  input_data.ix[3,'log_L_R'] != -1: 
+					delta_rt_wrong_iso =  abs(input_data.ix[3,'rt_peak'] - input_data.ix[0:3,'rt_peak'].mean())
+					delta_log_int =  input_data.ix[3,'log_int'] / input_data.ix[0,'log_int'] 
+					if (delta_rt_wrong_iso  < thr_q2 and delta_log_int  >  err_ratio_int):
+						# elimina overlapping peptide isotope
+						log.info('%s --> Not valid isotope evelope  overlapping detected -->  --  MAD RT  %r  -- rankCorr %r ', input_data['peptide'].unique()[0], mad_rt , rank_spearman)
 						return pd.Series({'intensity': -1, 'rt_peak': -1,'lwhm': -1 ,'rwhm': -1 ,'5p_noise': -1,'10p_noise': -1,'SNR': -1,'log_L_R': -1,'log_int': -1 })
+					else:
+						log.info('%s --> Valid isotope evelope detected after overlaping checkin -->  --  MAD RT  %r  -- rankCorr %r ', input_data['peptide'].unique()[0], mad_rt , rank_spearman)
+						return input_data.loc[input_data['ratio_iso'].idxmax(axis=1), ['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']]
+				else:
+					log.info('%s --> Valid isotope evelope detected and no overlaping detected -->  --  MAD RT  %r  -- rankCorr %r ', input_data['peptide'].unique()[0], mad_rt , rank_spearman)
+					return input_data.loc[input_data['ratio_iso'].idxmax(axis=1), ['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']]
+			else:
+				# not pass the thr. leveli
+				log.info('%s --> Not valid isotope evelope detected  -->  --  MAD RT  %r  -- rankCorr %r ', input_data['peptide'].unique()[0], mad_rt , rank_spearman)
+				return pd.Series({'intensity': -1, 'rt_peak': -1,'lwhm': -1 ,'rwhm': -1 ,'5p_noise': -1,'10p_noise': -1,'SNR': -1,'log_L_R': -1,'log_int': -1 })
 		else:
 			# I have only the 1st valid isotope peak  but not the second
 			log.info('%s --> not enough isotope peak detected only  %r over 3(/4) detected ', input_data['peptide'].unique()[0], input_data[input_data['log_L_R']!= -1].shape[0]  )
@@ -962,7 +951,6 @@ def main_apex_alone():
 		#error_ratio = 0.90
 		log.critical( 'quality threhsold estimated : MAD_retetion_time  %r  Ratio Int. FakeIsotope/1estIsotope: %r '% ( rt_drift ,error_ratio))
 		log.critical( 'starting MS2 peaks..')
-		exit('-- --/')
 		myPool = multiprocessing.Pool(  multiprocessing.cpu_count()  )
 		data_split = np.array_split(df[df['matched']==0 ] , multiprocessing.cpu_count()  )
 		result = {}
