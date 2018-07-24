@@ -380,7 +380,10 @@ def compute_match_peak_quality_measure( input_data, moff_pride_flag,log ):
 	mad_rt = np.mean(abs( input_data['rt_peak']  -  input_data['rt_peak'].mean() ))
 	return ( mad_diff_int, rank_spearman, mad_rt )
 
-def  estimate_on_match_peak(input_data , estimate_flag,moff_pride_flag,log,  thr_q2,err_ratio_int,xic_data , mbr_flag ,h_rt_w,s_w,s_w_match,offset_index  ,  c_count ):
+def  estimate_on_match_peak(x,input_data , estimate_flag,moff_pride_flag,log,  thr_q2,err_ratio_int,xic_data , mbr_flag ,h_rt_w,s_w,s_w_match,offset_index   ):
+	print x.name
+	input_data = input_data.iloc[x.name: x.name+4 ,:]
+	print input_data.shape
 	input_data.iloc[0:1,11:20] =  input_data.iloc[0:1,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index, moff_pride_flag,-1,c_count  ) , axis=1 )
 	if input_data.ix[0,'log_L_R'] != -1 :
 		if moff_pride_flag == 0 :
@@ -388,11 +391,11 @@ def  estimate_on_match_peak(input_data , estimate_flag,moff_pride_flag,log,  thr
 		else:
 		# to minute
 			new_point =  input_data.ix[0,'rt_peak'] / 60
-		input_data.iloc[1:4,11:20] =  input_data.iloc[1:4,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.3,0.3,offset_index, moff_pride_flag,new_point,c_count  ) , axis=1 )
+		input_data.iloc[1:4,11:20] =  input_data.iloc[1:4,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.5,0.5,offset_index, moff_pride_flag,new_point,c_count  ) , axis=1 )
 		if  (input_data.ix[0:2,'log_L_R'] != -1).all():
 			mad_diff_int, rank_spearman, mad_rt =  compute_match_peak_quality_measure( input_data.iloc[0:3,:], moff_pride_flag,log )
-			print input_data
-			print mad_diff_int, rank_spearman, mad_rt
+			#print input_data
+			#print mad_diff_int, rank_spearman, mad_rt
 			if input_data.ix[3,'log_L_R'] == -1:
 			#print 'xxx missing wrong iso'
 				return pd.Series({'Erro_RelIntensity_TheoExp': mad_diff_int, 'rankcorr': rank_spearman,'RT_drift': mad_rt ,'delta_rt': -1 ,'delta_log_int': -1})
@@ -405,8 +408,12 @@ def  estimate_on_match_peak(input_data , estimate_flag,moff_pride_flag,log,  thr
 
 
 
-def  filtering_match_peak(input_data , estimate_flag,moff_pride_flag,log,  thr_q2,err_ratio_int,xic_data , mbr_flag ,h_rt_w,s_w,s_w_match,offset_index  ,  c_count ): 
+def  filtering_match_peak(x,input_data , estimate_flag,moff_pride_flag,log,  thr_q2,err_ratio_int,xic_data , mbr_flag ,h_rt_w,s_w,s_w_match,offset_index   ):
+ 	print x.name
+	input_data = input_data.iloc[x.name: x.name+4 ,:]
+	print input_data.shape
 	input_data.iloc[0:1,11:20] =  input_data.iloc[0:1,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index, moff_pride_flag,-1,c_count  ) , axis=1 )
+	#print input_data
 	if input_data.ix[0,'log_L_R'] != -1 :
 		if moff_pride_flag == 0 :
 			new_point =  input_data.ix[0,'rt_peak']
@@ -414,12 +421,13 @@ def  filtering_match_peak(input_data , estimate_flag,moff_pride_flag,log,  thr_q
 			# to minute
 			new_point =  input_data.ix[0,'rt_peak'] / 60
 
-		input_data.iloc[1:2,11:20] =  input_data.iloc[1:2,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.3,0.3,offset_index, moff_pride_flag,new_point,c_count  ) , axis=1 )
-		input_data.iloc[2:3,11:20] =  input_data.iloc[2:3,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.3,0.3,offset_index, moff_pride_flag,new_point,c_count  ) , axis=1 )
-		input_data.iloc[3:4,11:20] =  input_data.iloc[3:4,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.3,0.3,offset_index, moff_pride_flag,new_point,c_count  ) , axis=1 )
+		#input_data.iloc[1:2,11:20] =  input_data.iloc[1:2,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.3,0.3,offset_index, moff_pride_flag,new_point,c_count  ) , axis=1 )
+		#input_data.iloc[2:3,11:20] =  input_data.iloc[2:3,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.3,0.3,offset_index, moff_pride_flag,new_point,c_count  ) , axis=1 )
+		#input_data.iloc[3:4,11:20] =  input_data.iloc[3:4,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.3,0.3,offset_index, moff_pride_flag,new_point,c_count  ) , axis=1 )
 		
+		input_data.iloc[1:4,11:20] =  input_data.iloc[1:4,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.5,0.5,offset_index, moff_pride_flag,new_point,c_count  ) , axis=1 )
 		# check isotope 2-3
-		if (input_data.ix[1:3,'log_L_R'] != -1).all() : 
+		if (input_data.ix[0:2,'log_L_R'] != -1).all() : 
 				
 			mad_diff_int, rank_spearman, mad_rt =  compute_match_peak_quality_measure( input_data.iloc[0:3,:], moff_pride_flag,log )
 			if  (mad_rt < thr_q2 and rank_spearman > 0.8):
@@ -447,7 +455,7 @@ def  filtering_match_peak(input_data , estimate_flag,moff_pride_flag,log,  thr_q
 			return pd.Series({'intensity': -1, 'rt_peak': -1,'lwhm': -1 ,'rwhm': -1 ,'5p_noise': -1,'10p_noise': -1,'SNR': -1,'log_L_R': -1,'log_int': -1 })
 	else:
 		#print 'not_find the 1st isotope'
-		log.info('%s --> first isotope peak not detected %r over 3(/4) not detected   ', input_data['peptide'].unique()[0]  ,  input_data[input_data['log_L_R']== -1].shape[0]  )
+		log.info('%s --> first isotope peak not detected %r over 3(/4) not detected   ', input_data['peptide'].unique()[0]  ,  input_data[input_data['log_L_R']!= -1].shape[0]  )
 		return pd.Series({'intensity': -1, 'rt_peak': -1,
                            'lwhm': -1 ,
                                 'rwhm': -1 ,
@@ -624,6 +632,7 @@ def apex_multithr_matched_peak(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s
 				isotopic_df['te'] = (row.rt  /60  ) + h_rt_w
 			all_isotope_df = pd.concat([all_isotope_df , isotopic_df ],join='outer',axis=0   )
 		all_isotope_df.reset_index( inplace=True )
+		#print all_isotope_df
 		if not flag_mzml :
 			# txic-28-9-separate-jsonlines.exe
 			if not flag_windows:
@@ -658,6 +667,24 @@ def apex_multithr_matched_peak(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s
 			run_temp = pymzml.run.Reader(raw_name)
 			xic_data = mzML_get_all( temp,tol,loc, run_temp ,rt_list , id_list  )
 		## new filtering
+		print all_isotope_df.shape,data_ms2.shape
+		print all_isotope_df.head(12)
+		all_isotope_df["intensity"] = -1
+		all_isotope_df["rt_peak"] = -1
+		all_isotope_df["lwhm"] = -1
+		all_isotope_df["rwhm"] = -1
+		all_isotope_df["5p_noise"] = -1
+		all_isotope_df["10p_noise"] = -1
+		all_isotope_df["SNR"] = -1
+		all_isotope_df["log_L_R"] = -1
+		all_isotope_df["log_int"] = -1
+		if estimate_flag==0:
+			data_ms2.iloc[c_count, data_ms2.columns.get_indexer(['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm' ]) ].apply( lambda x: filtering_match_peak( x,all_isotope_df,estimate_flag,   moff_pride_flag,log,   rt_drift, err_ratio_int, xic_data , mbr_flag  , h_rt_w,s_w,s_w_match,offset_index  ,  c_count ),axis=1)
+		else:
+			data_ms2[['Erro_RelIntensity_TheoExp','rankcorr','RT_drift','delta_rt','delta_log_int']].apply( lambda x: estimate_on_match_peak( x,all_isotope_df,estimate_flag,   moff_pride_flag,log,   rt_drift, err_ratio_int, xic_data , mbr_flag  , h_rt_w,s_w,s_w_match,offset_index  ),axis=1)
+
+
+		'''
 		for c_count, row in enumerate(data_ms2.itertuples()):
 			working_df =   all_isotope_df[(all_isotope_df['peptide']==row.mod_peptide) & (all_isotope_df['exp_mz']==row.mz) ].copy()
 			working_df["intensity"] = -1
@@ -669,12 +696,15 @@ def apex_multithr_matched_peak(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s
 			working_df["SNR"] = -1
 			working_df["log_L_R"] = -1
 			working_df["log_int"] = -1
+			#print working_df.columns
 			working_df.reset_index(inplace=True)
+			#working_df.drop(['peptide'],axis=1,inplace=True)
 			## cal the function
 			if estimate_flag==0:
 				data_ms2.iloc[c_count, data_ms2.columns.get_indexer(['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm' ]) ] = filtering_match_peak( working_df,estimate_flag,   moff_pride_flag,log,   rt_drift, err_ratio_int, xic_data , mbr_flag  , h_rt_w,s_w,s_w_match,offset_index  ,  c_count )
 			else:
 				data_ms2.iloc[c_count, data_ms2.columns.get_indexer(['Erro_RelIntensity_TheoExp','rankcorr','RT_drift','delta_rt','delta_log_int' ]) ] =  estimate_on_match_peak( working_df,estimate_flag,   moff_pride_flag,log,   rt_drift, err_ratio_int,xic_data , mbr_flag  , h_rt_w,s_w,s_w_match,offset_index  ,  c_count )
+'''
 		if estimate_flag != 1:
 			data_ms2 =  data_ms2[ (data_ms2[ ['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm' ]  ] != -1 ).all(1)]
 	except Exception as e:
@@ -951,8 +981,8 @@ def main_apex_alone():
 		#error_ratio = 0.90
 		log.critical( 'quality threhsold estimated : MAD_retetion_time  %r  Ratio Int. FakeIsotope/1estIsotope: %r '% ( rt_drift ,error_ratio))
 		log.critical( 'starting MS2 peaks..')
-		myPool = multiprocessing.Pool(  multiprocessing.cpu_count()  )
-		data_split = np.array_split(df[df['matched']==0 ] , multiprocessing.cpu_count()  )
+		myPool = multiprocessing.Pool(  1  )
+		data_split = np.array_split(df[df['matched']==0 ].head(1) , 1  )
 		result = {}
 		offset = 0
 		for df_index in range(0, len(data_split)):
@@ -962,7 +992,8 @@ def main_apex_alone():
 		ms2_data = save_moff_apex_result( data_split, result, loc_output )
 		log.critical( 'starting matched peaks...')
 		log.critical( 'initial # matched peaks: %r', df[ df['matched']==1].shape )
-		data_split = np.array_split(df[ df['matched']==1 ]   , multiprocessing.cpu_count()  )
+		data_split = np.array_split(df[ df['matched']==1 ].head(10)   , 1  )
+		print df[ df['matched']==1 ][['peptide','prot']].head(1)
 		result = {}
 		offset = 0
 		for df_index in range(0, len(data_split)):
