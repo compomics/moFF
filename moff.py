@@ -268,9 +268,11 @@ def compute_log_LR (data_xic,index,v_max, disc):
 
 
 def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_index,moff_pride_flag ,rt_match_peak,count_match):
+	#print x.name
 	if count_match != -1:
-		c = (count_match * 4 ) + x.name
-		#print count_match,x.name,'finale index', c
+		#c = (count_match * 4 ) + x.name
+		c= x.prog_xic_index
+		#print x.prog_xic_index   ,'finale index', c
 	else:
 		c = x.name
 	data_xic = xic_array[c]
@@ -353,10 +355,10 @@ def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_in
 
 
 def estimate_parameter( df , name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,  rt_list , id_list, moff_pride_flag ,ptm_map,   log,sample_size, quantile_value  ):
-	myPool = multiprocessing.Pool(  multiprocessing.cpu_count()   )
+	myPool = multiprocessing.Pool(  1  )
 	sample= df[df['matched']==0 ].sample(frac=sample_size)
 	log.critical('Estimate parameters using %r MS2 peptides randomly sampled' % sample.shape[0] )
-	data_split = np.array_split(sample,  multiprocessing.cpu_count())
+	data_split = np.array_split(sample,  1)
 	result = {}
 	offset = 0
 	# run matchinf filtering for 
@@ -381,28 +383,34 @@ def compute_match_peak_quality_measure( input_data, moff_pride_flag,log ):
 	return ( mad_diff_int, rank_spearman, mad_rt )
 
 def  estimate_on_match_peak(x,input_data , estimate_flag,moff_pride_flag,log,  thr_q2,err_ratio_int,xic_data , mbr_flag ,h_rt_w,s_w,s_w_match,offset_index   ):
-	print x.name
-	input_data = input_data.iloc[x.name: x.name+4 ,:]
-	print input_data.shape
-	input_data.iloc[0:1,11:20] =  input_data.iloc[0:1,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index, moff_pride_flag,-1,c_count  ) , axis=1 )
-	if input_data.ix[0,'log_L_R'] != -1 :
+	print 'inside estimation peak ---  '
+	#print 'index', x.name
+	#print 'shape ',input_data[input_data['original_ptm']== x.name ].shape
+	input_data = input_data[input_data['original_ptm']== x.name ]
+	#print 'local df inside estimate ', input_data.columns[12:22]
+	input_data.iloc[0:1,12:22] =  input_data.iloc[0:1,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index, moff_pride_flag,-1, 1  ) , axis=1 )
+	#print 'output -->>  ',input_data.iloc[:,12:22]
+	print  input_data.iloc[0, input_data.columns.get_indexer(['log_L_R'])].all() != -1
+	if (input_data.iloc[0, input_data.columns.get_indexer(['log_L_R'])]).any()  != -1 :
 		if moff_pride_flag == 0 :
-			new_point =  input_data.ix[0,'rt_peak']
+			new_point =  input_data.iloc[0,  input_data.columns.get_indexer(['rt_peak'])]
 		else:
 		# to minute
-			new_point =  input_data.ix[0,'rt_peak'] / 60
-		input_data.iloc[1:4,11:20] =  input_data.iloc[1:4,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.5,0.5,offset_index, moff_pride_flag,new_point,c_count  ) , axis=1 )
-		if  (input_data.ix[0:2,'log_L_R'] != -1).all():
+			new_point =  input_data.iloc[0, input_data.columns.get_indexer(['rt_peak']) ] / 60
+		print 'here -- ', new_point[0]
+		input_data.iloc[1:4,12:22] =  input_data.iloc[1:4,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.5,0.5,offset_index, moff_pride_flag,new_point[0], 1  ) , axis=1 )
+		print (input_data.iloc[0:3, input_data.columns.get_indexer(['log_L_R'])]  != -1).all()[0]
+		if  (input_data.iloc[0:3,  input_data.columns.get_indexer(['log_L_R'])]  != -1 ).all()[0] :
 			mad_diff_int, rank_spearman, mad_rt =  compute_match_peak_quality_measure( input_data.iloc[0:3,:], moff_pride_flag,log )
 			#print input_data
 			#print mad_diff_int, rank_spearman, mad_rt
-			if input_data.ix[3,'log_L_R'] == -1:
-			#print 'xxx missing wrong iso'
+			if (input_data.iloc[3,   input_data.columns.get_indexer(['log_L_R'])]).all() == -1:
+				print 'xxx missing wrong iso'
 				return pd.Series({'Erro_RelIntensity_TheoExp': mad_diff_int, 'rankcorr': rank_spearman,'RT_drift': mad_rt ,'delta_rt': -1 ,'delta_log_int': -1})
 			else:
-				delta_rt_wrong_iso =  abs(input_data.ix[3,'rt_peak'] - input_data.ix[0:3,'rt_peak'].mean())
-				delta_log_int =  input_data.ix[3,'log_int'] / input_data.ix[0,'log_int']
-			#print 'yyy find wrong iso', delta_log_int , delta_rt_wrong_iso
+				delta_rt_wrong_iso =  abs(input_data.iloc[3,  input_data.columns.get_indexer(['rt_peak']) ]  - input_data.iloc[0:3, input_data.columns.get_indexer(['rt_peak'])   ].mean())
+				delta_log_int =  input_data.iloc[3,  input_data.columns.get_indexer(['log_int']) ] / input_data.iloc[0,input_data.columns.get_indexer(['log_int']) ]
+				print 'yyy find wrong iso', delta_log_int , delta_rt_wrong_iso
 				return pd.Series({'Erro_RelIntensity_TheoExp': mad_diff_int, 'rankcorr': rank_spearman,'RT_drift': mad_rt ,'delta_rt': delta_rt_wrong_iso ,'delta_log_int': delta_log_int})
 
 
@@ -667,8 +675,14 @@ def apex_multithr_matched_peak(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s
 			run_temp = pymzml.run.Reader(raw_name)
 			xic_data = mzML_get_all( temp,tol,loc, run_temp ,rt_list , id_list  )
 		## new filtering
-		print all_isotope_df.shape,data_ms2.shape
-		print all_isotope_df.head(12)
+		print all_isotope_df.shape,data_ms2.shape, len(xic_data)
+		#print all_isotope_df
+		#print 'data_ms2'
+		#print data_ms2.index
+		# not needed
+		#data_ms2.reset_index(inplace=True)
+		all_isotope_df['prog_xic_index'] = range(0,len(xic_data)) 
+		all_isotope_df['original_ptm'] = np.repeat(data_ms2.index, 4)
 		all_isotope_df["intensity"] = -1
 		all_isotope_df["rt_peak"] = -1
 		all_isotope_df["lwhm"] = -1
@@ -678,8 +692,10 @@ def apex_multithr_matched_peak(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s
 		all_isotope_df["SNR"] = -1
 		all_isotope_df["log_L_R"] = -1
 		all_isotope_df["log_int"] = -1
+		print all_isotope_df[['prog_xic_index','original_ptm']]
+		print 'lenght PTM to test', data_ms2.shape
 		if estimate_flag==0:
-			data_ms2.iloc[c_count, data_ms2.columns.get_indexer(['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm' ]) ].apply( lambda x: filtering_match_peak( x,all_isotope_df,estimate_flag,   moff_pride_flag,log,   rt_drift, err_ratio_int, xic_data , mbr_flag  , h_rt_w,s_w,s_w_match,offset_index  ,  c_count ),axis=1)
+			data_ms2.iloc[['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm' ]].apply( lambda x: filtering_match_peak( x,all_isotope_df,estimate_flag,   moff_pride_flag,log,   rt_drift, err_ratio_int, xic_data , mbr_flag  , h_rt_w,s_w,s_w_match,offset_index  ,  c_count ),axis=1)
 		else:
 			data_ms2[['Erro_RelIntensity_TheoExp','rankcorr','RT_drift','delta_rt','delta_log_int']].apply( lambda x: estimate_on_match_peak( x,all_isotope_df,estimate_flag,   moff_pride_flag,log,   rt_drift, err_ratio_int, xic_data , mbr_flag  , h_rt_w,s_w,s_w_match,offset_index  ),axis=1)
 
