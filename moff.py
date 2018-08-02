@@ -286,10 +286,10 @@ def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_in
 	 	time_w= time_w /60
 	#print time_w, x['rt'] , moff_pride_flag, rt_match_peak,time_w, s_w,s_w_match
 	if mbr_flag == 0:
-		log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f',(offset_index +c +2), x['mz'], time_w)
+		#log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f',(offset_index +c +2), x['mz'], time_w)
 		temp_w = s_w
 	else:
-		log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f matched (yes=1/no=0): %i',(offset_index + c +2), x['mz'], time_w,x['matched'])
+		#log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f matched (yes=1/no=0): %i',(offset_index + c +2), x['mz'], time_w,x['matched'])
 					# row['matched'])
 		if x['matched'] == 1:
 			temp_w = s_w_match
@@ -306,9 +306,9 @@ def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_in
 			return pd.Series({'intensity': -1, 'rt_peak': -1,'lwhm':-1,'rwhm':-1,'5p_noise':-1,'10p_noise':-1,'SNR':-1,'log_L_R':-1,'log_int':-1})
 		val_max = data_xic.ix[pos_p, 1].values
 	else:
-		log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f ', (offset_index +c +2), x['mz'], time_w)
-		log.info("\t LW_BOUND window  %4.4f", time_w - temp_w)
-		log.info("\t UP_BOUND window %4.4f", time_w + temp_w)
+		#log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f ', (offset_index +c +2), x['mz'], time_w)
+		#log.info("\t LW_BOUND window  %4.4f", time_w - temp_w)
+		#log.info("\t UP_BOUND window %4.4f", time_w + temp_w)
 		log.info("\t WARNINGS: moff_rtWin_peak is not enough to detect the max peak ")
 
 		return  pd.Series({'intensity': -1, 'rt_peak': -1,
@@ -425,6 +425,7 @@ def  estimate_on_match_peak(x,input_data , estimate_flag,moff_pride_flag,log,  t
 
 def  filtering_match_peak(x,input_data , estimate_flag,moff_pride_flag,log,  thr_q2,err_ratio_int,xic_data , mbr_flag ,h_rt_w,s_w,s_w_match,offset_index   ):
 	print 'inside filtering routine ...'
+	log.info('matched peptide  --> %r  mZ: %4.4f RT: %4.4f ', x.mod_peptide , x.mz, x.rt) 
 	test = input_data.loc[input_data['original_ptm']== x.name,:  ].copy()
 	test.reset_index(inplace=True)
 	test.iloc[0:1,13:22] =  test.iloc[0:1,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index, moff_pride_flag,-1, 1  ) , axis=1 )
@@ -472,6 +473,7 @@ def  filtering_match_peak(x,input_data , estimate_flag,moff_pride_flag,log,  thr
 
 
 def apex_multithr_matched_peak(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset_index,  rt_list , id_list, moff_pride_flag ,ptm_map,estimate_flag, rt_drift, err_ratio_int ):
+	log.info('inside_matched peak --')
 	# ---
 		#WARNING : you must call thi routine with anoter name this is just for quist debug
 	# ---
@@ -691,32 +693,12 @@ def apex_multithr_matched_peak(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s
 		#print 'lenght PTM to test', data_ms2.shape
 		if estimate_flag==0:
 			data_ms2[['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm' ]]= data_ms2.apply( lambda x: filtering_match_peak( x,all_isotope_df,estimate_flag,   moff_pride_flag,log,   rt_drift, err_ratio_int, xic_data , mbr_flag  , h_rt_w,s_w,s_w_match,offset_index   ),axis=1)
-			print data_ms2
+			#print data_ms2
 		else:
 			#data_ms2[['Erro_RelIntensity_TheoExp','delta_log_int','delta_rt','RT_drift','rankcorr']]= 
 			data_ms2[['Erro_RelIntensity_TheoExp',  'RT_drift',  'delta_log_int',   'delta_rt','rankcorr']]= data_ms2.apply( lambda x: estimate_on_match_peak( x,all_isotope_df,estimate_flag,   moff_pride_flag,log,   rt_drift, err_ratio_int, xic_data , mbr_flag  , h_rt_w,s_w,s_w_match,offset_index  ),axis=1)
 		print 'Finito'
-		'''
-		for c_count, row in enumerate(data_ms2.itertuples()):
-			working_df =   all_isotope_df[(all_isotope_df['peptide']==row.mod_peptide) & (all_isotope_df['exp_mz']==row.mz) ].copy()
-			working_df["intensity"] = -1
-			working_df["rt_peak"] = -1
-			working_df["lwhm"] = -1
-			working_df["rwhm"] = -1
-			working_df["5p_noise"] = -1
-			working_df["10p_noise"] = -1
-			working_df["SNR"] = -1
-			working_df["log_L_R"] = -1
-			working_df["log_int"] = -1
-			#print working_df.columns
-			working_df.reset_index(inplace=True)
-			#working_df.drop(['peptide'],axis=1,inplace=True)
-			## cal the function
-			if estimate_flag==0:
-				data_ms2.iloc[c_count, data_ms2.columns.get_indexer(['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm' ]) ] = filtering_match_peak( working_df,estimate_flag,   moff_pride_flag,log,   rt_drift, err_ratio_int, xic_data , mbr_flag  , h_rt_w,s_w,s_w_match,offset_index  ,  c_count )
-			else:
-				data_ms2.iloc[c_count, data_ms2.columns.get_indexer(['Erro_RelIntensity_TheoExp','rankcorr','RT_drift','delta_rt','delta_log_int' ]) ] =  estimate_on_match_peak( working_df,estimate_flag,   moff_pride_flag,log,   rt_drift, err_ratio_int,xic_data , mbr_flag  , h_rt_w,s_w,s_w_match,offset_index  ,  c_count )
-'''
+		
 		if estimate_flag != 1:
 			data_ms2 =  data_ms2[ (data_ms2[ ['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm' ]  ] != -1 ).all(1)]
 	except Exception as e:
@@ -993,8 +975,8 @@ def main_apex_alone():
 		#error_ratio = 0.90
 		log.critical( 'quality threhsold estimated : MAD_retetion_time  %r  Ratio Int. FakeIsotope/1estIsotope: %r '% ( rt_drift ,error_ratio))
 		log.critical( 'starting MS2 peaks..')
-		myPool = multiprocessing.Pool(  1  )
-		data_split = np.array_split(df[df['matched']==0 ].head(1) , 1  )
+		myPool = multiprocessing.Pool(  1 )
+		data_split = np.array_split(df[df['matched']==0 ].head(10) , 1  )
 		result = {}
 		offset = 0
 		for df_index in range(0, len(data_split)):
@@ -1004,8 +986,8 @@ def main_apex_alone():
 		ms2_data = save_moff_apex_result( data_split, result, loc_output )
 		log.critical( 'starting matched peaks...')
 		log.critical( 'initial # matched peaks: %r', df[ df['matched']==1].shape )
-		data_split = np.array_split(df[ df['matched']==1 ].head(10)   , 1  )
-		print df[ df['matched']==1 ][['peptide','prot']].head(10)
+		data_split = np.array_split(df[ df['matched']==1 ].head(1)   , 1  )
+		#print df[ df['matched']==1 ][['peptide','prot']].head(30)
 		result = {}
 		offset = 0
 		for df_index in range(0, len(data_split)):
