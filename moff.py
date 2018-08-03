@@ -267,7 +267,7 @@ def compute_log_LR (data_xic,index,v_max, disc):
 
 
 
-def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_index,moff_pride_flag ,rt_match_peak,count_match):
+def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_index,moff_pride_flag ,rt_match_peak,count_match,filt_flag):
 	#print x.name
 	if count_match != -1:
 		#c = (count_match * 4 ) + x.name
@@ -289,7 +289,6 @@ def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_in
 		#log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f',(offset_index +c +2), x['mz'], time_w)
 		temp_w = s_w
 	else:
-		#log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f matched (yes=1/no=0): %i',(offset_index + c +2), x['mz'], time_w,x['matched'])
 					# row['matched'])
 		if x['matched'] == 1:
 			temp_w = s_w_match
@@ -305,12 +304,15 @@ def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_in
 			print 'error'
 			return pd.Series({'intensity': -1, 'rt_peak': -1,'lwhm':-1,'rwhm':-1,'5p_noise':-1,'10p_noise':-1,'SNR':-1,'log_L_R':-1,'log_int':-1})
 		val_max = data_xic.ix[pos_p, 1].values
+		if filt_flag ==1:
+			log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f matched (yes=1/no=0): %i Peak detected  ',(offset_index + c +2), x['mz'], time_w,x['matched'])
 	else:
+		if filt_flag==1:
+			log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f matched (yes=1/no=0): %i Peak not detected  Xic shape %r ',(offset_index + c +2), x['mz'], time_w,x['matched'],  data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0])
 		#log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f ', (offset_index +c +2), x['mz'], time_w)
 		#log.info("\t LW_BOUND window  %4.4f", time_w - temp_w)
 		#log.info("\t UP_BOUND window %4.4f", time_w + temp_w)
-		log.info("\t WARNINGS: moff_rtWin_peak is not enough to detect the max peak ")
-
+		#log.info("\t WARNINGS: Peak not detected  Xic shape %r ", data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0])
 		return  pd.Series({'intensity': -1, 'rt_peak': -1,
 				   'lwhm':-1,
 					'rwhm':-1,
@@ -354,7 +356,7 @@ def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_in
 
 
 
-def estimate_parameter( df , name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,  rt_list , id_list, moff_pride_flag ,ptm_map,   log,sample_size, quantile_value  ):
+def estimate_parameter( df , name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,  rt_list , id_list, moff_pride_flag ,ptm_map,   log,sample_size, quantile_value, match_filter_flag   ):
 	#multiprocessing.cpu_count()
 	myPool = multiprocessing.Pool(   multiprocessing.cpu_count() )
 	sample= df[df['matched']==0 ].sample(frac=sample_size)
@@ -364,7 +366,7 @@ def estimate_parameter( df , name_file, raw_name, tol, h_rt_w, s_w, s_w_match, l
 	offset = 0
 	# run matchinf filtering for 
 	for df_index in range(0, len(data_split)):
-		result[df_index] = myPool.apply_async(apex_multithr_matched_peak, args=(data_split[df_index], name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset,  rt_list , id_list, moff_pride_flag ,ptm_map   ,1,-1,-1  ))
+		result[df_index] = myPool.apply_async(apex_multithr, args=(data_split[df_index], name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset,  rt_list , id_list, moff_pride_flag ,ptm_map   ,1,-1,-1, match_filter_flag   ))
 		offset += len(data_split[df_index])
 	myPool.close()
 	myPool.join()
@@ -390,7 +392,7 @@ def  estimate_on_match_peak(x,input_data , estimate_flag,moff_pride_flag,log,  t
 	test = input_data.loc[input_data['original_ptm']== x.name,:  ].copy()
 	test.reset_index(inplace=True)
 	#print 'local df inside estimate ', input_data.columns
-	test.iloc[0:1,13:22] =  test.iloc[0:1,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index, moff_pride_flag,-1, 1  ) , axis=1 )
+	test.iloc[0:1,13:22] =  test.iloc[0:1,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index, moff_pride_flag,-1, 1, 0  ) , axis=1 )
 	#print 'output -->>  ',input_data.iloc[:,12:22]
 	#print  input_data.iloc[0, input_data.columns.get_indexer(['log_L_R'])].all() != -1
 	if (test.iloc[0, test.columns.get_indexer(['log_L_R'])]).any()  != -1 :
@@ -400,7 +402,7 @@ def  estimate_on_match_peak(x,input_data , estimate_flag,moff_pride_flag,log,  t
 		# to minute
 			new_point =  test.iloc[0, test.columns.get_indexer(['rt_peak']) ] / 60
 		#print 'here -- ', new_point[0]
-		test.iloc[1:4,13:22] =  test.iloc[1:4,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.3,0.3,offset_index, moff_pride_flag,new_point[0], 1  ) , axis=1 )
+		test.iloc[1:4,13:22] =  test.iloc[1:4,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.3,0.3,offset_index, moff_pride_flag,new_point[0], 1 ,0 ) , axis=1 )
 		#print (input_data.iloc[0:3, input_data.columns.get_indexer(['log_L_R'])]  != -1).all()[0]
 		if  (test.iloc[ 0:3,  test.columns.get_indexer(['log_L_R']) ]  != -1 ).all()[0] :
 			mad_diff_int, rank_spearman, mad_rt =  compute_match_peak_quality_measure( test.iloc[0:3,:], moff_pride_flag,log )
@@ -424,11 +426,11 @@ def  estimate_on_match_peak(x,input_data , estimate_flag,moff_pride_flag,log,  t
 
 
 def  filtering_match_peak(x,input_data , estimate_flag,moff_pride_flag,log,  thr_q2,err_ratio_int,xic_data , mbr_flag ,h_rt_w,s_w,s_w_match,offset_index   ):
-	print 'inside filtering routine ...'
-	log.info('matched peptide  --> %r  mZ: %4.4f RT: %4.4f ', x.mod_peptide , x.mz, x.rt) 
+	#print 'inside filtering routine ...'
+	#log.info('matched peptide  --> %r  mZ: %4.4f RT: %4.4f ', x.mod_peptide , x.mz, x.rt) 
 	test = input_data.loc[input_data['original_ptm']== x.name,:  ].copy()
 	test.reset_index(inplace=True)
-	test.iloc[0:1,13:22] =  test.iloc[0:1,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index, moff_pride_flag,-1, 1  ) , axis=1 )
+	test.iloc[0:1,13:22] =  test.iloc[0:1,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index, moff_pride_flag,-1, 1,0  ) , axis=1 )
 	#print input_data
 	if (test.iloc[0, test.columns.get_indexer(['log_L_R'])]).any()  != -1 : 
 		if moff_pride_flag == 0 :
@@ -436,7 +438,7 @@ def  filtering_match_peak(x,input_data , estimate_flag,moff_pride_flag,log,  thr
 		else:
 			# to minute
 			new_point =    test.iloc[0,  test.columns.get_indexer(['rt_peak'])] / 60
-		test.iloc[1:4,13:22] =  test.iloc[1:4,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.3,0.3,offset_index, moff_pride_flag,new_point[0], 1  ) , axis=1 )
+		test.iloc[1:4,13:22] =  test.iloc[1:4,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.3,0.3,offset_index, moff_pride_flag,new_point[0], 1,0  ) , axis=1 )
 		# check isotope 2-3
 		if (test.iloc[ 0:3,  test.columns.get_indexer(['log_L_R']) ]  != -1 ).all()[0] : 
 			mad_diff_int, rank_spearman, mad_rt =  compute_match_peak_quality_measure( test.iloc[0:3,:], moff_pride_flag,log )
@@ -448,40 +450,41 @@ def  filtering_match_peak(x,input_data , estimate_flag,moff_pride_flag,log,  thr
 					delta_log_int =  test.at[3, 'log_int']  / test.at[0,'log_int'] 
 					if (delta_rt_wrong_iso  < thr_q2 and delta_log_int  >  err_ratio_int):
 						# elimina overlapping peptide isotope
-						i#log.info('%s --> Not valid isotope evelope  overlapping detected -->  --  MAD RT  %r  -- rankCorr %r ', input_data['peptide'].unique()[0], mad_rt , rank_spearman)
+						log.info (' %r mz: %4.4f RT: %4.4f --> Not valid isotope evelope  overlapping detected -->  --  MAD RT  %r  -- rankCorr %r ', x.mod_peptide , x.mz, x.rt,   mad_rt , rank_spearman)
 						return pd.Series({'intensity': -1, 'rt_peak': -1,'lwhm': -1 ,'rwhm': -1 ,'5p_noise': -1,'10p_noise': -1,'SNR': -1,'log_L_R': -1,'log_int': -1 })
 					else:
-						#log.info('%s --> Valid isotope evelope detected after overlaping checkin -->  --  MAD RT  %r  -- rankCorr %r ', input_data['peptide'].unique()[0], mad_rt , rank_spearman)
+						log.info('%r mz: %4.4f RT: %4.4f --> Valid isotope evelope detected after overlaping checkin -->  --  MAD RT  %r  -- rankCorr %r ',   x.mod_peptide , x.mz, x.rt,  mad_rt , rank_spearman)
 						return test.loc[test['ratio_iso'].idxmax(axis=1), ['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']]
 				else:
-					#log.info('%s --> Valid isotope evelope detected and no overlaping detected -->  --  MAD RT  %r  -- rankCorr %r ', input_data['peptide'].unique()[0], mad_rt , rank_spearman)
+					log.info(' %r mz: %4.4f RT: %4.4f  --> Valid isotope evelope detected and no overlaping detected -->  --  MAD RT  %r  -- rankCorr %r ',   x.mod_peptide , x.mz, x.rt,  mad_rt , rank_spearman)
 					return test.loc[test['ratio_iso'].idxmax(axis=1), ['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']]
 			else:
 				# not pass the thr. leveli
-				#log.info('%s --> Not valid isotope evelope detected  -->  --  MAD RT  %r  -- rankCorr %r ', input_data['peptide'].unique()[0], mad_rt , rank_spearman)
+				log.info(' %r mz: %4.4f RT: %4.4f  --> Not valid isotope evelope detected  -->  --  MAD RT  %r  -- rankCorr %r ',x.mod_peptide , x.mz, x.rt,  mad_rt , rank_spearman)
 				return pd.Series({'intensity': -1, 'rt_peak': -1,'lwhm': -1 ,'rwhm': -1 ,'5p_noise': -1,'10p_noise': -1,'SNR': -1,'log_L_R': -1,'log_int': -1 })
 		else:
 			# I have only the 1st valid isotope peak  but not the second
-			#log.info('%s --> not enough isotope peak detected only  %r over 3(/4) detected ', input_data['peptide'].unique()[0], input_data[input_data['log_L_R']!= -1].shape[0]  )
+			log.info(' %r mz: %4.4f RT: %4.4f --> not enough isotope peak detected only  %r over 3(/4) detected ', x.mod_peptide , x.mz, x.rt,   input_data[input_data['log_L_R']!= -1].shape[0]  )
 			return pd.Series({'intensity': -1, 'rt_peak': -1,'lwhm': -1 ,'rwhm': -1 ,'5p_noise': -1,'10p_noise': -1,'SNR': -1,'log_L_R': -1,'log_int': -1 })
 	else:
-		#print 'not_find the 1st isotope'
-		#log.info('%s --> first isotope peak not detected %r over 3(/4) not detected   ', input_data['peptide'].unique()[0]  ,  input_data[input_data['log_L_R']!= -1].shape[0]  )
+		#print 'not_find the 1st isotope
+		log.info(' %r mz: %4.4f RT: %4.4f  --> first isotope peak not detected ', x.mod_peptide , x.mz, x.rt  )
 		return pd.Series({'intensity': -1, 'rt_peak': -1,'lwhm': -1 ,'rwhm': -1 ,'5p_noise': -1,'10p_noise': -1,'SNR': -1, 'log_L_R': -1, 'log_int': -1 })
 
 
 
 
-def apex_multithr_matched_peak(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset_index,  rt_list , id_list, moff_pride_flag ,ptm_map,estimate_flag, rt_drift, err_ratio_int ):
-	log.info('inside_matched peak --')
+def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset_index,  rt_list , id_list, moff_pride_flag ,ptm_map,estimate_flag, rt_drift, err_ratio_int, match_filter_flag ):
+	#log.info('inside_matched peak --')
 	# ---
 		#WARNING : you must call thi routine with anoter name this is just for quist debug
 	# ---
 	#setting logger for multiprocess
-	ch = logging.StreamHandler()
-	ch.setLevel(logging.ERROR)
-	log.addHandler(ch)
-
+	#ch = logging.StreamHandler()
+	#ch.setLevel(logging.ERROR)
+	#log.addHandler(ch)
+	#log.propagate=False
+	
 	#setting flag and ptah
 	moff_path = os.path.dirname(sys.argv[0])
 	flag_mzml = False
@@ -502,10 +505,10 @@ def apex_multithr_matched_peak(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s
 			log.info("created output folder: ", loc_output)
 
 	# to be checked if it is works ffor both caseses
-	fh = logging.FileHandler(os.path.join(loc_output, name_file + '__moff.log'), mode='a')
+	#fh = logging.FileHandler(os.path.join(loc_output, name_file + '__moff.log'), mode='a')
 
-	fh.setLevel(logging.INFO)
-	log.addHandler(fh)
+	#fh.setLevel(logging.INFO)
+	#log.addHandler(fh)
 
 	# check mbr input file
 	if '_match' in name_file:
@@ -577,136 +580,159 @@ def apex_multithr_matched_peak(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s
 	# get txic path: assumes txic is in the same directory as moff.py
 	txic_executable_name="txic_json.exe"
 	txic_path = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), txic_executable_name)
-	## to export a list of XIc
-	all_isotope_df = pd.DataFrame(columns=['peptide','mz','ratio_iso','tol','rt','matched','ts','te'])
 	# for all the input peptide in data_ms2
 	try :
-		for row in data_ms2.itertuples():
-		# get the sequence
-			#print '--  ---'
-			## for MQ sequence is (mod_tag )
-			# for PS sequenc eis <mod_tag> 
-			
-			if not ( '(' in row.mod_peptide):
-				#  only fixed mod
-				comps = Counter(list(chain(*[list(std_aa_comp[aa].elements()) for aa in row.peptide])))
-				comps["H"] += 2
-				comps["O"] += 1
-				#print 'Final COMPS',comp
-				fix_mod_count =  row.peptide.count('C')
-				if fix_mod_count > 0:
-					comps["H"] += (ptm_map['cC']['deltaChem'][0] * fix_mod_count )
-					comps["C"] += (ptm_map['cC']['deltaChem'][1] * fix_mod_count )
-					comps["N"] += (ptm_map['cC']['deltaChem'][2] * fix_mod_count)
-					comps["O"] += (ptm_map['cC']['deltaChem'][3] * fix_mod_count)
-			else: 
-			
-			#print 'still to do it '
-				comps = Counter(list(chain(*[list(std_aa_comp[aa].elements()) for aa in row.peptide])))
-				for ptm in ptm_map.keys() :
-					ptm_c = row.mod_peptide.count(ptm)
-				#ptm_c =  sum(ptm in s for s in row.mod_peptide)
-					if ptm_c  >=1:
-					#print ptm
-						comps["H"] += (ptm_map[ptm]['deltaChem'][0] * ptm_c )
-						comps["C"] += (ptm_map[ptm]['deltaChem'][1] * ptm_c)
-						comps["N"] += (ptm_map[ptm]['deltaChem'][2] * ptm_c)
-						comps["O"] += (ptm_map[ptm]['deltaChem'][3] * ptm_c)
-						
-				comps["H"] += 2
-				comps["O"] += 1
-			#print 'Modified COMPS',comps 
-			theoretical_isotopic_cluster = isotopic_variants(comps, charge=  int(round (  row.mass / float( row.mz)))   ,npeaks=3)
-			mz_iso = [ peak.mz  for peak in theoretical_isotopic_cluster ]
-			delta = mz_iso[0]-mz_iso[1]
-			mz_iso.append( mz_iso[0] + delta)
-			ratio_iso = [ peak.intensity  for peak in theoretical_isotopic_cluster ]
-			ratio_iso.append(-1)
-			isotopic_df =  pd.DataFrame({'mz':mz_iso,'ratio_iso':ratio_iso})
-			
-			isotopic_df.loc[:,'exp_mz']= row.mz
-			isotopic_df.loc[:,'peptide']= row.mod_peptide
-			isotopic_df.loc[:,'tol'] = int( tol)
-			isotopic_df.loc[:,'rt'] = row.rt
-			isotopic_df.loc[:,'matched']=1
-			if moff_pride_flag == 1:
-				isotopic_df['ts'] = (row.rt  ) - h_rt_w
-				isotopic_df['te'] = (row.rt   ) + h_rt_w
-			else:
-				isotopic_df['ts'] = (row.rt /60 ) - h_rt_w
-				isotopic_df['te'] = (row.rt  /60  ) + h_rt_w
-			all_isotope_df = pd.concat([all_isotope_df , isotopic_df ],join='outer',axis=0   )
-		all_isotope_df.reset_index( inplace=True )
-		#print all_isotope_df
-		if not flag_mzml :
-			# txic-28-9-separate-jsonlines.exe
-			if not flag_windows:
-			# Linux  to avoid cmd  string too long  and its error. the thresold is mainly base on  from empirical evaluation.
-				#print all_isotope_df[['mz','tol','ts','te']].head(1).to_json(orient='records')
-				if len(all_isotope_df.to_json(orient='records')) >= 50000:
-					with open(os.path.join(loc_output,multiprocessing.current_process().name  +'_' + name_file + '.json'), 'w') as f:
-						f.write(all_isotope_df[['mz','tol','ts','te']].to_json(orient='records'))
-				
-					args_txic = shlex.split( "mono " + txic_path + " -jf " +  os.path.join(loc_output,multiprocessing.current_process().name  +'_' + name_file  + '.json')  + " -f " + loc, posix=False)
-				else:
-					#  small amount of char. in the request
-					args_txic = shlex.split( "mono " + txic_path + " -j " + all_isotope_df[['mz','tol','ts','te']].to_json( orient='records' ) + " -f " + loc,posix=True )
-			else:
-				# Windows to avoid cmd  string too long  and its error. the thresold is mainly base on  from empirical evaluation.
-				if len(isotopic_df.to_json(orient='records')) >= 10000:
-					with open(os.path.join(loc_output,multiprocessing.current_process().name +  '_' + name_file + '.json'), 'w') as f:
-						f.write(all_isotope_df[['mz','tol','ts','te']].to_json(orient='records'))
-					args_txic = shlex.split(txic_path + " -jf " +  os.path.join(loc_output,multiprocessing.current_process().name + '_' + name_file + '.json')  + " -f " + loc, posix=False)
-				else:
-					#  small amount of char. in the request
-					args_txic = shlex.split(txic_path + " -j " + all_isotope_df[['mz','tol','ts','te']].to_json(orient='records') + " -f " + loc, posix=False)
-			start_timelocal = time.time()
-			p = subprocess.Popen(args_txic, stdout=subprocess.PIPE)
-			output, err = p.communicate()
-			xic_data=[]
-			for l in range ( 0, all_isotope_df.shape[0]  ) :
-				temp = json.loads( output.split('\n')[l].decode("utf-8") )
-				xic_data.append(pd.DataFrame( { 'rt' : temp['results']['times'], 'intensity':  temp['results']['intensities'] }   , columns=['rt', 'intensity'] ) )
-		else:	
-				## to test later
-			run_temp = pymzml.run.Reader(raw_name)
-			xic_data = mzML_get_all( temp,tol,loc, run_temp ,rt_list , id_list  )
-		## new filtering
-		#print all_isotope_df.shape,data_ms2.shape, len(xic_data)
-		#print all_isotope_df
-		#print 'data_ms2'
-		#print data_ms2.index
-		# not needed
-		#data_ms2.reset_index(inplace=True)
-		all_isotope_df['prog_xic_index'] = range(0,len(xic_data)) 
-		all_isotope_df['original_ptm'] = np.repeat(data_ms2.index, 4)
-		all_isotope_df["intensity"] = -1
-		all_isotope_df["rt_peak"] = -1
-		all_isotope_df["lwhm"] = -1
-		all_isotope_df["rwhm"] = -1
-		all_isotope_df["5p_noise"] = -1
-		all_isotope_df["10p_noise"] = -1
-		all_isotope_df["SNR"] = -1
-		all_isotope_df["log_L_R"] = -1
-		all_isotope_df["log_int"] = -1
-		#print all_isotope_df[['prog_xic_index','original_ptm']]
-		#print 'lenght PTM to test', data_ms2.shape
-		if estimate_flag==0:
-			data_ms2[['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm' ]]= data_ms2.apply( lambda x: filtering_match_peak( x,all_isotope_df,estimate_flag,   moff_pride_flag,log,   rt_drift, err_ratio_int, xic_data , mbr_flag  , h_rt_w,s_w,s_w_match,offset_index   ),axis=1)
+		if match_filter_flag  == 1:
+			all_isotope_df = build_matched_modification  ( data_ms2 , ptm_map, tol , moff_pride_flag , h_rt_w )
+			xic_data= get_xic_data (  flag_mzml, flag_windows, all_isotope_df[['mz','tol','ts','te']] , loc_output, name_file, txic_path, loc,  1   )
+			## new filtering
+			# not needed
+			#data_ms2.reset_index(inplace=True)
+			all_isotope_df['prog_xic_index'] = range(0,len(xic_data)) 
+			all_isotope_df['original_ptm'] = np.repeat(data_ms2.index, 4)
+			all_isotope_df["intensity"] = -1
+			all_isotope_df["rt_peak"] = -1
+			all_isotope_df["lwhm"] = -1
+			all_isotope_df["rwhm"] = -1
+			all_isotope_df["5p_noise"] = -1
+			all_isotope_df["10p_noise"] = -1
+			all_isotope_df["SNR"] = -1
+			all_isotope_df["log_L_R"] = -1
+			all_isotope_df["log_int"] = -1
+			#print 'lenght PTM to test', data_ms2.shape
+			if estimate_flag==0:
+				data_ms2[['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm' ]]= data_ms2.apply( lambda x: filtering_match_peak( x,all_isotope_df,estimate_flag,   moff_pride_flag,log,   rt_drift, err_ratio_int, xic_data , mbr_flag  , h_rt_w,s_w,s_w_match,offset_index   ),axis=1)
 			#print data_ms2
+			else:
+				data_ms2[['Erro_RelIntensity_TheoExp',  'RT_drift',  'delta_log_int',   'delta_rt','rankcorr']]= data_ms2.apply( lambda x: estimate_on_match_peak( x,all_isotope_df,estimate_flag,   moff_pride_flag,log,   rt_drift, err_ratio_int, xic_data , mbr_flag  , h_rt_w,s_w,s_w_match,offset_index  ),axis=1)
+			print 'Finito'
+			if estimate_flag != 1:
+				data_ms2 =  data_ms2[ (data_ms2[ ['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm' ]  ] != -1 ).all(1)]
 		else:
-			#data_ms2[['Erro_RelIntensity_TheoExp','delta_log_int','delta_rt','RT_drift','rankcorr']]= 
-			data_ms2[['Erro_RelIntensity_TheoExp',  'RT_drift',  'delta_log_int',   'delta_rt','rankcorr']]= data_ms2.apply( lambda x: estimate_on_match_peak( x,all_isotope_df,estimate_flag,   moff_pride_flag,log,   rt_drift, err_ratio_int, xic_data , mbr_flag  , h_rt_w,s_w,s_w_match,offset_index  ),axis=1)
-		print 'Finito'
-		
-		if estimate_flag != 1:
-			data_ms2 =  data_ms2[ (data_ms2[ ['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm' ]  ] != -1 ).all(1)]
+			# not match  filter
+			print 'not filterint'
+			temp=data_ms2[['mz','rt']].copy() # strange cases
+			temp.ix[:,'tol'] = int( tol)
+			if moff_pride_flag == 1:
+				temp['ts'] = (data_ms2['rt']  ) - h_rt_w
+				temp['te'] = (data_ms2['rt']   ) + h_rt_w
+			else:
+				temp['ts'] = (data_ms2['rt'] /60 ) - h_rt_w
+				temp['te'] = (data_ms2['rt'] /60  ) + h_rt_w
+			temp.drop('rt',1,inplace=True )
+			xic_data= get_xic_data (  flag_mzml, flag_windows, temp, loc_output, name_file, txic_path, loc,  0   )
+			data_ms2.reset_index(inplace=True)
+			data_ms2[['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']] = data_ms2.apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index, moff_pride_flag,-1, -1,1 ) , axis=1   )
+
 	except Exception as e:
 		traceback.print_exc()
 		print
 		raise e
 	return (data_ms2,1)
 
+
+def build_matched_modification  ( data , ptm_map , tol, moff_pride_flag ,  h_rt_w):
+	all_isotope_df = pd.DataFrame(columns=['peptide','mz','ratio_iso','tol','rt','matched','ts','te'])
+	for row in data.itertuples():
+	# get the sequence
+		#print '--  ---'
+	## for MQ sequence is (mod_tag )
+	# for PS sequenc eis <mod_tag>
+		if not ( '(' in row.mod_peptide):
+		#  only fixed mod
+			comps = Counter(list(chain(*[list(std_aa_comp[aa].elements()) for aa in row.peptide])))
+			comps["H"] += 2
+			comps["O"] += 1
+			#print 'Final COMPS',comp
+			fix_mod_count =  row.peptide.count('C')
+			if fix_mod_count > 0:
+				comps["H"] += (ptm_map['cC']['deltaChem'][0] * fix_mod_count )
+				comps["C"] += (ptm_map['cC']['deltaChem'][1] * fix_mod_count )
+				comps["N"] += (ptm_map['cC']['deltaChem'][2] * fix_mod_count)
+				comps["O"] += (ptm_map['cC']['deltaChem'][3] * fix_mod_count)
+		else:
+				#print 'still to do it '
+			comps = Counter(list(chain(*[list(std_aa_comp[aa].elements()) for aa in row.peptide])))
+			for ptm in ptm_map.keys() :
+				ptm_c = row.mod_peptide.count(ptm)
+				#ptm_c =  sum(ptm in s for s in row.mod_peptide)
+				if ptm_c  >=1:
+					#print ptm
+					comps["H"] += (ptm_map[ptm]['deltaChem'][0] * ptm_c )
+					comps["C"] += (ptm_map[ptm]['deltaChem'][1] * ptm_c)
+					comps["N"] += (ptm_map[ptm]['deltaChem'][2] * ptm_c)
+					comps["O"] += (ptm_map[ptm]['deltaChem'][3] * ptm_c)
+			comps["H"] += 2
+			comps["O"] += 1
+
+		#print 'Modified COMPS',comps
+		theoretical_isotopic_cluster = isotopic_variants(comps, charge=  int(round (  row.mass / float( row.mz)))   ,npeaks=3)
+		mz_iso = [ peak.mz  for peak in theoretical_isotopic_cluster ]
+		delta = mz_iso[0]-mz_iso[1]
+		mz_iso.append( mz_iso[0] + delta)
+		ratio_iso = [ peak.intensity  for peak in theoretical_isotopic_cluster ]
+		ratio_iso.append(-1)
+		isotopic_df =  pd.DataFrame({'mz':mz_iso,'ratio_iso':ratio_iso})
+
+		isotopic_df.loc[:,'exp_mz']= row.mz
+		isotopic_df.loc[:,'peptide']= row.mod_peptide
+		isotopic_df.loc[:,'tol'] = int( tol)
+		isotopic_df.loc[:,'rt'] = row.rt
+		isotopic_df.loc[:,'matched']=1
+		if moff_pride_flag == 1:
+			isotopic_df['ts'] = (row.rt  ) - h_rt_w
+			isotopic_df['te'] = (row.rt   ) + h_rt_w
+		else:
+			isotopic_df['ts'] = (row.rt /60 ) - h_rt_w
+			isotopic_df['te'] = (row.rt  /60  ) + h_rt_w
+		all_isotope_df = pd.concat([all_isotope_df , isotopic_df ],join='outer',axis=0   )
+	all_isotope_df.reset_index( inplace=True )
+
+	return all_isotope_df
+
+
+
+def get_xic_data (  flag_mzml, flag_windows, data, loc_output, name_file,txic_path , loc, flag_filtering  ):
+	#if flag_filtering==1:
+	#	data = data[['mz','tol','ts','te']].copy()
+
+
+	if not flag_mzml :
+	# txic-28-9-separate-jsonlines.exe
+		if not flag_windows:
+	# Linux  to avoid cmd  string too long  and its error. the thresold is mainly base on  from empirical evaluation.
+	#print all_isotope_df[['mz','tol','ts','te']].head(1).to_json(orient='records')
+			if len(data.to_json(orient='records')) >= 50000:
+				with open(os.path.join(loc_output,multiprocessing.current_process().name  + '_' + name_file + '.json'), 'w') as f:
+					f.write(data.to_json(orient='records'))
+				args_txic = shlex.split( "mono " + txic_path + " -jf " +  os.path.join(loc_output,multiprocessing.current_process().name  +'_' + name_file  + '.json')  + " -f " + loc, posix=False)
+			else:
+					#  small amount of char. in the request
+				args_txic = shlex.split( "mono " + txic_path + " -j " + data.to_json( orient='records' ) + " -f " + loc,posix=True )
+		else:
+			# Windows to avoid cmd  string too long  and its error. the thresold is mainly base on  from empirical evaluation.
+			if len(isotopic_df.to_json(orient='records')) >= 10000:
+				with open(os.path.join(loc_output,multiprocessing.current_process().name +  '_' + name_file + '.json'), 'w') as f:
+					f.write(data.to_json(orient='records'))
+				args_txic = shlex.split(txic_path + " -jf " +  os.path.join(loc_output,multiprocessing.current_process().name + '_' + name_file + '.json')  + " -f " + loc, posix=False)
+			else:
+				#  small amount of char. in the request
+				args_txic = shlex.split(txic_path + " -j " + data.to_json(orient='records') + " -f " + loc, posix=False)
+		start_timelocal = time.time()
+		p = subprocess.Popen(args_txic, stdout=subprocess.PIPE)
+		output, err = p.communicate()
+		xic_data=[]
+		for l in range ( 0,  data.shape[0]  ) :
+			temp = json.loads( output.split('\n')[l].decode("utf-8") )
+			xic_data.append(pd.DataFrame( { 'rt' : temp['results']['times'], 'intensity':  temp['results']['intensities'] }   , columns=['rt', 'intensity'] ) )
+	else:
+				## to test later
+		run_temp = pymzml.run.Reader(raw_name)
+		xic_data = mzML_get_all( temp,tol,loc, run_temp ,rt_list , id_list  )
+
+	return xic_data
+
+'''
 def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset_index,  rt_list , id_list, moff_pride_flag ):
         #setting logger for multiprocess
         ch = logging.StreamHandler()
@@ -820,39 +846,8 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
                         temp['te'] = (data_ms2['rt'] /60  ) + h_rt_w
                 temp.drop('rt',1,inplace=True )
 
-
-                if not flag_mzml :
-                        # txic-28-9-separate-jsonlines.exe
-                        if not flag_windows:
-                                # Linux  to avoid cmd  string too long  and its error. the thresold is mainly base on  from empirical evaluation.
-                                if len(temp.to_json(orient='records')) >= 50000:
-                                        with open(os.path.join(loc_output,multiprocessing.current_process().name  +'_' + name_file + '.json'), 'w') as f:
-                                                f.write(temp.to_json(orient='records'))
-                                        args_txic = shlex.split( "mono " + txic_path + " -jf " +  os.path.join(loc_output,multiprocessing.current_process().name  +'_' + name_file  + '.json')  + " -f " + loc, posix=False)
-                                else:
-                                        #  small amount of char. in the request
-                                        args_txic = shlex.split( "mono " + txic_path + " -j " + temp.to_json( orient='records' ) + " -f " + loc,posix=True )
-                        else:
-                                # Windows to avoid cmd  string too long  and its error. the thresold is mainly base on  from empirical evaluation.
-                                if len(temp.to_json(orient='records')) >= 10000:
-                                        with open(os.path.join(loc_output,multiprocessing.current_process().name +  '_' + name_file + '.json'), 'w') as f:
-                                                f.write(temp.to_json(orient='records'))
-                                        args_txic = shlex.split(txic_path + " -jf " +  os.path.join(loc_output,multiprocessing.current_process().name + '_' + name_file + '.json')  + " -f " + loc, posix=False)
-                                else:
-                                        #  small amount of char. in the request
-                                        args_txic = shlex.split(txic_path + " -j " + temp.to_json(orient='records') + " -f " + loc, posix=False)
-                        start_timelocal = time.time()
-                        p = subprocess.Popen(args_txic, stdout=subprocess.PIPE)
-                        output, err = p.communicate()
-                        xic_data=[]
-                        for l in range ( 0,temp.shape[0] ) :
-                                        temp = json.loads( output.split('\n')[l].decode("utf-8") )
-                                        xic_data.append(pd.DataFrame( { 'rt' : temp['results']['times'], 'intensity':  temp['results']['intensities'] }   , columns=['rt', 'intensity'] ) )
-                else:
-                        run_temp = pymzml.run.Reader(raw_name)
-                        xic_data =  mzML_get_all( temp,tol,loc, run_temp ,rt_list , id_list  )
-                        #10p_noise    5p_noise  SNR     intensity  log_L_R    log_int  lwhm rt_peak  rwhm
-                data_ms2.reset_index(inplace=True)
+		xic_data= get_xic_data (  flag_mzml, flag_windows, temp, loc_output, name_file, txic_path, loc,  0   )
+		data_ms2.reset_index(inplace=True)
                 data_ms2[['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']] = data_ms2.apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index, moff_pride_flag,-1, -1 ) , axis=1   )
         except Exception as e:
                 traceback.print_exc()
@@ -860,7 +855,7 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
                 raise e
 
         return (data_ms2,1)
-
+'''
 
 def main_apex_alone():
 	parser = argparse.ArgumentParser(description='moFF input parameter')
@@ -909,6 +904,11 @@ def main_apex_alone():
 	ch = logging.StreamHandler()
 	ch.setLevel(logging.ERROR)
 	log.addHandler(ch)
+	log.propagate = 0
+	# ''''
+	fh = logging.FileHandler(os.path.join(loc_output, 'test_' + '__moff.log'), mode='w')
+	fh.setLevel(logging.INFO)
+	log.addHandler(fh)
 
 	config = ConfigParser.RawConfigParser()
 	config.read(os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), 'moff_setting.properties'))
@@ -969,29 +969,30 @@ def main_apex_alone():
 			ptm_map = json.load(data_file)
 		start_time = time.time()
 		# run estimation _parameter
-		rt_drift, not_used_measure,error_ratio =  estimate_parameter( df, name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,  rt_list , id_list,  moff_pride_flag, ptm_map,log,args.sample_size,args.quantile_thr_filtering  )
+		rt_drift, not_used_measure,error_ratio =  estimate_parameter( df, name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,  rt_list , id_list,  moff_pride_flag, ptm_map,log,args.sample_size,args.quantile_thr_filtering, args.match_filter )
 		#rt_drift = 6
 		#thr1= -1
 		#error_ratio = 0.90
 		log.critical( 'quality threhsold estimated : MAD_retetion_time  %r  Ratio Int. FakeIsotope/1estIsotope: %r '% ( rt_drift ,error_ratio))
 		log.critical( 'starting MS2 peaks..')
-		myPool = multiprocessing.Pool(  1 )
-		data_split = np.array_split(df[df['matched']==0 ].head(10) , 1  )
+		myPool = multiprocessing.Pool(  multiprocessing.cpu_count() )
+		data_split = np.array_split(df[df['matched']==0 ].head(50) , multiprocessing.cpu_count()  )
 		result = {}
 		offset = 0
 		for df_index in range(0, len(data_split)):
-			result[df_index] = myPool.apply_async(apex_multithr, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag  ))
+			result[df_index] = myPool.apply_async(apex_multithr, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag, ptm_map,0 , rt_drift,error_ratio, 0  ))
+			#result[df_index] = myPool.apply_async(apex_multithr, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag  ))
 			offset += len(data_split[df_index])
 		# save ms2 resulr
 		ms2_data = save_moff_apex_result( data_split, result, loc_output )
 		log.critical( 'starting matched peaks...')
 		log.critical( 'initial # matched peaks: %r', df[ df['matched']==1].shape )
-		data_split = np.array_split(df[ df['matched']==1 ].head(1)   , 1  )
+		data_split = np.array_split(df[ df['matched']==1 ].head(50)   ,  multiprocessing.cpu_count()  )
 		#print df[ df['matched']==1 ][['peptide','prot']].head(30)
 		result = {}
 		offset = 0
 		for df_index in range(0, len(data_split)):
-			result[df_index] = myPool.apply_async(apex_multithr_matched_peak, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag, ptm_map,0 , rt_drift,error_ratio ))
+			result[df_index] = myPool.apply_async(apex_multithr, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag, ptm_map,0 , rt_drift,error_ratio, args.match_filter ))
 			offset += len(data_split[df_index])
 
 		myPool.close()
@@ -1013,7 +1014,8 @@ def main_apex_alone():
 		offset = 0
 		start_time = time.time()
 		for df_index in range(0, len(data_split)):
-			result[df_index] = myPool.apply_async(apex_multithr, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag ))
+			result[df_index] = myPool.apply_async(apex_multithr, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag, ptm_map,0 ,-1,-1, 0  ))
+			#result[df_index] = myPool.apply_async(apex_multithr, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag ))
 			offset += len(data_split[df_index])
 		myPool.close()
 		myPool.join()
