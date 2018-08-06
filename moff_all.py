@@ -27,16 +27,45 @@ if __name__ == '__main__':
 
 	multiprocessing.freeze_support()
 
+	parser_1 = argparse.ArgumentParser(description='moFF match between run and apex module input parameter', add_help = False   )
+
+	parser_1.add_argument('--config_file', dest='config_file', action='store',help='Specify a moFF parameter file ', required=False)
+	args, remaining_argv = parser_1.parse_known_args()
+
+	if args.config_file:
+		config = ConfigParser.SafeConfigParser( allow_no_value=True)
+		config.read([args.config_file])
+		moFF_parameters = dict(config.items("moFF_parameters"))
+		# check if loc_in  is set in the input file 
+		if not ( 'loc_in' in moFF_parameters.keys() and 'raw_repo' in moFF_parameters.keys()  ) :
+			moFF_parameters['tsv_list']  = moFF_parameters['tsv_list'].split(' ')
+		if not ( 'raw_repo' in moFF_parameters.keys()):
+			moFF_parameters['raw_list']  = moFF_parameters['raw_list'].split(' ')
+		if not ('toll' in moFF_parameters.keys()):
+			exit('you must specify the tollerance in the configuration file ')
+		moFF_parameters['toll']= float (moFF_parameters['toll'] )
+		moFF_parameters['xic_length']= float (moFF_parameters['xic_length'] )
+		moFF_parameters['rt_peak_win']= float (moFF_parameters['rt_peak_win'] )
+		moFF_parameters['rt_peak_win_match']= float (moFF_parameters['rt_peak_win_match'] )
+		moFF_parameters['peptide_summary']= float (moFF_parameters['peptide_summary'] )
+		moFF_parameters['w_comb']=int( moFF_parameters['w_comb'])
+		moFF_parameters['out_flag']=int( moFF_parameters['out_flag'])
+		moFF_parameters['w_filt']=float( moFF_parameters['w_filt'])
+	args_1, remaining_argv = parser_1.parse_known_args()
+
+	parser = argparse.ArgumentParser(parents=[parser_1],description=__doc__,formatter_class=argparse.RawDescriptionHelpFormatter, )
+
+
 	parser = argparse.ArgumentParser(description='moFF match between run and apex module input parameter')
 
-	parser.add_argument('--inputF', dest='loc_in', action='store',
+	parser.add_argument('--loc_in', dest='loc_in', action='store',
 						help='specify the folder of the input MS2 peptide list files ', required=False)
 
-	parser.add_argument('--inputtsv', dest='tsv_list', action='store', nargs='*' ,
+	parser.add_argument('--tsv_list', dest='tsv_list', action='store', nargs='*' ,
 						help='specify the mzid file as a list ', required=False)
 
 
-	parser.add_argument('--inputraw', dest='raw_list', action='store',  nargs='*' ,
+	parser.add_argument('--raw_list', dest='raw_list', action='store',  nargs='*' ,
 					help='specify the raw file as a list ', required=False)
 
 	parser.add_argument('--sample', dest='sample', action='store',
@@ -45,48 +74,63 @@ if __name__ == '__main__':
 	parser.add_argument('--ext', dest='ext', action='store', default='txt',
 						help='specify the file extentention of the input like ', required=False)
 
-	parser.add_argument('--log_file_name', dest='log_label', action='store', default='moFF',
+	parser.add_argument('--log_label', dest='log_label', action='store', default='moFF',
 						help='a label name to use for the log file', required=False)
 
-	parser.add_argument('--filt_width', dest='w_filt', action='store', default=2,
+	parser.add_argument('--w_filt', dest='w_filt', action='store', default=2,
 						help='width value of the filter  k * mean(Dist_Malahobis)', required=False)
 
-	parser.add_argument('--out_filt', dest='out_flag', action='store', default=1,
+	parser.add_argument('--out_flag', dest='out_flag', action='store', default=1,
 						help='filter outlier in each rt time allignment', required=False)
 
-	parser.add_argument('--weight_comb', dest='w_comb', action='store', default=0,
+	parser.add_argument('--w_comb', dest='w_comb', action='store', default=0,
 						help='weights for model combination combination : 0 for no weight  1 weighted devised by trein err of the model.',
 						required=False)
 
 	# parser.add_argument('--input', dest='name', action='store',help='specify input list of MS2 peptides ', required=True)
 
-	parser.add_argument('--tol', dest='toll', action='store', type=float, help='specify the tollerance  parameter in ppm',
+	parser.add_argument('--toll', dest='toll', action='store', type=float, help='specify the tollerance  parameter in ppm',
 						required=True)
 
-	parser.add_argument('--rt_w', dest='rt_window', action='store', type=float, default=3,
+	parser.add_argument('--xic_length', dest='xic_length', action='store', type=float, default=3,
 						help='specify rt window for xic (minute). Default value is 3 min', required=False)
 
-	parser.add_argument('--rt_p', dest='rt_p_window', action='store', type=float, default=1,
+	parser.add_argument('--rt_peak_win', dest='rt_peak_win', action='store', type=float, default=1,
 						help='specify the time windows for the peak ( minute). Default value is 1 minute ', required=False)
 
-	parser.add_argument('--rt_p_match', dest='rt_p_window_match', action='store', type=float, default=1,
+	parser.add_argument('--rt_peak_win_match', dest='rt_peak_win_match', action='store', type=float, default=1,
 						help='specify the time windows for the matched peptide peak ( minute). Default value is 1.2 minute ',
 						required=False)
 
-	parser.add_argument('--raw_repo', dest='raw', action='store', help='specify the raw file repository ', required=False)
+	parser.add_argument('--raw_repo', dest='raw_repo', action='store', help='specify the raw file repository ', required=False)
 
-	parser.add_argument('--output_folder', dest='loc_out', action='store', default='', help='specify the folder output',
+	parser.add_argument('--loc_out', dest='loc_out', action='store', default='', help='specify the folder output',
 						required=False)
 
 	parser.add_argument('--rt_feat_file', dest='rt_feat_file', action='store',
 						help='specify the file that contains the features to use in the match-between-run RT prediction ',
 						required=False)
 
-	parser.add_argument('--peptide_summary', dest='pep_matrix', action='store',type=int,default= 0,
+	parser.add_argument('--peptide_summary', dest='peptide_summary', action='store',type=int,default= 0,
 						help='sumarize all the peptide intesity in one tab-delited file ',
 						required=False)
 
-	parser.add_argument('--tag_pep_sum_file', dest='tag_pepsum', action='store',type=str,default= 'moFF_run', help='a tag that is used in the peptide summary file name',required=False)
+	parser.add_argument('--tag_pepsum', dest='tag_pepsum', action='store',type=str,default= 'moFF_run', help='a tag that is used in the peptide summary file name',required=False)
+	
+	parser.add_argument('--match_filter', dest='match_filter', action='store', type=int, default=0, help='filtering on the matched peak .default 0',required=False)
+	parser.add_argument('--ptm_file', dest='ptm_file', action='store', default='ptm_setting.json', help='name of json ptm file. default file ptm_setting.json ',required=False)
+	parser.add_argument('--quantile_thr_filtering', dest='quantile_thr_filtering', action='store', type=float, default=0.75, help='quantile value used to computed the filtering threshold for the matched peak .default 0.75',required=False)
+	parser.add_argument('--sample_size', dest='sample_size', action='store', type=float, default=0.05, help='percentage of MS2 peptide used to estimated the threshold',required=False)
+
+	parser.add_argument('--mbr', dest='mbr', action='store',type=str,default= 'on', help='a tag that is used in the peptide summary file name',required=False )
+
+	if args.config_file:
+		# load from config file and load the remaining parametes
+		parser.set_defaults(**moFF_parameters)
+		args = parser.parse_args(remaining_argv)
+	else: 
+		# normal case for the input parsing
+		args = parser.parse_args()
 
 	args = parser.parse_args()
 
@@ -94,77 +138,103 @@ if __name__ == '__main__':
 	ch = logging.StreamHandler()
 	ch.setLevel(logging.ERROR)
 	log.addHandler(ch)
+	log.propagate = 0
 
-	if (args.tsv_list is None) and  (args.loc_in is None) and  (args.raw_list is None) and (args.raw is None) :
+	if args.toll is None:
+		exit('you must specify the tollerance in ppm ')
+	if (args.tsv_list is None) and  (args.loc_in is None) and  (args.raw_list is None) and (args.raw_repo is None) :
 		exit('you must specify the input and raw files ')
-	if (args.tsv_list is not None) and  (args.loc_in is not None) and  (args.raw_list is not None) and (args.raw is not None) :
-		 exit('you must specify the input and raw files or unsing: --inputtsv and --rawlist or --inputF and --rawrepo ')
+	if (args.tsv_list is not None) and  (args.loc_in is not None) and  (args.raw_list is not None) and (args.raw_repo is not None) :
+		 exit('you must specify the input and raw files or using: --tsv_list and --raw_list or --loc_in and --raw_repo ')
 	else:
 		if ((args.tsv_list is None ) and (args.raw_list is not None) ) or ((args.tsv_list is not  None ) and (args.raw_list is  None) ):
-			exit('Missing information: using --inputtsv you must specify the raw file with --inputraw ')
-		if ((args.loc_in is None ) and (args.raw is not None) ) or ((args.loc_in is not  None ) and (args.raw is  None) ) :
-			exit('Missing information: using --inputF you must specify the raw file with --raw_repo ')
+			exit('Missing information: using --tsv_list you must specify the raw file with --raw_list ')
+		if ((args.loc_in is None ) and (args.raw_repo is not None) ) or ((args.loc_in is not  None ) and (args.raw_repo is  None) ) :
+			exit('Missing information: using --loc_in you must specify the raw file with --raw_repo ')
 
-
-	log.critical('Matching between run module (mbr)')
 
 
 	# fixed variable number of split and also number of CPU presence in the macine
 	# change this variable  with repset to the machine setting of the user
 	num_CPU=multiprocessing.cpu_count()
 
-
-	#res_state,mbr_list_loc = moff_mbr.run_mbr(args)
+	# only mbr 
+	if 'only' in args.mbr :
+		log.critical('Running only the Matching between run module (mbr)')
+		exit('-- mbr')
+		res_state,output_list_loc = moff_mbr.run_mbr(args)
+		if res_state == -1:
+			exit('An error is occurred during the writing of the mbr file')
 	
-	##--- debug version-- just to run CPTAC without running mbr
-	res_state= 1
-	mbr_list_loc =[]
+	if 'on' in args.mbr :
+		
+		log.critical('Matching between run module (mbr)')
+		#res_state,mbr_list_loc = moff_mbr.run_mbr(args)
+		exit('mbr_on')
+		##--- debug version-- just to run CPTAC without running mbr
+		res_state= 1
+		output_list_loc =[]
 	
 	
-	for item in os.listdir(args.loc_in):
-            log.critical(item)
-            if os.path.isfile(os.path.join(args.loc_in, item)):
-                    if os.path.join(args.loc_in, item).endswith('.' + args.ext):
-                             mbr_list_loc.append(os.path.join(args.loc_in, item))
+		for item in os.listdir(args.loc_in):
+			#log.critical(item)
+			if os.path.isfile(os.path.join(args.loc_in, item)):
+				if os.path.join(args.loc_in, item).endswith('.' + args.ext):
+					mbr_list_loc.append(os.path.join(args.loc_in, item))
 	
 	###---	
 	
-	if res_state == -1:
-		exit('An error is occurred during the writing of the mbr file')
-	if args.tsv_list is not None:
-		# input list of raw and tsv file
-		if len(args.tsv_list) != len(args.raw_list) :
-			exit('Error:  number of the input files is different from the number of raw files' )
-		# in case list of file as input , mbr_output is written in local folder
-		folder = os.path.join('mbr_output')
-	else:
-		folder = os.path.join(args.loc_in, 'mbr_output')
-
-	log.critical('Apex module... ')
-	
-	c=0
-	start_time_total = time.time()
-	
-	for file_name in mbr_list_loc:
-		tol = args.toll
-		h_rt_w = args.rt_window
-		s_w = args.rt_p_window
-		s_w_match = args.rt_p_window_match
+		if res_state == -1:
+			exit('An error is occurred during the writing of the mbr file')
 		if args.tsv_list is not None:
-		## list of the raw file and their path
+		# input list of raw and tsv file
+			if len(args.tsv_list) != len(args.raw_list) :
+				exit('Error:  number of the input files is different from the number of raw files' )
+		# in case list of file as input , mbr_output is written in local folder
+			folder = os.path.join('mbr_output')
+		else:
+			folder = os.path.join(args.loc_in, 'mbr_output')
+
+		log.critical('Apex module... ')
+	
+		c=0
+		start_time_total = time.time()
+		
+	if 'off' in args.mbr :
+		# put everython in mbr_loc 
+		output_list_loc = []
+		for item in os.listdir(args.loc_in):
+			#log.critical(item)
+			if os.path.isfile(os.path.join(args.loc_in, item)):
+				if os.path.join(args.loc_in, item).endswith('.' + args.ext):
+					output_list_loc.append(os.path.join(args.loc_in, item))
+
+
+	for file_name in output_list_loc:
+
+		fh = logging.FileHandler(os.path.join(args.loc_out, 'test2_' + '__moff.log'), mode='w')
+		fh.setLevel(logging.INFO)
+		log.addHandler(fh)
+
+		tol = args.toll
+		h_rt_w = args.xic_length
+		s_w = args.rt_peak_win
+		s_w_match =  args.rt_peak_win_match
+		if args.tsv_list is not None:
+	## list of the raw file and their path
 			raw_list = args.raw_list[c]
 		else:
 			raw_list = None
 
-		loc_raw = args.raw
+		loc_raw = args.raw_repo
 		loc_output = args.loc_out
 
 
-		## add multi thredign option
+	## add multi thredign option
 		df = pd.read_csv(file_name,sep="\t")
 
 		#data_split= np.array_split(df, num_CPU)
-		
+	
 		log.critical('Starting Apex for %s ...',file_name)
 		log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
 		if args.raw_list is None:
@@ -176,82 +246,90 @@ if __name__ == '__main__':
 			log.critical('Apex module has detected mbr peptides')
 			with open(  os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])),'ptm_setting_mq.json')  ) as data_file:
 				ptm_map = json.load(data_file)
-        		## add same safety checks len > 1
+		## add same safety checks len > 1
 
 
-		#print 'Original input size', df.shape
+	#print 'Original input size', df.shape
 		name = os.path.basename(file_name).split('.')[0]
 
-		#  IF raw_list contains mzML file -->  I m going to  read the file, one time just to save all the scan  Id and their RT.
+	#  IF raw_list contains mzML file -->  I m going to  read the file, one time just to save all the scan  Id and their RT.
 		rt_list, id_list = moff.scan_mzml(raw_list)
 
-		#control id the folder exist
+	#control id the folder exist
 		moff.check_output_folder_existence(loc_output)
-		#control if exist the same log file : avoid appending output
-		
+	#control if exist the same log file : avoid appending output
+	
 		moff.check_log_existence(os.path.join(loc_output, name + '__moff.log'))
-        # this flag must be set to 0. it is 1 only in case moFF-Pride date and only in tha pex module
+# this flag must be set to 0. it is 1 only in case moFF-Pride date and only in tha pex module
 		moff_pride_flag= 1
-		
-
-		rt_drift, thr1,error_ratio =  moff.estimate_parameter( df, name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,  rt_list , id_list,  moff_pride_flag, ptm_map,log   )
-		#rt_drift = 6
-		#thr1= -1
-		#error_ratio = 0.90
-		log.critical( 'quality threhsold evaluated  : MAD_retetion_time  %r  Ratio Int. FakeIsotope/1estIsotope: %r '% ( rt_drift ,error_ratio))
-		log.critical( 'starting MS2 peaks..')
-		#rt_drift = -1
-		#thr1=-1
-		#print rt_drift, thr1
-		
-		myPool = multiprocessing.Pool(num_CPU)
-
-		### new to stuff to set it 
-		log.critical('MS2 Peak size: %r' %  df[df['matched']==0 ].shape[0])
-		data_split = np.array_split(df[df['matched']==0 ],  multiprocessing.cpu_count())
-		print len(data_split)
-        	result = {}
-        	offset = 0
-        	start_time = time.time()
-        	for df_index in range(0, len(data_split)):
-
-                	result[df_index] = myPool.apply_async(moff.apex_multithr, args=( data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag  )   )
-			offset += len(data_split[df_index])
-
-        	ms2_data= moff.save_moff_apex_result(data_split, result, loc_output)
-		log.critical('Matched Peak size: %r' %  df[df['matched']==1].shape[0] )
-
-        	data_split = np.array_split(df[df['matched']==1 ],  multiprocessing.cpu_count())
-        	result = {}
-        	offset = 0
-        	start_time = time.time()
-		for df_index in range(0, len(data_split)):
-
-                	result[df_index] = myPool.apply_async(moff.apex_multithr_matched_peak, args=( data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag, ptm_map,0 , rt_drift, thr1 ,error_ratio    ))
-			offset += len(data_split[df_index])
-
-        	myPool.close()
-        	myPool.join()
-
-
-        	log.critical('...apex terminated')
-        	log.critical( 'Computational time (sec):  %4.4f ' % (time.time() -start_time))
-        	print 'Time no result collect',  time.time() -start_time
-        	start_time_2 = time.time()
-        	matched_peak= moff.save_moff_apex_result(data_split, result, loc_output)
-		log.critical('Matched Peak after filtering size: %r' %  matched_peak[matched_peak['matched']==1].shape[0] )
-        	# concat
-        	final_res = pd.concat([ms2_data,matched_peak])
-        	final_res.to_csv(os.path.join(loc_output, os.path.basename(name).split('.')[0] + "_moff_result.txt"), sep="\t",index=False)
-		
-		moff.clean_json_temp_file(loc_output)
-				
-		c+=1
 	
-	#moff.clean_json_temp_file(loc_output)
-	
-	log.critical('TOTAL time for apex %4.4f sec', time.time() - start_time_total)
-	if args.pep_matrix == 1 :
+
+		if args.match_filter == 1: 
+			with open(  os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])),args.ptm_file)  ) as data_file:
+				ptm_map = json.load(data_file)
+			start_time = time.time()
+			log.critical( 'starting estimation of quality measures..')
+			# run estimation _parameter
+			rt_drift, not_used_measure,error_ratio =  moff.estimate_parameter( df, name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,  rt_list , id_list,  moff_pride_flag, ptm_map,log,args.sample_size,args.quantile_thr_filtering, args.match_filter )
+			#rt_drift = 6
+			#thr1= -1
+			#error_ratio = 0.90
+			log.critical( 'quality threhsold estimated : MAD_retetion_time  %r  Ratio Int. FakeIsotope/1estIsotope: %r '% ( rt_drift ,error_ratio))
+			log.critical( 'starting  aoex quantification of MS2 peptides..')
+			myPool = multiprocessing.Pool(  multiprocessing.cpu_count() )
+			data_split = np.array_split(df[df['matched']==0 ].head(50) , multiprocessing.cpu_count()  )
+			result = {}
+			offset = 0
+			for df_index in range(0, len(data_split)):
+				result[df_index] = myPool.apply_async(moff.apex_multithr, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag, ptm_map,0 , rt_drift,error_ratio, 0  ))
+				offset += len(data_split[df_index])
+			# save ms2 resulr
+			ms2_data = moff.save_moff_apex_result( data_split, result, loc_output )
+			log.critical( 'ended  apex quantification of MS2 peptides..')
+			log.critical( 'starting quantification with matched peaks using the quality filtering  ...')
+			log.critical( 'initial # matched peaks: %r', df[ df['matched']==1].shape )
+			data_split = np.array_split(df[ df['matched']==1 ].head(50)   ,  multiprocessing.cpu_count()  )
+			#print df[ df['matched']==1 ][['peptide','prot']].head(30)
+			result = {}
+			offset = 0
+			for df_index in range(0, len(data_split)):
+				result[df_index] = myPool.apply_async(moff.apex_multithr, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag, ptm_map,0 , rt_drift,error_ratio, args.match_filter ))
+				offset += len(data_split[df_index])
+			myPool.close()
+			myPool.join()
+			log.critical('endend apex quantification matched peptide ')
+			log.critical( 'Computational time (sec):  %4.4f ' % (time.time() -start_time))
+			#print 'Time no result collect',  time.time() -start_time
+			matched_peak= moff.save_moff_apex_result(data_split, result, loc_output)
+			log.critical('after filtering matched peak #%r ',matched_peak.shape[0])
+			# concat the ms2 res  + mateched result
+			final_res = pd.concat([ms2_data,matched_peak])
+			# save result
+			final_res.to_csv(os.path.join(loc_output, os.path.basename(name).split('.')[0] + "_moff_result.txt"), sep="\t",index=False)
+		else:
+			log.critical( 'starting  peptide quantification (ms2 / matched ) ..')
+			myPool = multiprocessing.Pool(  multiprocessing.cpu_count()   )
+			data_split = np.array_split(df , multiprocessing.cpu_count()  )
+			result = {}
+			offset = 0
+			start_time = time.time()
+			for df_index in range(0, len(data_split)):
+				result[df_index] = myPool.apply_async(moff.apex_multithr, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag, ptm_map,0 ,-1,-1, 0  ))
+				offset += len(data_split[df_index])
+			myPool.close()
+			myPool.join()
+			log.critical('...apex terminated')
+			log.critical( 'Computational time (sec):  %4.4f ' % (time.time() -start_time))
+			#print 'Time no result collect',  time.time() -start_time
+			start_time_2 = time.time()
+			result = moff.save_moff_apex_result(data_split, result, loc_output, file_name)
+			resultres.to_csv(os.path.join(folder_output, os.path.basename(name).split('.')[0] + "_moff_result.txt"), sep="\t",index=False)
+			
+
+#moff.clean_json_temp_file(loc_output)
+
+			#log.critical('TOTAL time for apex %4.4f sec', time.time() - start_time_total)
+	if args.peptide_summary == 1 :
 		state = moff.compute_peptide_matrix(args.loc_out,log,args.tag_pepsum)
-		if state == -1 :
-			log.critical ('Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')
+	if state == -1 :
+		log.critical ('Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')
