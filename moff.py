@@ -26,8 +26,10 @@ from  itertools  import chain
 from brainpy import isotopic_variants
 from scipy.stats import spearmanr
 
-log = logging.getLogger(__name__)
+log = logging.getLogger(__name__ )
 log.setLevel(logging.DEBUG)
+
+
 
 
 """
@@ -41,6 +43,24 @@ log.setLevel(logging.DEBUG)
 
 TXIC_PATH = os.environ.get('TXIC_PATH', './')
 
+
+def set_logger (name_file):
+	if len(log.handlers) == 0:
+		ch= logging.StreamHandler()
+		ch.setLevel(logging.ERROR)
+		log.addHandler(ch)
+		fh = logging.FileHandler(name_file, mode='a')
+		fh.setLevel(logging.DEBUG)
+		#formatter = logging.Formatter('%(message)s')
+		#fh.setFormatter(formatter)
+		log.addHandler(fh)
+
+
+def detach_handler( ):
+	handlers = log.handlers[:]
+	for handler in handlers:
+		handler.close()
+		log.removeHandler(handler)
 
 def clean_json_temp_file(loc_output):
 	for f in glob.glob(loc_output + "/*.json"):
@@ -94,16 +114,13 @@ def compute_peptide_matrix(loc_output, log, tag_filename):
 	return 1
 
 
-def save_moff_apex_result(list_df, result, folder_output):
-	#print len(list_df)
+def save_moff_apex_result(list_df, result):
 	try:
 		xx = []
 		for df_index in range(0,len(list_df)):
 			if result[df_index].get()[1] == -1:
 				exit ('Raw file not retrieved: wrong path or upper/low case mismatch')
 			else:
-				#print result[df_index].get()[0]
-					
 				xx.append( result[df_index].get()[0] )
 
 		#print len(xx)
@@ -112,11 +129,9 @@ def save_moff_apex_result(list_df, result, folder_output):
 		if 'index' in final_res.columns:
 			final_res.drop('index',axis=1,inplace=True )
 		
-		#final_res.to_csv(os.path.join(folder_output, os.path.basename(name).split('.')[0] + "_moff_result.txt"), sep="\t",index=False)
 	except Exception as e :
 		traceback.print_exc()
 		print
-		# print os.path.join(folder_output,os.path.basename(name).split('.')[0]  + "_moff_result.txt")
 		raise e
 	return (final_res)
 
@@ -304,11 +319,11 @@ def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_in
 			print 'error'
 			return pd.Series({'intensity': -1, 'rt_peak': -1,'lwhm':-1,'rwhm':-1,'5p_noise':-1,'10p_noise':-1,'SNR':-1,'log_L_R':-1,'log_int':-1})
 		val_max = data_xic.ix[pos_p, 1].values
-		if filt_flag ==1:
-			log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f matched (yes=1/no=0): %i Peak detected  ',(offset_index + c +2), x['mz'], time_w,x['matched'])
+		#if filt_flag ==1:
+			#log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f matched (yes=1/no=0): %i Peak detected  ',(offset_index + c +2), x['mz'], time_w,x['matched'])
 	else:
 		if filt_flag==1:
-			log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f matched (yes=1/no=0): %i Peak not detected  Xic shape %r ',(offset_index + c +2), x['mz'], time_w,x['matched'],  data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0])
+			log.info('peptide %r -->  MZ: %4.4f RT: %4.4f matched (yes=1/no=0): %i Peak not detected  Xic shape %r ',x['mod_peptide'] , x['mz'], time_w,x['matched'],  data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0])
 		#log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f ', (offset_index +c +2), x['mz'], time_w)
 		#log.info("\t LW_BOUND window  %4.4f", time_w - temp_w)
 		#log.info("\t UP_BOUND window %4.4f", time_w + temp_w)
@@ -354,28 +369,29 @@ def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_in
 				'log_int': np.log2(val_max)[0] })
 
 
+# def estimate_parameter( df , name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,  rt_list , id_list, moff_pride_flag ,ptm_map,   log,sample_size, quantile_value, match_filter_flag   ):
 
-
-def estimate_parameter( df , name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,  rt_list , id_list, moff_pride_flag ,ptm_map,   log,sample_size, quantile_value, match_filter_flag   ):
+def estimate_parameter( df , name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,  rt_list , id_list, moff_pride_flag ,ptm_map, sample_size, quantile_value, match_filter_flag ,log_file  ):
 	#multiprocessing.cpu_count()
+	set_logger(log_file)
 	myPool = multiprocessing.Pool(   multiprocessing.cpu_count() )
 	sample= df[df['matched']==0 ].sample(frac=sample_size)
-	log.critical('Estimate parameters using %r MS2 peptides randomly sampled' % sample.shape[0] )
+	log.critical('quality measures estimation  using %r  MS2 ident. peptides randomly sampled' % sample.shape[0] )
 	data_split = np.array_split(sample,   multiprocessing.cpu_count()  )
 	result = {}
 	offset = 0
 	# run matchinf filtering for 
 	for df_index in range(0, len(data_split)):
-		result[df_index] = myPool.apply_async(apex_multithr, args=(data_split[df_index], name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset,  rt_list , id_list, moff_pride_flag ,ptm_map   ,1,-1,-1, match_filter_flag   ))
+		result[df_index] = myPool.apply_async(apex_multithr, args=(data_split[df_index], name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset,  rt_list , id_list, moff_pride_flag ,ptm_map   ,1,-1,-1, match_filter_flag ))
 		offset += len(data_split[df_index])
 	myPool.close()
 	myPool.join()
-	ms2_data= save_moff_apex_result(data_split, result, loc_output)
-	log.critical ('Estimated distribution rank correlation exp. int. vs theor. int. %r %r %r ' %( ms2_data[ ms2_data['rankcorr'] != -1]['rankcorr'].quantile(0.25), ms2_data[ms2_data['rankcorr'] != -1]['rankcorr'].quantile(0.50),   ms2_data[ ms2_data['rankcorr'] != -1]['rankcorr'].quantile(0.75) )  )
+	ms2_data = save_moff_apex_result(data_split, result)
+	#log.critical ('Estimated distribution rank correlation exp. int. vs theor. int. %r %r %r ' %( ms2_data[ ms2_data['rankcorr'] != -1]['rankcorr'].quantile(0.25), ms2_data[ms2_data['rankcorr'] != -1]['rankcorr'].quantile(0.50),   ms2_data[ ms2_data['rankcorr'] != -1]['rankcorr'].quantile(0.75) )  )
 	log.critical ('MAD retention time along all isotope %r', ms2_data[ ms2_data['RT_drift'] != -1 ]['RT_drift'].describe())
 	log.critical ('Estimated distribition ratio exp. int. left isotope vs. monoisotopic isotope %r ', ms2_data[ms2_data['delta_log_int'] != -1 ]['delta_log_int'].describe() )
 	error_relInr =  ms2_data[ ms2_data['Erro_RelIntensity_TheoExp'] != -1]['Erro_RelIntensity_TheoExp'].quantile(quantile_value)
-	rt_drift = ms2_data[   ms2_data['RT_drift'] != -1 ] ['RT_drift'].quantile(quantile_value)
+	rt_drift = ms2_data[  ms2_data['RT_drift'] != -1 ] ['RT_drift'].quantile(quantile_value)
 	ratio_log_int = ms2_data[ms2_data['delta_log_int'] != -1 ]['delta_log_int'].quantile(quantile_value )
 	return (rt_drift , error_relInr, ratio_log_int ) 
 
@@ -442,7 +458,7 @@ def  filtering_match_peak(x,input_data , estimate_flag,moff_pride_flag,log,  thr
 		# check isotope 2-3
 		if (test.iloc[ 0:3,  test.columns.get_indexer(['log_L_R']) ]  != -1 ).all()[0] : 
 			mad_diff_int, rank_spearman, mad_rt =  compute_match_peak_quality_measure( test.iloc[0:3,:], moff_pride_flag,log )
-			print rank_spearman, mad_rt
+			#print rank_spearman, mad_rt
 			if  (mad_rt < thr_q2 and rank_spearman > 0.8):
 			# check isotope -1 
 				if  (test.iloc[3,   test.columns.get_indexer(['log_L_R'])]).all() == -1:
@@ -475,16 +491,6 @@ def  filtering_match_peak(x,input_data , estimate_flag,moff_pride_flag,log,  thr
 
 
 def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset_index,  rt_list , id_list, moff_pride_flag ,ptm_map,estimate_flag, rt_drift, err_ratio_int, match_filter_flag ):
-	#log.info('inside_matched peak --')
-	# ---
-		#WARNING : you must call thi routine with anoter name this is just for quist debug
-	# ---
-	#setting logger for multiprocess
-	#ch = logging.StreamHandler()
-	#ch.setLevel(logging.ERROR)
-	#log.addHandler(ch)
-	#log.propagate=False
-	
 	#setting flag and ptah
 	moff_path = os.path.dirname(sys.argv[0])
 	flag_mzml = False
@@ -498,19 +504,11 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 		flag_windows = True
 
 
-	# check output log file in right location
 	if loc_output != '':
 		if not (os.path.isdir(loc_output)):
 			os.makedirs(loc_output)
 			log.info("created output folder: ", loc_output)
 
-	# to be checked if it is works ffor both caseses
-	#fh = logging.FileHandler(os.path.join(loc_output, name_file + '__moff.log'), mode='a')
-
-	#fh.setLevel(logging.INFO)
-	#log.addHandler(fh)
-
-	# check mbr input file
 	if '_match' in name_file:
 		# in case of mbr , here i dont have evaluate the flag mbr
 		start = name_file.find('_match')
@@ -536,16 +534,13 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 		if ('MZML' in raw_name.upper()):
 			flag_mzml = True
 
-	if os.path.isfile(loc):
-		log.info('raw file exist')
-	else:
+	if not (os.path.isfile(loc) ):
+		#log.info('raw file exist')
 		#exit('ERROR: Wrong path or wrong raw file name included: %s' % loc  )
-		log.info('ERROR: Wrong path or wrong raw file name included: %s' % loc  )
+		log.critical('ERROR: Wrong path or wrong raw file name included: %s' % loc  )
 		return (None,-1)
 
-
 	index_offset = data_ms2.columns.shape[0] - 1
-
 	data_ms2["intensity"] = -1
 	data_ms2["rt_peak"] = -1
 	data_ms2["lwhm"] = -1
@@ -574,8 +569,6 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 	# set mbr_flag
 	if 'matched' in data_ms2.columns:
 		mbr_flag = 1
-		#log.critical('Apex module has detected mbr peptides')
-		#log.info('moff_rtWin_peak for matched peptide:   %4.4f ', s_w_match)
 
 	# get txic path: assumes txic is in the same directory as moff.py
 	txic_executable_name="txic_json.exe"
@@ -587,7 +580,6 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 			xic_data= get_xic_data (  flag_mzml, flag_windows, all_isotope_df[['mz','tol','ts','te']] , loc_output, name_file, txic_path, loc,  1   )
 			## new filtering
 			# not needed
-			#data_ms2.reset_index(inplace=True)
 			all_isotope_df['prog_xic_index'] = range(0,len(xic_data)) 
 			all_isotope_df['original_ptm'] = np.repeat(data_ms2.index, 4)
 			all_isotope_df["intensity"] = -1
@@ -599,18 +591,14 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 			all_isotope_df["SNR"] = -1
 			all_isotope_df["log_L_R"] = -1
 			all_isotope_df["log_int"] = -1
-			#print 'lenght PTM to test', data_ms2.shape
 			if estimate_flag==0:
 				data_ms2[['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm' ]]= data_ms2.apply( lambda x: filtering_match_peak( x,all_isotope_df,estimate_flag,   moff_pride_flag,log,   rt_drift, err_ratio_int, xic_data , mbr_flag  , h_rt_w,s_w,s_w_match,offset_index   ),axis=1)
-			#print data_ms2
 			else:
 				data_ms2[['Erro_RelIntensity_TheoExp',  'RT_drift',  'delta_log_int',   'delta_rt','rankcorr']]= data_ms2.apply( lambda x: estimate_on_match_peak( x,all_isotope_df,estimate_flag,   moff_pride_flag,log,   rt_drift, err_ratio_int, xic_data , mbr_flag  , h_rt_w,s_w,s_w_match,offset_index  ),axis=1)
-			print 'Finito'
 			if estimate_flag != 1:
 				data_ms2 =  data_ms2[ (data_ms2[ ['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm' ]  ] != -1 ).all(1)]
 		else:
 			# not match  filter
-			print 'not filterint'
 			temp=data_ms2[['mz','rt']].copy() # strange cases
 			temp.ix[:,'tol'] = int( tol)
 			if moff_pride_flag == 1:
@@ -635,27 +623,47 @@ def build_matched_modification  ( data , ptm_map , tol, moff_pride_flag ,  h_rt_
 	all_isotope_df = pd.DataFrame(columns=['peptide','mz','ratio_iso','tol','rt','matched','ts','te'])
 	for row in data.itertuples():
 	# get the sequence
-		#print '--  ---'
 	## for MQ sequence is (mod_tag )
-	# for PS sequenc eis <mod_tag>
-		if not ( '(' in row.mod_peptide):
+	# for PS sequence is  <mod_tag>
+		mq_mod_flag= True
+		if mq_mod_flag :
+			if not ( '(' in row.mod_peptide) and mq_mod_flag :
 		#  only fixed mod
-			comps = Counter(list(chain(*[list(std_aa_comp[aa].elements()) for aa in row.peptide])))
-			comps["H"] += 2
-			comps["O"] += 1
-			#print 'Final COMPS',comp
-			fix_mod_count =  row.peptide.count('C')
-			if fix_mod_count > 0:
-				comps["H"] += (ptm_map['cC']['deltaChem'][0] * fix_mod_count )
-				comps["C"] += (ptm_map['cC']['deltaChem'][1] * fix_mod_count )
-				comps["N"] += (ptm_map['cC']['deltaChem'][2] * fix_mod_count)
-				comps["O"] += (ptm_map['cC']['deltaChem'][3] * fix_mod_count)
+				comps = Counter(list(chain(*[list(std_aa_comp[aa].elements()) for aa in row.peptide])))
+				comps["H"] += 2
+				comps["O"] += 1
+				fix_mod_count =  row.peptide.count('C')
+				if fix_mod_count > 0:
+					comps["H"] += (ptm_map['cC']['deltaChem'][0] * fix_mod_count )
+					comps["C"] += (ptm_map['cC']['deltaChem'][1] * fix_mod_count )
+					comps["N"] += (ptm_map['cC']['deltaChem'][2] * fix_mod_count)
+					comps["O"] += (ptm_map['cC']['deltaChem'][3] * fix_mod_count)
+			else:
+				comps = Counter(list(chain(*[list(std_aa_comp[aa].elements()) for aa in row.peptide])))
+				for ptm in ptm_map.keys() :
+					ptm_c = row.mod_peptide.count(ptm)
+				#ptm_c =  sum(ptm in s for s in row.mod_peptide)
+					if ptm_c  >=1:
+						comps["H"] += (ptm_map[ptm]['deltaChem'][0] * ptm_c )
+						comps["C"] += (ptm_map[ptm]['deltaChem'][1] * ptm_c)
+						comps["N"] += (ptm_map[ptm]['deltaChem'][2] * ptm_c)
+						comps["O"] += (ptm_map[ptm]['deltaChem'][3] * ptm_c)
+			# add eventually fixed mod/ 
+				fix_mod_count =  row.mod_peptide.count('C')
+				if fix_mod_count > 0:
+					comps["H"] += (ptm_map['cC']['deltaChem'][0] * fix_mod_count )
+					comps["C"] += (ptm_map['cC']['deltaChem'][1] * fix_mod_count )
+					comps["N"] += (ptm_map['cC']['deltaChem'][2] * fix_mod_count)
+					comps["O"] += (ptm_map['cC']['deltaChem'][3] * fix_mod_count)
+				comps["H"] += 2
+				comps["O"] += 1
+				print comps, row.mod_peptide
 		else:
-				#print 'still to do it '
+	# fixed and variable mod are both in the sequence
 			comps = Counter(list(chain(*[list(std_aa_comp[aa].elements()) for aa in row.peptide])))
 			for ptm in ptm_map.keys() :
 				ptm_c = row.mod_peptide.count(ptm)
-				#ptm_c =  sum(ptm in s for s in row.mod_peptide)
+			#ptm_c =  sum(ptm in s for s in row.mod_peptide)
 				if ptm_c  >=1:
 					#print ptm
 					comps["H"] += (ptm_map[ptm]['deltaChem'][0] * ptm_c )
@@ -665,7 +673,6 @@ def build_matched_modification  ( data , ptm_map , tol, moff_pride_flag ,  h_rt_
 			comps["H"] += 2
 			comps["O"] += 1
 
-		#print 'Modified COMPS',comps
 		theoretical_isotopic_cluster = isotopic_variants(comps, charge=  int(round (  row.mass / float( row.mz)))   ,npeaks=3)
 		mz_iso = [ peak.mz  for peak in theoretical_isotopic_cluster ]
 		delta = mz_iso[0]-mz_iso[1]
@@ -685,6 +692,7 @@ def build_matched_modification  ( data , ptm_map , tol, moff_pride_flag ,  h_rt_
 		else:
 			isotopic_df['ts'] = (row.rt /60 ) - h_rt_w
 			isotopic_df['te'] = (row.rt  /60  ) + h_rt_w
+
 		all_isotope_df = pd.concat([all_isotope_df , isotopic_df ],join='outer',axis=0   )
 	all_isotope_df.reset_index( inplace=True )
 
@@ -693,15 +701,10 @@ def build_matched_modification  ( data , ptm_map , tol, moff_pride_flag ,  h_rt_
 
 
 def get_xic_data (  flag_mzml, flag_windows, data, loc_output, name_file,txic_path , loc, flag_filtering  ):
-	#if flag_filtering==1:
-	#	data = data[['mz','tol','ts','te']].copy()
-
-
 	if not flag_mzml :
 	# txic-28-9-separate-jsonlines.exe
 		if not flag_windows:
-	# Linux  to avoid cmd  string too long  and its error. the thresold is mainly base on  from empirical evaluation.
-	#print all_isotope_df[['mz','tol','ts','te']].head(1).to_json(orient='records')
+		# Linux  to avoid cmd  string too long  and its error. the thresold is mainly base on  from empirical evaluation.
 			if len(data.to_json(orient='records')) >= 50000:
 				with open(os.path.join(loc_output,multiprocessing.current_process().name  + '_' + name_file + '.json'), 'w') as f:
 					f.write(data.to_json(orient='records'))
@@ -726,310 +729,9 @@ def get_xic_data (  flag_mzml, flag_windows, data, loc_output, name_file,txic_pa
 			temp = json.loads( output.split('\n')[l].decode("utf-8") )
 			xic_data.append(pd.DataFrame( { 'rt' : temp['results']['times'], 'intensity':  temp['results']['intensities'] }   , columns=['rt', 'intensity'] ) )
 	else:
-				## to test later
 		run_temp = pymzml.run.Reader(raw_name)
 		xic_data = mzML_get_all( temp,tol,loc, run_temp ,rt_list , id_list  )
 
 	return xic_data
 
-'''
-def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset_index,  rt_list , id_list, moff_pride_flag ):
-        #setting logger for multiprocess
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.ERROR)
-        log.addHandler(ch)
 
-        #setting flag and ptah
-        moff_path = os.path.dirname(sys.argv[0])
-        flag_mzml = False
-        flag_windows = False
-        mbr_flag = 0
-
-        # set platform
-        if _platform in ["linux", "linux2", 'darwin']:
-                flag_windows = False
-        elif _platform == "win32":
-                flag_windows = True
-
-
-        # check output log file in right location
-        if loc_output != '':
-                if not (os.path.isdir(loc_output)):
-                        os.makedirs(loc_output)
-                        log.info("created output folder: ", loc_output)
-
-        # to be checked if it is works ffor both caseses
-        fh = logging.FileHandler(os.path.join(loc_output, name_file + '__moff.log'), mode='a')
-
-        fh.setLevel(logging.INFO)
-        log.addHandler(fh)
-
-        # check mbr input file
-        if '_match' in name_file:
-                # in case of mbr , here i dont have evaluate the flag mbr
-                start = name_file.find('_match')
-                # extract the name of the file
-                name_file = name_file[0:start]
-
-        if loc_raw is not None:
-                if flag_windows:
-                   loc  = os.path.join(loc_raw, name_file.upper()+ '.RAW')
-
-                else:
-                        # raw file name must have capitals letters :) this shloud be checked
-                        # this should be done in moe elegant way
-
-                        loc  = os.path.normcase(os.path.join(loc_raw, name_file + '.RAW'))
-
-                        if not (os.path.isfile(loc)):
-                                loc  = os.path.join(loc_raw, name_file + '.raw')
-
-        else:
-                #mzML work only with --inputraw option
-                loc  = raw_name
-                if ('MZML' in raw_name.upper()):
-                        flag_mzml = True
-
-        if os.path.isfile(loc):
-                log.info('raw file exist')
-        else:
-                #exit('ERROR: Wrong path or wrong raw file name included: %s' % loc  )
-                log.info('ERROR: Wrong path or wrong raw file name included: %s' % loc  )
-                return (None,-1)
-
-
-
-        index_offset = data_ms2.columns.shape[0] - 1
-
-        data_ms2["intensity"] = -1
-        data_ms2["rt_peak"] = -1
-        data_ms2["lwhm"] = -1
-        data_ms2["rwhm"] = -1
-        data_ms2["5p_noise"] = -1
-        data_ms2["10p_noise"] = -1
-        data_ms2["SNR"] = -1
-        data_ms2["log_L_R"] = -1
-        data_ms2["log_int"] = -1
-        data_ms2["rt_peak"] = data_ms2["rt_peak"].astype('float64')
-        data_ms2['intensity'] = data_ms2['intensity'].astype('float64')
-        data_ms2['lwhm'] = data_ms2['lwhm'].astype('float64')
-        data_ms2["rwhm"] = data_ms2['rwhm'].astype('float64')
-        data_ms2["5p_noise"] = data_ms2['5p_noise'].astype('float64')
-        data_ms2["10p_noise"] = data_ms2['10p_noise'].astype('float64')
-        data_ms2["SNR"] = data_ms2['SNR'].astype('float64')
-        data_ms2["log_L_R"] = data_ms2['log_L_R'].astype('float64')
-        data_ms2["log_int"] = data_ms2['log_int'].astype('float64')
-
-
-
-        # set mbr_flag
-        if 'matched' in data_ms2.columns:
-                mbr_flag = 1
-                #log.critical('Apex module has detected mbr peptides')
-                #log.info('moff_rtWin_peak for matched peptide:   %4.4f ', s_w_match)
-
-        # get txic path: assumes txic is in the same directory as moff.py
-        txic_executable_name="txic_json.exe"
-	txic_path = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), txic_executable_name)
-
-        ## to export a list of XIc
-        try:
-                temp=data_ms2[['mz','rt']].copy()
-        # strange cases
-
-                temp.ix[:,'tol'] = int( tol)
-                if moff_pride_flag == 1:
-                        temp['ts'] = (data_ms2['rt']  ) - h_rt_w
-                        temp['te'] = (data_ms2['rt']   ) + h_rt_w
-                else:
-                        temp['ts'] = (data_ms2['rt'] /60 ) - h_rt_w
-                        temp['te'] = (data_ms2['rt'] /60  ) + h_rt_w
-                temp.drop('rt',1,inplace=True )
-
-		xic_data= get_xic_data (  flag_mzml, flag_windows, temp, loc_output, name_file, txic_path, loc,  0   )
-		data_ms2.reset_index(inplace=True)
-                data_ms2[['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']] = data_ms2.apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index, moff_pride_flag,-1, -1 ) , axis=1   )
-        except Exception as e:
-                traceback.print_exc()
-                print
-                raise e
-
-        return (data_ms2,1)
-'''
-
-def main_apex_alone():
-	parser = argparse.ArgumentParser(description='moFF input parameter')
-	parser.add_argument('--tsv_list', dest='name', action='store',
-						help='specify the input file with the MS2 peptides/features', required=True)
-	parser.add_argument('--raw_list', dest='raw_list', action='store', help='specify directly raw file', required=False)
-	parser.add_argument('--toll', dest='toll', action='store', type=float, help='specify the tollerance parameter in ppm',
-						required=True)
-	parser.add_argument('--xic_length', dest='xic_length', action='store', type=float, default=3,
-						help='specify rt window for xic (minute). Default value is 3 min', required=False)
-	parser.add_argument('--rt_peak_win', dest='rt_peak_win', action='store', type=float, default=1,
-						help='specify the time windows for the peak ( minute). Default value is 1 minute ', required=False)
-	parser.add_argument('--rt_peak_win_match', dest='rt_peak_win_match', action='store', type=float, default=1.2,
-						help='specify the time windows for the matched  peak ( minute). Default value is 1.2 minute ',
-						required=False)
-	parser.add_argument('--raw_repo', dest='raw_repo', action='store', help='specify the raw file repository folder',
-						required=False)
-	parser.add_argument('--loc_out', dest='loc_out', action='store', default='', help='specify the folder output',
-						required=False)
-	parser.add_argument('--peptide_summary', dest='peptide_summary', action='store', type=int, default=0, help='summarize all the peptide intesity in one tab-delited file ',required=False)
-	parser.add_argument('--match_filter', dest='match_filter', action='store', type=int, default=0, help='filtering on the matched peak .default 0',required=False)
-	parser.add_argument('--ptm_file', dest='ptm_file', action='store', default='ptm_setting.json', help='name of json ptm file. default file ptm_setting.json ',required=False)
-	parser.add_argument('--quantile_thr_filtering', dest='quantile_thr_filtering', action='store', type=float, default=0.75, help='quantile value used to computed the filtering threshold for the matched peak .default 0.75',required=False)
-	parser.add_argument('--sample_size', dest='sample_size', action='store', type=float, default=0.05, help='percentage of MS2 peptide used to estimated the threshold',required=False)
-	parser.add_argument('--tag_pepsum', dest='tag_pepsum', action='store', type=str, default='moFF_run', help='a tag that is used in the peptide summary file name', required=False)
-
-
-	args = parser.parse_args()
-
-	if (args.raw_list is None) and (args.raw_repo is None):
-		exit('you must specify and raw files  with --raw_list (file name) or --raw_repo (folder)')
-	if (args.raw_list is not None) and (args.raw_repo is not None):
-		exit('you must specify raw files using only one options --raw_list (file name) or --raw_repo (folder) ')
-
-
-	file_name = args.name
-	tol = args.toll
-	h_rt_w = args.xic_length
-	s_w = args.rt_peak_win
-	s_w_match = args.rt_peak_win_match
-
-	loc_raw = args.raw_repo
-	loc_output = args.loc_out
-
-	# set stream option for logger
-	ch = logging.StreamHandler()
-	ch.setLevel(logging.ERROR)
-	log.addHandler(ch)
-	log.propagate = 0
-	# ''''
-	fh = logging.FileHandler(os.path.join(loc_output, 'test_' + '__moff.log'), mode='w')
-	fh.setLevel(logging.INFO)
-	log.addHandler(fh)
-
-	config = ConfigParser.RawConfigParser()
-	config.read(os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), 'moff_setting.properties'))
-	df = pd.read_csv(file_name, sep="\t")
-	## add same safety checks len > 1
-	## check and eventually tranf for PS template
-	moff_pride_flag = 1
-
-	if check_ps_input_data(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'moffpride_format'))) == 1:
-		# if it is a moff_pride data I do not check aany other requirement
-		log.critical('moffPride input detected')
-		moff_pride_flag = 1
-	else:
-		if not 'matched' in df.columns:
-			# check if it is a PS file ,
-			list_name = df.columns.values.tolist()
-			# get the lists of PS  defaultcolumns from properties file
-			list = ast.literal_eval(config.get('moFF', 'ps_default_export_v1'))
-			# here it controls if the input file is a PS export; if yes it maps the input in right moFF name
-			if check_ps_input_data(list_name, list) == 1:
-				# map  the columns name according to moFF input requirements
-				if args.pep_matrix != 1:
-					data_ms2, list_name = map_ps2moff(df,'col_must_have_apex')
-				else:
-					data_ms2, list_name = map_ps2moff(df, 'col_must_have_mbr')
-		## check if the field names are good, in case of pep summary we need same req as in  mbr
-		if args.peptide_summary == 1:
-			if check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_mbr')),log) == 1 :
-				exit('ERROR minimal field requested are missing or wrong')
-		else:
-			if  check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_apex')),log) == 1   :
-				exit('ERROR minimal field requested are missing or wrong')
-
-        # flag to check idf the input are from moffPride file.
-        # if so, rt is already in minutes
-
-
-	log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
-	if args.raw_list is None:
-		log.critical('RAW file from folder :  %s' % loc_raw)
-	else:
-		log.critical('RAW file  :  %s' % args.raw_list)
-
-	log.critical('Output file in :  %s', loc_output)
-
-
-	log.critical('starting Apex module .....')
-	name = os.path.basename(file_name).split('.')[0]
-
-	
-	rt_list , id_list = scan_mzml ( args.raw_list )
-	## sampling
-	if args.match_filter == 1 :
-	#filtering
-		# load ptm file 
-		# ptm file MUST be located in the moFF folder
-		with open(  os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])),args.ptm_file)  ) as data_file:
-			ptm_map = json.load(data_file)
-		start_time = time.time()
-		# run estimation _parameter
-		rt_drift, not_used_measure,error_ratio =  estimate_parameter( df, name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,  rt_list , id_list,  moff_pride_flag, ptm_map,log,args.sample_size,args.quantile_thr_filtering, args.match_filter )
-		#rt_drift = 6
-		#thr1= -1
-		#error_ratio = 0.90
-		log.critical( 'quality threhsold estimated : MAD_retetion_time  %r  Ratio Int. FakeIsotope/1estIsotope: %r '% ( rt_drift ,error_ratio))
-		log.critical( 'starting MS2 peaks..')
-		myPool = multiprocessing.Pool(  multiprocessing.cpu_count() )
-		data_split = np.array_split(df[df['matched']==0 ].head(50) , multiprocessing.cpu_count()  )
-		result = {}
-		offset = 0
-		for df_index in range(0, len(data_split)):
-			result[df_index] = myPool.apply_async(apex_multithr, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag, ptm_map,0 , rt_drift,error_ratio, 0  ))
-			#result[df_index] = myPool.apply_async(apex_multithr, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag  ))
-			offset += len(data_split[df_index])
-		# save ms2 resulr
-		ms2_data = save_moff_apex_result( data_split, result, loc_output )
-		log.critical( 'starting matched peaks...')
-		log.critical( 'initial # matched peaks: %r', df[ df['matched']==1].shape )
-		data_split = np.array_split(df[ df['matched']==1 ].head(50)   ,  multiprocessing.cpu_count()  )
-		#print df[ df['matched']==1 ][['peptide','prot']].head(30)
-		result = {}
-		offset = 0
-		for df_index in range(0, len(data_split)):
-			result[df_index] = myPool.apply_async(apex_multithr, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag, ptm_map,0 , rt_drift,error_ratio, args.match_filter ))
-			offset += len(data_split[df_index])
-
-		myPool.close()
-		myPool.join()
-		log.critical('...apex terminated')
-		log.critical( 'Computational time (sec):  %4.4f ' % (time.time() -start_time))
-		print 'Time no result collect',  time.time() -start_time
-		matched_peak= save_moff_apex_result(data_split, result, loc_output)
-		log.critical('after filtering matched peak #%r ',matched_peak.shape[0])
-		# concat the ms2 res  + mateched result 
-		final_res = pd.concat([ms2_data,matched_peak])
-		# save result
-		final_res.to_csv(os.path.join(loc_output, os.path.basename(name).split('.')[0] + "_moff_result.txt"), sep="\t",index=False)
-	else:
-	## no filtering matched peak
-		myPool = multiprocessing.Pool(  multiprocessing.cpu_count()   )
-		data_split = np.array_split(df , multiprocessing.cpu_count()  )
-		result = {}
-		offset = 0
-		start_time = time.time()
-		for df_index in range(0, len(data_split)):
-			result[df_index] = myPool.apply_async(apex_multithr, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag, ptm_map,0 ,-1,-1, 0  ))
-			#result[df_index] = myPool.apply_async(apex_multithr, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag ))
-			offset += len(data_split[df_index])
-		myPool.close()
-		myPool.join()
-		log.critical('...apex terminated')
-		log.critical( 'Computational time (sec):  %4.4f ' % (time.time() -start_time))
-		print 'Time no result collect',  time.time() -start_time
-		start_time_2 = time.time()
-		save_moff_apex_result(data_split, result, loc_output, file_name)
-
-	if args.peptide_summary == 1 :
-		# # TO DO manage the error with retunr -1 like in moff_all.py  master repo
-		state = compute_peptide_matrix(loc_output,log,args.tag_pepsum)
-		if state ==-1 :
-			log.critical ('Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')
-
-if __name__ == '__main__':
-	main_apex_alone()
