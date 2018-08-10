@@ -17,9 +17,6 @@ import moff_mbr
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
-ch= logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-log.addHandler(ch)
 
 
 
@@ -231,7 +228,7 @@ if __name__ == '__main__':
 		df = pd.read_csv(file_name, sep="\t")
 		## add same safety checks len > 1
 		## check and eventually tranf for PS template
-		moff_pride_flag = 0
+		moff_pride_flag = 0 
 
 		if moff.check_ps_input_data(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'moffpride_format'))) == 1:
 		# if it is a moff_pride data I do not check aany other requirement
