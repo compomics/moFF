@@ -1,19 +1,19 @@
 #!/usr/bin/env python
+import ConfigParser
 import argparse
-import logging
+import ast
+import json
 import logging.config
 import multiprocessing
 import os
+import sys
 import time
-import json
+
 import numpy as np
 import pandas as pd
-import sys
+
 import moff
 import moff_mbr
-import ConfigParser
-import ast
-
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -123,7 +123,7 @@ if __name__ == '__main__':
 		# load from config file and load the remaining parametes
 		parser.set_defaults(**moFF_parameters)
 		args = parser.parse_args(remaining_argv)
-	else: 
+	else:
 		# normal case for the input parsing
 		args = parser.parse_args()
 
@@ -199,7 +199,6 @@ if __name__ == '__main__':
 				if os.path.join(args.loc_in, item).endswith('.' + args.ext):
 					output_list_loc.append(os.path.join(args.loc_in, item))
 
-
 	for file_name in output_list_loc:
 		name = os.path.basename(file_name).split('.')[0]
 		moff.check_log_existence(os.path.join(args.loc_out, name + '__moff.log'))
@@ -232,7 +231,7 @@ if __name__ == '__main__':
 		df = pd.read_csv(file_name, sep="\t")
 		## add same safety checks len > 1
 		## check and eventually tranf for PS template
-		moff_pride_flag = 1
+		moff_pride_flag = 0
 
 		if moff.check_ps_input_data(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'moffpride_format'))) == 1:
 		# if it is a moff_pride data I do not check aany other requirement
@@ -248,9 +247,9 @@ if __name__ == '__main__':
 				if moff.check_ps_input_data(list_name, list) == 1:
 				# map  the columns name according to moFF input requirements
 					if args.peptide_summary != 1:
-						data_ms2, list_name = map_ps2moff(df,'col_must_have_apex')
+						data_ms2, list_name = moff.map_ps2moff(df,'col_must_have_apex')
 					else:
-						data_ms2, list_name = map_ps2moff(df, 'col_must_have_mbr')
+						data_ms2, list_name = moff.map_ps2moff(df, 'col_must_have_mbr')
 				## check if the field names are 	good, in case of pep summary we need same req as in  mbr
 		if args.peptide_summary == 1:
 			if moff.check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_mbr')),log) == 1 :
@@ -311,7 +310,6 @@ if __name__ == '__main__':
 			log.critical( 'starting quantification with matched peaks using the quality filtering  ...')
 			log.critical( 'initial # matched peaks: %r', df[ df['matched']==1].shape )
 			data_split = np.array_split(df[ df['matched']==1 ].head(50)   ,  multiprocessing.cpu_count()  )
-			#print df[ df['matched']==1 ][['peptide','prot']].head(30)
 			result = {}
 			offset = 0
 			for df_index in range(0, len(data_split)):

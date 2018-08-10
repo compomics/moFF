@@ -1,8 +1,5 @@
 #/usr/bin/env python
 
-import ConfigParser
-import argparse
-import ast
 import bisect
 import glob
 import logging
@@ -13,17 +10,16 @@ import subprocess
 import sys
 import time
 import traceback
+from collections import Counter
+from itertools import chain
 from sys import platform as _platform
 
 import numpy as np
 import pandas as pd
 import pymzml
 import simplejson as json
-
-from pyteomics.mass import std_aa_comp,Unimod,calculate_mass
-from collections import Counter
-from  itertools  import chain
 from brainpy import isotopic_variants
+from pyteomics.mass import std_aa_comp
 from scipy.stats import spearmanr
 
 log = logging.getLogger(__name__ )
@@ -625,7 +621,7 @@ def build_matched_modification  ( data , ptm_map , tol, moff_pride_flag ,  h_rt_
 	# get the sequence
 	## for MQ sequence is (mod_tag )
 	# for PS sequence is  <mod_tag>
-		mq_mod_flag= True
+		mq_mod_flag= False
 		if mq_mod_flag :
 			if not ( '(' in row.mod_peptide) and mq_mod_flag :
 		#  only fixed mod
@@ -642,7 +638,6 @@ def build_matched_modification  ( data , ptm_map , tol, moff_pride_flag ,  h_rt_
 				comps = Counter(list(chain(*[list(std_aa_comp[aa].elements()) for aa in row.peptide])))
 				for ptm in ptm_map.keys() :
 					ptm_c = row.mod_peptide.count(ptm)
-				#ptm_c =  sum(ptm in s for s in row.mod_peptide)
 					if ptm_c  >=1:
 						comps["H"] += (ptm_map[ptm]['deltaChem'][0] * ptm_c )
 						comps["C"] += (ptm_map[ptm]['deltaChem'][1] * ptm_c)
@@ -657,7 +652,6 @@ def build_matched_modification  ( data , ptm_map , tol, moff_pride_flag ,  h_rt_
 					comps["O"] += (ptm_map['cC']['deltaChem'][3] * fix_mod_count)
 				comps["H"] += 2
 				comps["O"] += 1
-				print comps, row.mod_peptide
 		else:
 	# fixed and variable mod are both in the sequence
 			comps = Counter(list(chain(*[list(std_aa_comp[aa].elements()) for aa in row.peptide])))
@@ -665,7 +659,6 @@ def build_matched_modification  ( data , ptm_map , tol, moff_pride_flag ,  h_rt_
 				ptm_c = row.mod_peptide.count(ptm)
 			#ptm_c =  sum(ptm in s for s in row.mod_peptide)
 				if ptm_c  >=1:
-					#print ptm
 					comps["H"] += (ptm_map[ptm]['deltaChem'][0] * ptm_c )
 					comps["C"] += (ptm_map[ptm]['deltaChem'][1] * ptm_c)
 					comps["N"] += (ptm_map[ptm]['deltaChem'][2] * ptm_c)
@@ -693,13 +686,13 @@ def build_matched_modification  ( data , ptm_map , tol, moff_pride_flag ,  h_rt_
 			isotopic_df['ts'] = (row.rt /60 ) - h_rt_w
 			isotopic_df['te'] = (row.rt  /60  ) + h_rt_w
 
-		all_isotope_df = pd.concat([all_isotope_df , isotopic_df ],join='outer',axis=0   )
+		all_isotope_df = pd.concat([all_isotope_df , isotopic_df ],join='outer',axis=0 ,sort=False  )
 	all_isotope_df.reset_index( inplace=True )
 
 	return all_isotope_df
 
 
-
+50
 def get_xic_data (  flag_mzml, flag_windows, data, loc_output, name_file,txic_path , loc, flag_filtering  ):
 	if not flag_mzml :
 	# txic-28-9-separate-jsonlines.exe
@@ -714,7 +707,7 @@ def get_xic_data (  flag_mzml, flag_windows, data, loc_output, name_file,txic_pa
 				args_txic = shlex.split( "mono " + txic_path + " -j " + data.to_json( orient='records' ) + " -f " + loc,posix=True )
 		else:
 			# Windows to avoid cmd  string too long  and its error. the thresold is mainly base on  from empirical evaluation.
-			if len(isotopic_df.to_json(orient='records')) >= 10000:
+			if len(data.to_json(orient='records')) >= 10000:
 				with open(os.path.join(loc_output,multiprocessing.current_process().name +  '_' + name_file + '.json'), 'w') as f:
 					f.write(data.to_json(orient='records'))
 				args_txic = shlex.split(txic_path + " -jf " +  os.path.join(loc_output,multiprocessing.current_process().name + '_' + name_file + '.json')  + " -f " + loc, posix=False)

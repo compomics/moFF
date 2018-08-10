@@ -1,0 +1,3 @@
+{
+"<cmm>": {"deltaChem":[3,2,1,1],"desc":"Carboxyamidomethylation C  unimod:4"},
+"<ox>": {"deltaChem":[0,0,0,1],"desc":"oxidation oxidation unimod:35" } }
