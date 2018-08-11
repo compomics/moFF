@@ -378,7 +378,7 @@ def estimate_parameter( df , name_file, raw_name, tol, h_rt_w, s_w, s_w_match, l
 	offset = 0
 	# run matchinf filtering for 
 	for df_index in range(0, len(data_split)):
-		result[df_index] = myPool.apply_async(apex_multithr, args=(data_split[df_index], name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset,  rt_list , id_list, moff_pride_flag ,ptm_map   ,1,-1,-1, match_filter_flag ))
+		result[df_index] = myPool.apply_async(apex_multithr, args=(data_split[df_index], name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset,  rt_list , id_list, moff_pride_flag ,ptm_map   ,1,-1,-1, match_filter_flag ,log_file))
 		offset += len(data_split[df_index])
 	myPool.close()
 	myPool.join()
@@ -462,21 +462,21 @@ def  filtering_match_peak(x,input_data , estimate_flag,moff_pride_flag,log,  thr
 					delta_log_int =  test.at[3, 'log_int']  / test.at[0,'log_int'] 
 					if (delta_rt_wrong_iso  < thr_q2 and delta_log_int  >  err_ratio_int):
 						# elimina overlapping peptide isotope
-						log.info (' %r mz: %4.4f RT: %4.4f --> Not valid isotope evelope  overlapping detected -->  --  MAD RT  %r  -- rankCorr %r ', x.mod_peptide , x.mz, x.rt,   mad_rt , rank_spearman)
+						log.info (' %r mz: %4.4f RT: %4.4f --> Not valid isotope envelope  overlapping detected -->  --  MAD RT  %r  -- rankCorr %r ', x.mod_peptide , x.mz, x.rt,   mad_rt , rank_spearman)
 						return pd.Series({'intensity': -1, 'rt_peak': -1,'lwhm': -1 ,'rwhm': -1 ,'5p_noise': -1,'10p_noise': -1,'SNR': -1,'log_L_R': -1,'log_int': -1 })
 					else:
-						log.info('%r mz: %4.4f RT: %4.4f --> Valid isotope evelope detected after overlaping checkin -->  --  MAD RT  %r  -- rankCorr %r ',   x.mod_peptide , x.mz, x.rt,  mad_rt , rank_spearman)
+						log.info('%r mz: %4.4f RT: %4.4f --> Valid isotope evelope detected after overlaping check -->  --  MAD RT  %r  -- rankCorr %r ',   x.mod_peptide , x.mz, x.rt,  mad_rt , rank_spearman)
 						return test.loc[test['ratio_iso'].idxmax(axis=1), ['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']]
 				else:
-					log.info(' %r mz: %4.4f RT: %4.4f  --> Valid isotope evelope detected and no overlaping detected -->  --  MAD RT  %r  -- rankCorr %r ',   x.mod_peptide , x.mz, x.rt,  mad_rt , rank_spearman)
+					log.info(' %r mz: %4.4f RT: %4.4f  --> Valid isotope envelope detected and no overlaping detected -->  --  MAD RT  %r  -- rankCorr %r ',   x.mod_peptide , x.mz, x.rt,  mad_rt , rank_spearman)
 					return test.loc[test['ratio_iso'].idxmax(axis=1), ['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']]
 			else:
 				# not pass the thr. leveli
-				log.info(' %r mz: %4.4f RT: %4.4f  --> Not valid isotope evelope detected  -->  --  MAD RT  %r  -- rankCorr %r ',x.mod_peptide , x.mz, x.rt,  mad_rt , rank_spearman)
+				log.info(' %r mz: %4.4f RT: %4.4f  --> Not valid isotope envelope detected  -->  --  MAD RT  %r  -- rankCorr %r ',x.mod_peptide , x.mz, x.rt,  mad_rt , rank_spearman)
 				return pd.Series({'intensity': -1, 'rt_peak': -1,'lwhm': -1 ,'rwhm': -1 ,'5p_noise': -1,'10p_noise': -1,'SNR': -1,'log_L_R': -1,'log_int': -1 })
 		else:
 			# I have only the 1st valid isotope peak  but not the second
-			log.info(' %r mz: %4.4f RT: %4.4f --> not enough isotope peak detected only  %r over 3(/4) detected ', x.mod_peptide , x.mz, x.rt,   input_data[input_data['log_L_R']!= -1].shape[0]  )
+			log.info(' %r mz: %4.4f RT: %4.4f --> not enough isotope peaks detected only  %r over 3(/4) detected ', x.mod_peptide , x.mz, x.rt,   input_data[input_data['log_L_R']!= -1].shape[0]  )
 			return pd.Series({'intensity': -1, 'rt_peak': -1,'lwhm': -1 ,'rwhm': -1 ,'5p_noise': -1,'10p_noise': -1,'SNR': -1,'log_L_R': -1,'log_int': -1 })
 	else:
 		#print 'not_find the 1st isotope
@@ -486,7 +486,10 @@ def  filtering_match_peak(x,input_data , estimate_flag,moff_pride_flag,log,  thr
 
 
 
-def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset_index,  rt_list , id_list, moff_pride_flag ,ptm_map,estimate_flag, rt_drift, err_ratio_int, match_filter_flag ):
+def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,offset_index,  rt_list , id_list, moff_pride_flag ,ptm_map,estimate_flag, rt_drift, err_ratio_int, match_filter_flag ,log_file):
+	#print log.handlers
+	set_logger(log_file)
+	#log.info('Sono dentro a apex multith')
 	#setting flag and ptah
 	moff_path = os.path.dirname(sys.argv[0])
 	flag_mzml = False

@@ -285,7 +285,8 @@ if __name__ == '__main__':
 			with open(  os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])),args.ptm_file)  ) as data_file:
 				ptm_map = json.load(data_file)
 			start_time = time.time()
-			
+
+			moff.set_logger(log_file)
 			#log.critical( 'starting estimation of quality measures..')
 			# run estimation _parameter
 			rt_drift, not_used_measure,error_ratio =  moff.estimate_parameter( df, name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,  rt_list , id_list,  moff_pride_flag, ptm_map,args.sample_size,args.quantile_thr_filtering, args.match_filter, log_file )
@@ -295,22 +296,23 @@ if __name__ == '__main__':
 			log.critical( 'quality threhsold estimated : MAD_retetion_time  %r  Ratio Int. FakeIsotope/1estIsotope: %r '% ( rt_drift ,error_ratio))
 			log.critical( 'starting apex quantification of MS2 peptides..')
 			myPool = multiprocessing.Pool(  multiprocessing.cpu_count() )
-			data_split = np.array_split(df[df['matched']==0 ].head(50) , multiprocessing.cpu_count()  )
+			data_split = np.array_split(df[df['matched']==0 ].head() , multiprocessing.cpu_count()  )
 			result = {}
 			offset = 0
 			for df_index in range(0, len(data_split)):
-				result[df_index] = myPool.apply_async(moff.apex_multithr, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag, ptm_map,0 , rt_drift,error_ratio, 0  ))
+				result[df_index] = myPool.apply_async(moff.apex_multithr, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag, ptm_map,0 , rt_drift,error_ratio, 0,log_file  ))
 				offset += len(data_split[df_index])
 			# save ms2 resulr
 			ms2_data = moff.save_moff_apex_result( data_split, result, )
 			log.critical( 'end  apex quantification of MS2 peptides..')
 			log.critical( 'starting quantification with matched peaks using the quality filtering  ...')
 			log.critical( 'initial # matched peaks: %r', df[ df['matched']==1].shape )
-			data_split = np.array_split(df[ df['matched']==1 ].head(50)   ,  multiprocessing.cpu_count()  )
+			log.info('Matched Peptides analysis:')
+			data_split = np.array_split(df[ df['matched']==1 ].head()   ,  multiprocessing.cpu_count()  )
 			result = {}
 			offset = 0
 			for df_index in range(0, len(data_split)):
-				result[df_index] = myPool.apply_async(moff.apex_multithr, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag, ptm_map,0 , rt_drift,error_ratio, args.match_filter ))
+				result[df_index] = myPool.apply_async(moff.apex_multithr, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag, ptm_map,0 , rt_drift,error_ratio, args.match_filter ,log_file))
 				offset += len(data_split[df_index])
 			myPool.close()
 			myPool.join()
@@ -333,7 +335,7 @@ if __name__ == '__main__':
 			offset = 0
 			start_time = time.time()
 			for df_index in range(0, len(data_split)):
-				result[df_index] = myPool.apply_async(moff.apex_multithr, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag, ptm_map,0 ,-1,-1, 0  ))
+				result[df_index] = myPool.apply_async(moff.apex_multithr, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag, ptm_map,0 ,-1,-1, 0 ,log_file ))
 				offset += len(data_split[df_index])
 			myPool.close()
 			myPool.join()
