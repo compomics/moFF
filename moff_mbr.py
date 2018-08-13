@@ -362,7 +362,7 @@ def run_mbr(args):
             test[field] = np.nan  # -1
 
         log.info('Before adding %s contains %i ', exp_set[jj], exp_t[jj].shape[0])
-        exp_out[jj] = pd.concat([exp_t[jj], test], join='outer', axis=0)
+        exp_out[jj] = pd.concat([exp_t[jj], test], join='outer', axis=0,sort=False)
         log.info('After MBR %s contains:  %i  peptides', exp_set[jj], exp_out[jj].shape[0])
         log.critical('matched features   %i  MS2 features  %i ', exp_out[jj][exp_out[jj]['matched'] == 1].shape[0],
                      exp_out[jj][exp_out[jj]['matched'] == 0].shape[0])

@@ -154,11 +154,13 @@ if __name__ == '__main__':
 
 	# only mbr 
 	if 'only' in args.mbr :
-		log.critical('Running only the Matching between run module (mbr)')
-		exit('-- mbr')
+		log.critical('starting matching between run module (mbr)')
 		res_state,output_list_loc = moff_mbr.run_mbr(args)
 		if res_state == -1:
 			exit('An error is occurred during the writing of the mbr file')
+		else:
+			log.critical('end matching between run module (mbr)')
+			exit()
 	
 	if 'on' in args.mbr :
 		
@@ -178,7 +180,7 @@ if __name__ == '__main__':
 		# input list of raw and tsv file
 			if len(args.tsv_list) != len(args.raw_list) :
 				exit('Error:  number of the input files is different from the number of raw files' )
-		# in case list of file as input , mbr_output is written in local folder
+			# in case list of file as input , mbr_output is written in local folder
 			folder = os.path.join('mbr_output')
 		else:
 			folder = os.path.join(args.loc_in, 'mbr_output')
@@ -188,15 +190,19 @@ if __name__ == '__main__':
 		
 		
 	if 'off' in args.mbr :
-		# put everython in mbr_loc 
+		# put everython in mbr_loc
 		output_list_loc = []
-		for item in os.listdir(args.loc_in):
-			#log.critical(item)
-			if os.path.isfile(os.path.join(args.loc_in, item)):
-				if os.path.join(args.loc_in, item).endswith('.' + args.ext):
-					output_list_loc.append(os.path.join(args.loc_in, item))
+		if not (args.loc_in is None):
+			for item in os.listdir(args.loc_in):
+				#log.critical(item)
+				if os.path.isfile(os.path.join(args.loc_in, item)):
+					if os.path.join(args.loc_in, item).endswith('.' + args.ext):
+						output_list_loc.append(os.path.join(args.loc_in, item))
+		else:
+			output_list_loc = args.tsv_list
 
-	for file_name in output_list_loc:
+
+	for c,file_name in enumerate(output_list_loc):
 		name = os.path.basename(file_name).split('.')[0]
 		moff.check_log_existence(os.path.join(args.loc_out, name + '__moff.log'))
 		fh = logging.FileHandler(os.path.abspath(os.path.join(args.loc_out, name  + '__moff.log')), mode='a')
@@ -213,7 +219,7 @@ if __name__ == '__main__':
 		s_w_match =  args.rt_peak_win_match
 
 		if args.tsv_list is not None:
-	## list of the raw file and their path
+			## raw_list contains the current raws file provided by args.raw_list option
 			raw_list = args.raw_list[c]
 		else:
 			raw_list = None
@@ -221,15 +227,12 @@ if __name__ == '__main__':
 		loc_raw = args.raw_repo
 		loc_output = args.loc_out
 
-
-	## add multi thredign option
 		config = ConfigParser.RawConfigParser()
 		config.read(os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), 'moff_setting.properties'))
 		df = pd.read_csv(file_name, sep="\t")
 		## add same safety checks len > 1
 		## check and eventually tranf for PS template
 		moff_pride_flag = 0 
-
 		if moff.check_ps_input_data(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'moffpride_format'))) == 1:
 		# if it is a moff_pride data I do not check aany other requirement
 			log.critical('moffPride input detected')
@@ -248,13 +251,19 @@ if __name__ == '__main__':
 					else:
 						data_ms2, list_name = moff.map_ps2moff(df, 'col_must_have_mbr')
 				## check if the field names are 	good, in case of pep summary we need same req as in  mbr
-		if args.peptide_summary == 1:
-			if moff.check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_mbr')),log) == 1 :
-				exit('ERROR minimal field requested are missing or wrong')
-		else:
-			if  moff.check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_apex')),log) == 1   :
-				exit('ERROR minimal field requested are missing or wrong')
+			if args.peptide_summary == 1:
+				if moff.check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_mbr')),log) == 1 :
+					exit('ERROR minimal field requested are missing or wrong')
+			else:
+				if  moff.check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_apex')),log) == 1   :
+					exit('ERROR minimal field requested are missing or wrong')
 
+		#check if filtering is UP and the input data is not suitable for mbr filtering
+		if  'off' in args.mbr and args.match_filter==1:
+			if not 'matched' in df.columns:
+				exit('mbr peptide not detect in the input file, filtering of mbr peptides is not possible. Please set --match_filter to 0 and run again.')
+			if not ('mod_peptide' in df.columns):
+				exit('mod_peptide sequence is not present your the input file, filtering of mbr peptides is not possible. Please check your infput file or parameter settings')
 		log.critical('Starting Apex for %s ...',file_name)
 		log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (file_name, tol, h_rt_w, s_w))
 		if args.raw_list is None:
@@ -262,24 +271,24 @@ if __name__ == '__main__':
 		else:
 			log.critical('RAW file  :  %s' % args.raw_list)
 		log.critical('Output file in :  %s', loc_output)
-		if 'matched' in df.columns:
+		# load the ptm file IF
+		# mbr on with filetering  UP
+		# mbr off with filtering flag UP (already check if inputdata contains matched field.)
+		if 'matched' in df.columns and args.match_filter==1 :
 			log.critical('Apex module has detected mbr peptides')
-			with open(  os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])),'ptm_setting_mq.json')  ) as data_file:
+			with open(  os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])),args.ptm_file)  ) as data_file:
 				ptm_map = json.load(data_file)
-		## add same safety checks len > 1
-	#print 'Original input size', df.shape
-		name = os.path.basename(file_name).split('.')[0]
 
-	#  IF raw_list contains mzML file -->  I m going to  read the file, one time just to save all the scan  Id and their RT.
+		name = os.path.basename(file_name).split('.')[0]
+		#  IF raw_list contains mzML file -->  I m going to  read the file, one time just to save all the scan  Id and their RT.
 		rt_list, id_list = moff.scan_mzml(raw_list)
 
-	#control id the folder exist
+		#control id the folder exist
 		moff.check_output_folder_existence(loc_output)
 
 		#control if exist the same log file : avoid appending output
 		#moff.check_log_existence(os.path.join(loc_output, name + '__moff.log'))
 		# this flag must be set to 0. it is 1 only in case moFF-Pride date and only in tha pex module
-
 
 		if args.match_filter == 1: 
 			with open(  os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])),args.ptm_file)  ) as data_file:
@@ -289,30 +298,31 @@ if __name__ == '__main__':
 			moff.set_logger(log_file)
 			#log.critical( 'starting estimation of quality measures..')
 			# run estimation _parameter
-			rt_drift, not_used_measure,error_ratio =  moff.estimate_parameter( df, name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,  rt_list , id_list,  moff_pride_flag, ptm_map,args.sample_size,args.quantile_thr_filtering, args.match_filter, log_file )
+			rt_drift, not_used_measure,error_ratio =  moff.estimate_parameter( df, name, raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,  rt_list , id_list,  moff_pride_flag, ptm_map,args.sample_size,args.quantile_thr_filtering, args.match_filter, log_file )
 			#rt_drift = 4.5
 			#thr1= -1
 			#error_ratio = 0.89
 			log.critical( 'quality threhsold estimated : MAD_retetion_time  %r  Ratio Int. FakeIsotope/1estIsotope: %r '% ( rt_drift ,error_ratio))
 			log.critical( 'starting apex quantification of MS2 peptides..')
+			log.info('log of MS2 identified peptide not retrived :  ..')
 			myPool = multiprocessing.Pool(  multiprocessing.cpu_count() )
-			data_split = np.array_split(df[df['matched']==0 ].head() , multiprocessing.cpu_count()  )
+			data_split = np.array_split(df[df['matched']==0 ] , multiprocessing.cpu_count()  )
 			result = {}
 			offset = 0
 			for df_index in range(0, len(data_split)):
-				result[df_index] = myPool.apply_async(moff.apex_multithr, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag, ptm_map,0 , rt_drift,error_ratio, 0,log_file  ))
+				result[df_index] = myPool.apply_async(moff.apex_multithr, args=(data_split[df_index], name, raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag, ptm_map,0 , rt_drift,error_ratio, 0,log_file  ))
 				offset += len(data_split[df_index])
 			# save ms2 resulr
 			ms2_data = moff.save_moff_apex_result( data_split, result, )
 			log.critical( 'end  apex quantification of MS2 peptides..')
 			log.critical( 'starting quantification with matched peaks using the quality filtering  ...')
 			log.critical( 'initial # matched peaks: %r', df[ df['matched']==1].shape )
-			log.info('Matched Peptides analysis:')
-			data_split = np.array_split(df[ df['matched']==1 ].head()   ,  multiprocessing.cpu_count()  )
+			log.info('Log Matched Peptides filtered :')
+			data_split = np.array_split(df[ df['matched']==1 ] ,  multiprocessing.cpu_count()  )
 			result = {}
 			offset = 0
 			for df_index in range(0, len(data_split)):
-				result[df_index] = myPool.apply_async(moff.apex_multithr, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag, ptm_map,0 , rt_drift,error_ratio, args.match_filter ,log_file))
+				result[df_index] = myPool.apply_async(moff.apex_multithr, args=(data_split[df_index], name, raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag, ptm_map,0 , rt_drift,error_ratio, args.match_filter ,log_file))
 				offset += len(data_split[df_index])
 			myPool.close()
 			myPool.join()
@@ -333,9 +343,10 @@ if __name__ == '__main__':
 			data_split = np.array_split(df , multiprocessing.cpu_count()  )
 			result = {}
 			offset = 0
+			log.info('log of MS2 identified peptide not retrived ')
 			start_time = time.time()
 			for df_index in range(0, len(data_split)):
-				result[df_index] = myPool.apply_async(moff.apex_multithr, args=(data_split[df_index], name, args.raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag, ptm_map,0 ,-1,-1, 0 ,log_file ))
+				result[df_index] = myPool.apply_async(moff.apex_multithr, args=(data_split[df_index], name, raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset,  rt_list , id_list,  moff_pride_flag,None,0 ,-1,-1, 0 ,log_file ))
 				offset += len(data_split[df_index])
 			myPool.close()
 			myPool.join()

@@ -141,7 +141,7 @@ def map_ps2moff(data,type_mapping):
 		data.rename(columns={'sequence': 'peptide', 'modified sequence': 'mod_peptide', 'measured charge': 'charge',
 		                     'theoretical mass': 'mass', 'protein(s)': 'prot', 'm/z': 'mz'}, inplace=True)
 	if type_mapping == 'col_must_have_apex':
-		data.rename(columns={'sequence': 'peptide', 'measured charge': 'charge', 'theoretical mass': 'mass',
+		data.rename(columns={'sequence': 'peptide', 'modified sequence': 'mod_peptide' ,'measured charge': 'charge', 'theoretical mass': 'mass',
 		                     'protein(s)': 'prot', 'm/z': 'mz'}, inplace=True)
 	return data, data.columns.values.tolist()
 
@@ -175,7 +175,7 @@ def check_columns_name(col_list, col_must_have,log):
 
 
 def scan_mzml ( name ):
-# when I am using thermo raw and --raw_repo option used
+    # when I am using thermo raw and --raw_repo option used
 	if name is None:
 		return (-1,-1)
 	if ('MZML' in name.upper()):
@@ -318,8 +318,11 @@ def compute_peak_simple(x,xic_array,log,mbr_flag, h_rt_w,s_w,s_w_match,offset_in
 		#if filt_flag ==1:
 			#log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f matched (yes=1/no=0): %i Peak detected  ',(offset_index + c +2), x['mz'], time_w,x['matched'])
 	else:
-		if filt_flag==1:
-			log.info('peptide %r -->  MZ: %4.4f RT: %4.4f matched (yes=1/no=0): %i Peak not detected  Xic shape %r ',x['mod_peptide'] , x['mz'], time_w,x['matched'],  data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0])
+		if filt_flag==1 :
+			if ( 'matched'in x.axes[0].tolist() ):
+				log.info('peptide %r -->  MZ: %4.4f RT: %4.4f matched (yes=1/no=0): %i Peak not detected  Xic shape %r ',x['mod_peptide'] , x['mz'], time_w,x['matched'],  data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0])
+			else:
+				log.info('peptide %r -->  MZ: %4.4f RT: %4.4f matched (yes=1/no=0): %i Peak not detected  Xic shape %r ',x['mod_peptide'] , x['mz'], time_w,0,  data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0])
 		#log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f ', (offset_index +c +2), x['mz'], time_w)
 		#log.info("\t LW_BOUND window  %4.4f", time_w - temp_w)
 		#log.info("\t UP_BOUND window %4.4f", time_w + temp_w)
@@ -404,7 +407,7 @@ def  estimate_on_match_peak(x,input_data , estimate_flag,moff_pride_flag,log,  t
 	test = input_data.loc[input_data['original_ptm']== x.name,:  ].copy()
 	test.reset_index(inplace=True)
 	#print 'local df inside estimate ', input_data.columns
-	test.iloc[0:1,13:22] =  test.iloc[0:1,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index, moff_pride_flag,-1, 1, 0  ) , axis=1 )
+	test.iloc[0:1,13:22] =  test.iloc[0:1,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index, moff_pride_flag,-1, 1, 0 ) , axis=1 )
 	#print 'output -->>  ',input_data.iloc[:,12:22]
 	#print  input_data.iloc[0, input_data.columns.get_indexer(['log_L_R'])].all() != -1
 	if (test.iloc[0, test.columns.get_indexer(['log_L_R'])]).any()  != -1 :
@@ -528,7 +531,7 @@ def apex_multithr(data_ms2,name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
 				loc  = os.path.join(loc_raw, name_file + '.raw')
 
 	else:
-		#mzML work only with --inputraw option
+		#mzML work only with --raw_list option
 		loc  = raw_name
 		if ('MZML' in raw_name.upper()):
 			flag_mzml = True
