@@ -672,6 +672,7 @@ def build_matched_modification  ( data , ptm_map , tol, moff_pride_flag ,  h_rt_
 			comps["H"] += 2
 			comps["O"] += 1
 
+
 		theoretical_isotopic_cluster = isotopic_variants(comps, charge=  int(round (  row.mass / float( row.mz)))   ,npeaks=3)
 		mz_iso = [ peak.mz  for peak in theoretical_isotopic_cluster ]
 		delta = mz_iso[0]-mz_iso[1]

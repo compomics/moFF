@@ -327,7 +327,7 @@ if __name__ == '__main__':
 			myPool.close()
 			myPool.join()
 			log.critical('end apex quantification matched peptide ')
-			log.critical( 'Computational time (sec):  %4.4f ' % (time.time() -start_time))
+			log.critical('Computational time (sec):  %4.4f ' % (time.time() -start_time))
 			#print 'Time no result collect',  time.time() -start_time
 			matched_peak= moff.save_moff_apex_result(data_split, result)
 			log.critical('after filtering matched peak #%r ',matched_peak.shape[0])

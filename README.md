@@ -50,10 +50,11 @@ Required java version :
 
 Required python libraries :
 - Python 2.7
-- pandas  > 0.20.
-- numpy > 1.10.0
-- argparse > 1.2.1 
-- scikit-learn > 0.18
+- pandas  >  0.23
+- numpy > 1.15.0
+- argparse > 1.2.1
+- scipy 1.1.0
+- scikit-learn > 0.19
 - pymzML > 0.7.7
 
 
