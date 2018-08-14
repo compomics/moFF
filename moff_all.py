@@ -231,8 +231,8 @@ if __name__ == '__main__':
 		config.read(os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), 'moff_setting.properties'))
 		df = pd.read_csv(file_name, sep="\t")
 		## add same safety checks len > 1
-		## check and eventually tranf for PS template
-		moff_pride_flag = 0 
+		## Flag for pride pipeline, or to set from second to minute as input rt time scale
+		moff_pride_flag = O
 		if moff.check_ps_input_data(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'moffpride_format'))) == 1:
 		# if it is a moff_pride data I do not check aany other requirement
 			log.critical('moffPride input detected')
@@ -272,7 +272,7 @@ if __name__ == '__main__':
 			log.critical('RAW file  :  %s' % args.raw_list)
 		log.critical('Output file in :  %s', loc_output)
 		# load the ptm file IF
-		# mbr on with filetering  UP
+		# mbr on with filtering  UP
 		# mbr off with filtering flag UP (already check if inputdata contains matched field.)
 		if 'matched' in df.columns and args.match_filter==1 :
 			log.critical('Apex module has detected mbr peptides')
@@ -288,7 +288,6 @@ if __name__ == '__main__':
 
 		#control if exist the same log file : avoid appending output
 		#moff.check_log_existence(os.path.join(loc_output, name + '__moff.log'))
-		# this flag must be set to 0. it is 1 only in case moFF-Pride date and only in tha pex module
 
 		if args.match_filter == 1: 
 			with open(  os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])),args.ptm_file)  ) as data_file:
@@ -299,14 +298,11 @@ if __name__ == '__main__':
 			#log.critical( 'starting estimation of quality measures..')
 			# run estimation _parameter
 			rt_drift, not_used_measure,error_ratio =  moff.estimate_parameter( df, name, raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,  rt_list , id_list,  moff_pride_flag, ptm_map,args.sample_size,args.quantile_thr_filtering, args.match_filter, log_file )
-			#rt_drift = 4.5
-			#thr1= -1
-			#error_ratio = 0.89
 			log.critical( 'quality threhsold estimated : MAD_retetion_time  %r  Ratio Int. FakeIsotope/1estIsotope: %r '% ( rt_drift ,error_ratio))
 			log.critical( 'starting apex quantification of MS2 peptides..')
 			log.info('log of MS2 identified peptide not retrived :  ..')
 			myPool = multiprocessing.Pool(  multiprocessing.cpu_count() )
-			data_split = np.array_split(df[df['matched']==0 ] , multiprocessing.cpu_count()  )
+			data_split = np.array_split(df[df['matched']==0 ].head(50) , multiprocessing.cpu_count()  )
 			result = {}
 			offset = 0
 			for df_index in range(0, len(data_split)):
@@ -318,7 +314,7 @@ if __name__ == '__main__':
 			log.critical( 'starting quantification with matched peaks using the quality filtering  ...')
 			log.critical( 'initial # matched peaks: %r', df[ df['matched']==1].shape )
 			log.info('Log Matched Peptides filtered :')
-			data_split = np.array_split(df[ df['matched']==1 ] ,  multiprocessing.cpu_count()  )
+			data_split = np.array_split(df[ df['matched']==1 ].head(400) ,  multiprocessing.cpu_count()  )
 			result = {}
 			offset = 0
 			for df_index in range(0, len(data_split)):
@@ -360,7 +356,7 @@ if __name__ == '__main__':
 		log.removeHandler(fh)
 		moff.detach_handler()
 
-	#moff.clean_json_temp_file(loc_output)
+	moff.clean_json_temp_file(loc_output)
 	if args.peptide_summary == 1 :
 		state = moff.compute_peptide_matrix(args.loc_out,log,args.tag_pepsum)
 		if state == -1 :
