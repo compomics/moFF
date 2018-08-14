@@ -302,7 +302,7 @@ if __name__ == '__main__':
 			log.critical( 'starting apex quantification of MS2 peptides..')
 			log.info('log of MS2 identified peptide not retrived :  ..')
 			myPool = multiprocessing.Pool(  multiprocessing.cpu_count() )
-			data_split = np.array_split(df[df['matched']==0 ].head(50) , multiprocessing.cpu_count()  )
+			data_split = np.array_split(df[df['matched']==0 ] , multiprocessing.cpu_count()  )
 			result = {}
 			offset = 0
 			for df_index in range(0, len(data_split)):
@@ -314,7 +314,7 @@ if __name__ == '__main__':
 			log.critical( 'starting quantification with matched peaks using the quality filtering  ...')
 			log.critical( 'initial # matched peaks: %r', df[ df['matched']==1].shape )
 			log.info('Log Matched Peptides filtered :')
-			data_split = np.array_split(df[ df['matched']==1 ].head(400) ,  multiprocessing.cpu_count()  )
+			data_split = np.array_split(df[ df['matched']==1 ] ,  multiprocessing.cpu_count()  )
 			result = {}
 			offset = 0
 			for df_index in range(0, len(data_split)):
