@@ -429,7 +429,7 @@ def  estimate_on_match_peak(x,input_data , estimate_flag,moff_pride_flag,log,  t
 				return pd.Series({'Erro_RelIntensity_TheoExp': mad_diff_int, 'rankcorr': rank_spearman,'RT_drift': mad_rt ,'delta_rt': -1 ,'delta_log_int': -1})
 				#return pd.Series({'Erro_RelIntensity_TheoExp': mad_diff_int, 'rankcorr': rank_spearman,'RT_drift': mad_rt ,'delta_rt': -1 ,'delta_log_int': -1})
 			else:
-				delta_rt_wrong_iso =  abs(   test.at[3,  'rt_peak' ] - test.iloc[0:3, input_data.columns.get_indexer(['rt_peak'])   ].mean()[0] )
+				delta_rt_wrong_iso =  abs(   test.at[3,  'rt_peak' ] - test.iloc[0:3, test.columns.get_indexer(['rt_peak'])   ].mean()[0] )
 				delta_log_int =  test.at[3, 'log_int']  / test.at[0,'log_int']
 				#print pd.Series({'Erro_RelIntensity_TheoExp': mad_diff_int, 'rankcorr': rank_spearman,'RT_drift': mad_rt ,'delta_rt': delta_rt_wrong_iso ,'delta_log_int': delta_log_int})
 				return pd.Series({ 'Erro_RelIntensity_TheoExp': mad_diff_int, 'rankcorr': rank_spearman  ,'RT_drift': mad_rt ,'delta_rt': delta_rt_wrong_iso,'delta_log_int': delta_log_int})
@@ -447,7 +447,7 @@ def  filtering_match_peak(x,input_data , estimate_flag,moff_pride_flag,log,  thr
 	test.reset_index(inplace=True)
 	test.iloc[0:1,13:22] =  test.iloc[0:1,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,s_w,s_w_match,offset_index, moff_pride_flag,-1, 1,0  ) , axis=1 )
 	#print input_data
-	if (test.iloc[0, test.columns.get_indexer(['log_L_R'])]).any()  != -1 : 
+	if (test.iloc[0, test.columns.get_indexer(['log_L_R'])]).all()  != -1 : 
 		if moff_pride_flag == 0 :
 			new_point =   test.iloc[0,  test.columns.get_indexer(['rt_peak'])]
 		else:
@@ -455,34 +455,33 @@ def  filtering_match_peak(x,input_data , estimate_flag,moff_pride_flag,log,  thr
 			new_point =    test.iloc[0,  test.columns.get_indexer(['rt_peak'])] / 60
 		test.iloc[1:4,13:22] =  test.iloc[1:4,:].apply(lambda x : compute_peak_simple( x,xic_data ,log,mbr_flag ,h_rt_w,0.3,0.3,offset_index, moff_pride_flag,new_point[0], 1,0  ) , axis=1 )
 		# check isotope 2-3
-		if (test.iloc[ 0:3,  test.columns.get_indexer(['log_L_R']) ]  != -1 ).all()[0] : 
+		if (test.iloc[ 1:3,  test.columns.get_indexer(['log_L_R']) ]  != -1 ).all()[0] : 
 			mad_diff_int, rank_spearman, mad_rt =  compute_match_peak_quality_measure( test.iloc[0:3,:], moff_pride_flag,log )
 			#print rank_spearman, mad_rt
 			if  (mad_rt < thr_q2 and rank_spearman > 0.8):
 			# check isotope -1 
-				if  (test.iloc[3,   test.columns.get_indexer(['log_L_R'])]).all() == -1:
-					delta_rt_wrong_iso =  abs( test.at[3,  'rt_peak' ] - test.iloc[0:3, input_data.columns.get_indexer(['rt_peak'])   ].mean()[0] )
+				if  (test.iloc[3,   test.columns.get_indexer(['log_L_R'])]).all() != -1:
+					delta_rt_wrong_iso =  abs( test.at[3,  'rt_peak' ] - test.iloc[0:3, test.columns.get_indexer(['rt_peak'])   ].mean()[0] )
 					delta_log_int =  test.at[3, 'log_int']  / test.at[0,'log_int'] 
-					if (delta_rt_wrong_iso  < thr_q2 and delta_log_int  >  err_ratio_int):
-						# elimina overlapping peptide isotope
+					if (delta_rt_wrong_iso <  thr_q2) and ( delta_log_int  >  err_ratio_int) :
+						# filter  overlapping peptide isotope
 						log.info (' %r mz: %4.4f RT: %4.4f --> Not valid isotope envelope  overlapping detected -->  --  MAD RT  %r  -- rankCorr %r ', x.mod_peptide , x.mz, x.rt,   mad_rt , rank_spearman)
 						return pd.Series({'intensity': -1, 'rt_peak': -1,'lwhm': -1 ,'rwhm': -1 ,'5p_noise': -1,'10p_noise': -1,'SNR': -1,'log_L_R': -1,'log_int': -1 })
 					else:
-						log.info('%r mz: %4.4f RT: %4.4f --> Valid isotope evelope detected after overlaping check -->  --  MAD RT  %r  -- rankCorr %r ',   x.mod_peptide , x.mz, x.rt,  mad_rt , rank_spearman)
+						log.info('%r mz: %4.4f RT: %4.4f --> Valid isotope envelope detected after overlapping check -->  --  MAD RT  %r  -- rankCorr %r ',   x.mod_peptide , x.mz, x.rt,  mad_rt , rank_spearman)
 						return test.loc[test['ratio_iso'].idxmax(axis=1), ['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']]
 				else:
 					log.info(' %r mz: %4.4f RT: %4.4f  --> Valid isotope envelope detected and no overlaping detected -->  --  MAD RT  %r  -- rankCorr %r ',   x.mod_peptide , x.mz, x.rt,  mad_rt , rank_spearman)
 					return test.loc[test['ratio_iso'].idxmax(axis=1), ['10p_noise','5p_noise','SNR','intensity','log_L_R','log_int' ,'lwhm','rt_peak','rwhm']]
 			else:
-				# not pass the thr. leveli
+				# not pass the thr. control
 				log.info(' %r mz: %4.4f RT: %4.4f  --> Not valid isotope envelope detected  -->  --  MAD RT  %r  -- rankCorr %r ',x.mod_peptide , x.mz, x.rt,  mad_rt , rank_spearman)
 				return pd.Series({'intensity': -1, 'rt_peak': -1,'lwhm': -1 ,'rwhm': -1 ,'5p_noise': -1,'10p_noise': -1,'SNR': -1,'log_L_R': -1,'log_int': -1 })
 		else:
-			# I have only the 1st valid isotope peak  but not the second
-			log.info(' %r mz: %4.4f RT: %4.4f --> not enough isotope peaks detected only  %r over 3(/4) detected ', x.mod_peptide , x.mz, x.rt,   input_data[input_data['log_L_R']!= -1].shape[0]  )
+			# I have only the 1st valid isotope peak  but not the second or third
+			log.info(' %r mz: %4.4f RT: %4.4f --> not enough isotope peaks detected  ', x.mod_peptide , x.mz, x.rt  )
 			return pd.Series({'intensity': -1, 'rt_peak': -1,'lwhm': -1 ,'rwhm': -1 ,'5p_noise': -1,'10p_noise': -1,'SNR': -1,'log_L_R': -1,'log_int': -1 })
 	else:
-		#print 'not_find the 1st isotope
 		log.info(' %r mz: %4.4f RT: %4.4f  --> first isotope peak not detected ', x.mod_peptide , x.mz, x.rt  )
 		return pd.Series({'intensity': -1, 'rt_peak': -1,'lwhm': -1 ,'rwhm': -1 ,'5p_noise': -1,'10p_noise': -1,'SNR': -1, 'log_L_R': -1, 'log_int': -1 })
 
@@ -627,7 +626,7 @@ def build_matched_modification  ( data , ptm_map , tol, moff_pride_flag ,  h_rt_
 	# get the sequence
 	## for MQ sequence is (mod_tag )
 	# for PS sequence is  <mod_tag>
-		mq_mod_flag= False
+		mq_mod_flag= True
 		if mq_mod_flag :
 			if not ( '(' in row.mod_peptide) and mq_mod_flag :
 		#  only fixed mod
