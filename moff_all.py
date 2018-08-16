@@ -146,7 +146,7 @@ if __name__ == '__main__':
 	if args.loc_out != '':
 		if not (os.path.isdir(args.loc_out)):
 			os.makedirs(args.loc_out)
-			log.critical("created output folder  ", args.loc_out)
+			log.critical("created output folder  %r", args.loc_out)
 
 	# fixed variable number of split and also number of CPU presence in the macine
 	# change this variable  with repset to the machine setting of the user
