@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
 	parser_1 = argparse.ArgumentParser(description='moFF match between run and apex module input parameter', add_help = False   )
 
-	parser_1.add_argument('--config_file', dest='config_file', action='store',help='Specify a moFF parameter file ', required=False)
+	parser_1.add_argument('--config_file', dest='config_file', action='store',help='specify a moFF parameter file ', required=False)
 	args, remaining_argv = parser_1.parse_known_args()
 	if args.config_file:
 		config = ConfigParser.SafeConfigParser( allow_no_value=True)
@@ -56,42 +56,42 @@ if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser(description='moFF match between run and apex module input parameter')
 	parser.add_argument('--loc_in', dest='loc_in', action='store',
-						help='specify the folder of the input MS2 peptide list files ', required=False)
+						help='specify the folder of the input MS2 peptide list files', required=False)
 
 	parser.add_argument('--tsv_list', dest='tsv_list', action='store', nargs='*' ,
-						help='specify the mzid file as a list ', required=False)
+						help='specify the mzid file as a list', required=False)
 
 
-	parser.add_argument('--raw_list', dest='raw_list', action='store',  nargs='*' ,help='specify the raw file as a list ', required=False)
+	parser.add_argument('--raw_list', dest='raw_list', action='store',  nargs='*' ,help='specify the raw file as a list', required=False)
 
 	parser.add_argument('--sample', dest='sample', action='store',
-						help='specify witch replicated to use for mbr reg_exp are valid ', required=False)
+						help='specify witch replicated to use for mbr reg_exp are valid', required=False)
 
 	parser.add_argument('--ext', dest='ext', action='store', default='txt',
-						help='specify the file extentention of the input like ', required=False)
+						help='specify the file extentention of the input like. Default value: txt', required=False)
 
 	parser.add_argument('--log_label', dest='log_label', action='store', default='moFF',
-						help='a label name to use for the log file', required=False)
+						help='a label name to use for the log file. Default value: moFF', required=False)
 
 	parser.add_argument('--w_filt', dest='w_filt', action='store', default=2,
-						help='width value of the filter  k * mean(Dist_Malahobis)', required=False)
+						help='width value of the filter  k * mean(Dist_Malahobis). Default value: 2', required=False)
 
 	parser.add_argument('--out_flag', dest='out_flag', action='store', default=1,
-						help='filter outlier in each rt time allignment', required=False)
+						help='filter outliers for  rt time allignment 1 (on) / 0 (off)  Default value: 1', required=False)
 
 	parser.add_argument('--w_comb', dest='w_comb', action='store', default=0,
-						help='weights for model combination combination : 0 for no weight  1 weighted devised by trein err of the model.',
+						help='weight or unweighted RT model combination using traing model error: 0 for no weight / 1  for weighted combination. Default value: 0',
 						required=False)
-	parser.add_argument('--toll', dest='toll', action='store',default=10, type=float, help='specify the tollerance  parameter in ppm',required=False)
+	parser.add_argument('--tol', dest='toll', action='store',default=10, type=float, help='specify the tollerance  parameter in ppm. Default value: 10',required=False)
 
 	parser.add_argument('--xic_length', dest='xic_length', action='store', type=float, default=3,
-						help='specify rt window for xic (minute). Default value is 3 min', required=False)
+						help='specify rt window for xic (minutes). Default value: 3', required=False)
 
 	parser.add_argument('--rt_peak_win', dest='rt_peak_win', action='store', type=float, default=1,
-						help='specify the time windows for the peak ( minute). Default value is 1 minute ', required=False)
+						help='specify the time windows for the peak (minutes). Default value: 1', required=False)
 
-	parser.add_argument('--rt_peak_win_match', dest='rt_peak_win_match', action='store', type=float, default=1,
-						help='specify the time windows for the matched peptide peak ( minute). Default value is 1.2 minute ',
+	parser.add_argument('--rt_peak_win_match', dest='rt_peak_win_match', action='store', type=float, default=1.2,
+						help='specify the time windows for the matched peptide peak (minutes). Default value: 1.2 ',
 						required=False)
 
 	parser.add_argument('--raw_repo', dest='raw_repo', action='store', help='specify the raw file repository ', required=False)
@@ -104,16 +104,16 @@ if __name__ == '__main__':
 						required=False)
 
 	parser.add_argument('--peptide_summary', dest='peptide_summary', action='store',type=int,default= 0,
-						help='sumarize all the peptide intesity in one tab-delited file ',
+						help='Export a peptide intesity summary tab-delited file. Default value: 0 (not active) ',
 						required=False)
 
-	parser.add_argument('--tag_pepsum', dest='tag_pepsum', action='store',type=str,default= 'moFF_run', help='a tag that is used in the peptide summary file name',required=False)
-	parser.add_argument('--match_filter', dest='match_filter', action='store', type=int, default=0, help='filtering on the matched peak .default 0',required=False)
+	parser.add_argument('--tag_pepsum', dest='tag_pepsum', action='store',type=str,default= 'moFF_run', help='a tag text used for peptide summary file name (peptide_summary_intensity_ + tag + .tab ). Default value: moFF_run ',required=False)
+	parser.add_argument('--match_filter', dest='match_filter', action='store', type=int, default=0, help='filtering on the matched peak. Default value: 0',required=False)
 	parser.add_argument('--ptm_file', dest='ptm_file', action='store', default='ptm_setting.json', help='name of json ptm file. default file ptm_setting.json ',required=False)
-	parser.add_argument('--quantile_thr_filtering', dest='quantile_thr_filtering', action='store', type=float, default=0.75, help='quantile value used to computed the filtering threshold for the matched peak .default 0.75',required=False)
-	parser.add_argument('--sample_size', dest='sample_size', action='store', type=float, default=0.05, help='percentage of MS2 peptide used to estimated the threshold',required=False)
+	parser.add_argument('--quantile_thr_filtering', dest='quantile_thr_filtering', action='store', type=float, default=0.75, help='quantile value used to computed the filtering threshold for the matched peak .Default value: 0.75',required=False)
+	parser.add_argument('--sample_size', dest='sample_size', action='store', type=float, default=0.20, help='percentage of MS2 peptide used to estimated the threshold. Default value: 0.20' ,required=False)
 
-	parser.add_argument('--mbr', dest='mbr', action='store',type=str,default= 'on', help='select the workflow:  on to run mbr + apex , off to run only apex , only to run obnly mbr  ',required=False )
+	parser.add_argument('--mbr', dest='mbr', action='store',type=str,default= 'on', help='select the moFF workflow: on to run mbr + apex , off to run only apex , only to run obnly mbr. Default value: on   ',required=False )
 
 
 	if args.config_file:
@@ -163,7 +163,6 @@ if __name__ == '__main__':
 			exit()
 	
 	if 'on' in args.mbr :
-		
 		log.critical('Matching between run module (mbr)')
 		res_state,output_list_loc = moff_mbr.run_mbr(args)
 		##--- debug version-- just to run skip the mbr in for special cases
@@ -206,10 +205,8 @@ if __name__ == '__main__':
 		name = os.path.basename(file_name).split('.')[0]
 		moff.check_log_existence(os.path.join(args.loc_out, name + '__moff.log'))
 		fh = logging.FileHandler(os.path.abspath(os.path.join(args.loc_out, name  + '__moff.log')), mode='a')
-		#rotateHandler = ConcurrentRotatingFileHandler( os.path.abspath(os.path.join(args.loc_out, name  + '__moff.log'))  , "a", 512*1024, 5)
 		fh.setLevel(logging.DEBUG)
-		#formatter = logging.Formatter('%(message)s')
-		#fh.setFormatter(formatter)
+
 		log.addHandler(fh)
 
 		log_file =os.path.join(args.loc_out, name + '__moff.log') 
@@ -232,7 +229,7 @@ if __name__ == '__main__':
 		df = pd.read_csv(file_name, sep="\t")
 		## add same safety checks len > 1
 		## Flag for pride pipeline, or to set from second to minute as input rt time scale
-		moff_pride_flag = O
+		moff_pride_flag = 0
 		if moff.check_ps_input_data(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'moffpride_format'))) == 1:
 		# if it is a moff_pride data I do not check aany other requirement
 			log.critical('moffPride input detected')
@@ -301,6 +298,7 @@ if __name__ == '__main__':
 			log.critical( 'quality threhsold estimated : MAD_retetion_time  %r  Ratio Int. FakeIsotope/1estIsotope: %r '% ( rt_drift ,error_ratio))
 			log.critical( 'starting apex quantification of MS2 peptides..')
 			log.info('log of MS2 identified peptide not retrived :  ..')
+			moff.clean_json_temp_file(loc_output)
 			myPool = multiprocessing.Pool(  multiprocessing.cpu_count() )
 			data_split = np.array_split(df[df['matched']==0 ] , multiprocessing.cpu_count()  )
 			result = {}
@@ -313,6 +311,7 @@ if __name__ == '__main__':
 			log.critical( 'end  apex quantification of MS2 peptides..')
 			log.critical( 'starting quantification with matched peaks using the quality filtering  ...')
 			log.critical( 'initial # matched peaks: %r', df[ df['matched']==1].shape )
+			moff.clean_json_temp_file(loc_output)
 			log.info('Log Matched Peptides filtered :')
 			data_split = np.array_split(df[ df['matched']==1 ] ,  multiprocessing.cpu_count()  )
 			result = {}
@@ -331,7 +330,7 @@ if __name__ == '__main__':
 			final_res = pd.concat([ms2_data,matched_peak])
 			# save result
 			final_res.to_csv(os.path.join(loc_output, os.path.basename(name).split('.')[0] + "_moff_result.txt"), sep="\t",index=False)
-			
+			moff.clean_json_temp_file(loc_output)
 		else:
 			moff.set_logger (log_file)
 			log.critical( 'starting  peptide quantification (ms2 / matched ) ..')
@@ -351,7 +350,8 @@ if __name__ == '__main__':
 			start_time_2 = time.time()
 			result = moff.save_moff_apex_result(data_split, result)
 			result.to_csv(os.path.join(loc_output, os.path.basename(name).split('.')[0] + "_moff_result.txt"), sep="\t",index=False)
-			
+			moff.clean_json_temp_file(loc_output)
+
 		fh.close()
 		log.removeHandler(fh)
 		moff.detach_handler()

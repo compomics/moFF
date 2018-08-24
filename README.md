@@ -57,7 +57,7 @@ Required python libraries :
 - scikit-learn > 0.19
 - pymzML > 0.7.7
 - brain-isotopic-distribution > 1.3.2
-
+-  pyteomics >  3.5
 
 
 Required linux library:

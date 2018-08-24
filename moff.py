@@ -660,14 +660,17 @@ def build_matched_modification  ( data , ptm_map , tol, moff_pride_flag ,  h_rt_
 		else:
 	# fixed and variable mod are both in the sequence
 			comps = Counter(list(chain(*[list(std_aa_comp[aa].elements()) for aa in row.peptide])))
-			for ptm in ptm_map.keys() :
-				ptm_c = row.mod_peptide.count(ptm)
-			#ptm_c =  sum(ptm in s for s in row.mod_peptide)
-				if ptm_c  >=1:
-					comps["H"] += (ptm_map[ptm]['deltaChem'][0] * ptm_c )
-					comps["C"] += (ptm_map[ptm]['deltaChem'][1] * ptm_c)
-					comps["N"] += (ptm_map[ptm]['deltaChem'][2] * ptm_c)
-					comps["O"] += (ptm_map[ptm]['deltaChem'][3] * ptm_c)
+			if  ( '<' in row.mod_peptide):
+				# check only if modificatio are present.
+				# Ffor the future use dthe tag_mod_sequence_delimiter use in moFF_setting
+				for ptm in ptm_map.keys() :
+					ptm_c = row.mod_peptide.count(ptm)
+				#ptm_c =  sum(ptm in s for s in row.mod_peptide)
+					if ptm_c  >=1:
+						comps["H"] += (ptm_map[ptm]['deltaChem'][0] * ptm_c )
+						comps["C"] += (ptm_map[ptm]['deltaChem'][1] * ptm_c)
+						comps["N"] += (ptm_map[ptm]['deltaChem'][2] * ptm_c)
+						comps["O"] += (ptm_map[ptm]['deltaChem'][3] * ptm_c)
 			comps["H"] += 2
 			comps["O"] += 1
 
@@ -698,7 +701,7 @@ def build_matched_modification  ( data , ptm_map , tol, moff_pride_flag ,  h_rt_
 	return all_isotope_df
 
 
-50
+
 def get_xic_data (  flag_mzml, flag_windows, data, loc_output, name_file,txic_path , loc, flag_filtering  ):
 	if not flag_mzml :
 	# txic-28-9-separate-jsonlines.exe
