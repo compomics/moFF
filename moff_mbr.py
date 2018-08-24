@@ -189,7 +189,7 @@ def run_mbr(args):
 	#print __name__
 
 	ch = logging.StreamHandler()
-	ch.setLevel(logging.DEBUG)
+	ch.setLevel(logging.ERROR)
 	log.addHandler(ch)
 
 	if args.loc_in is None:
