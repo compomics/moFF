@@ -564,7 +564,7 @@ def apex_multithr(data_ms2, name_file, raw_name, tol, h_rt_w, s_w, s_w_match, lo
             'ERROR: Wrong path or wrong raw file name included: %s' % loc)
         return (None, -1)
 
-    index_offset = data_ms2.columns.shape[0] - 1
+    # index_offset = data_ms2.columns.shape[0] - 1
     data_ms2["intensity"] = -1
     data_ms2["rt_peak"] = -1
     data_ms2["lwhm"] = -1
