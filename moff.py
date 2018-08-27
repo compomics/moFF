@@ -770,7 +770,7 @@ def get_xic_data(flag_mzml, flag_windows, data, loc_output, name_file, txic_path
                 #  small amount of char. in the request
                 args_txic = shlex.split(
                     txic_path + " -j " + data.to_json(orient='records') + " -f " + loc, posix=False)
-        start_timelocal = time.time()
+        # start_timelocal = time.time()
         p = subprocess.Popen(args_txic, stdout=subprocess.PIPE)
         output, err = p.communicate()
         xic_data = []
