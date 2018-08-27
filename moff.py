@@ -8,7 +8,7 @@ import os as os
 import shlex
 import subprocess
 import sys
-import time
+# import time
 import traceback
 from collections import Counter
 from itertools import chain
@@ -320,10 +320,10 @@ def compute_peak_simple(x, xic_array, log, mbr_flag, h_rt_w, s_w, s_w_match, off
         if filt_flag == 1:
             if ('matched'in x.axes[0].tolist()):
                 log.info('peptide %r -->  MZ: %4.4f RT: %4.4f matched (yes=1/no=0): %i Peak not detected  Xic shape %r ',
-                        x['mod_peptide'], x['mz'], time_w, x['matched'], data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0])
+                         x['mod_peptide'], x['mz'], time_w, x['matched'], data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0])
             else:
                 log.info('peptide %r -->  MZ: %4.4f RT: %4.4f matched (yes=1/no=0): %i Peak not detected  Xic shape %r ',
-                        x['mod_peptide'], x['mz'], time_w, 0, data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0])
+                         x['mod_peptide'], x['mz'], time_w, 0, data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0])
         # log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f ', (offset_index +c +2), x['mz'], time_w)
         # log.info("\t LW_BOUND window  %4.4f", time_w - temp_w)
         # log.info("\t UP_BOUND window %4.4f", time_w + temp_w)
@@ -779,7 +779,9 @@ def get_xic_data(flag_mzml, flag_windows, data, loc_output, name_file, txic_path
             xic_data.append(pd.DataFrame(
                 {'rt': temp['results']['times'], 'intensity': temp['results']['intensities']}, columns=['rt', 'intensity']))
     else:
-        run_temp = pymzml.run.Reader(raw_name)
-        xic_data = mzML_get_all(temp, tol, loc, run_temp, rt_list, id_list)
+        # this does not seem to work yet.
+        pass
+        # run_temp = pymzml.run.Reader(raw_name)
+        # xic_data = mzML_get_all(temp, tol, loc, run_temp, rt_list, id_list)
 
     return xic_data
