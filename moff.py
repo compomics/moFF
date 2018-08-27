@@ -519,7 +519,6 @@ def apex_multithr(data_ms2, name_file, raw_name, tol, h_rt_w, s_w, s_w_match, lo
     """
     set_logger(log_file)
     # setting flag and ptah
-    moff_path = os.path.dirname(sys.argv[0])
     flag_mzml = False
     flag_windows = False
     mbr_flag = 0
