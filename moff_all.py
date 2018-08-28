@@ -40,9 +40,9 @@ if __name__ == '__main__':
         if not ('raw_repo' in moFF_parameters.keys()):
             moFF_parameters['raw_list'] = moFF_parameters['raw_list'].split(
                 ' ')
-        if not ('toll' in moFF_parameters.keys()):
+        if not ('tol' in moFF_parameters.keys()):
             exit('you must specify the tollerance in the configuration file ')
-        moFF_parameters['toll'] = float(moFF_parameters['toll'])
+        moFF_parameters['tol'] = float(moFF_parameters['tol'])
         moFF_parameters['xic_length'] = float(moFF_parameters['xic_length'])
         moFF_parameters['rt_peak_win'] = float(moFF_parameters['rt_peak_win'])
         moFF_parameters['rt_peak_win_match'] = float(
@@ -90,7 +90,7 @@ if __name__ == '__main__':
     parser.add_argument('--w_comb', dest='w_comb', action='store', default=0,
                         help='weight or unweighted RT model combination using traing model error: 0 for no weight / 1  for weighted combination. Default value: 0',
                         required=False)
-    parser.add_argument('--tol', dest='toll', action='store', default=10, type=float,
+    parser.add_argument('--tol', dest='tol', action='store', default=10, type=float,
                         help='specify the tollerance  parameter in ppm. Default value: 10', required=False)
 
     parser.add_argument('--xic_length', dest='xic_length', action='store', type=float, default=3,
@@ -131,6 +131,9 @@ if __name__ == '__main__':
     parser.add_argument('--mbr', dest='mbr', action='store', type=str, default='on',
                         help='select the moFF workflow: on to run mbr + apex , off to run only apex , only to run obnly mbr. Default value: on   ', required=False)
 
+    parser.add_argument('--cpu',dest='cpu_num', action='store', type=int, default=0,
+                        help='number of cpu. as default value it will detect automaticaly the CPU number in your machine.   ',required=False)
+
     if args.config_file:
         # load from config file and load the remaining parametes
         parser.set_defaults(**moFF_parameters)
@@ -144,7 +147,7 @@ if __name__ == '__main__':
     ch.setLevel(logging.ERROR)
     log.addHandler(ch)
 
-    if args.toll is None:
+    if args.tol is None:
         exit('you must specify the tollerance in ppm ')
     if (args.tsv_list is None) and (args.loc_in is None) and (args.raw_list is None) and (args.raw_repo is None):
         exit('you must specify the input and raw files ')
@@ -165,7 +168,12 @@ if __name__ == '__main__':
 
     # fixed variable number of split and also number of CPU presence in the macine
     # change this variable  with repset to the machine setting of the user
-    num_CPU = multiprocessing.cpu_count()
+
+
+    if args.cpu_num > 0:
+         num_CPU = args.cpu_num
+    else:
+         num_CPU = multiprocessing.cpu_count()
 
     # only mbr
     if 'only' in args.mbr:
@@ -225,7 +233,7 @@ if __name__ == '__main__':
         log.addHandler(fh)
 
         log_file = os.path.join(args.loc_out, name + '__moff.log')
-        tol = args.toll
+        tol = args.tol
         h_rt_w = args.xic_length
         s_w = args.rt_peak_win
         s_w_match = args.rt_peak_win_match
@@ -245,11 +253,11 @@ if __name__ == '__main__':
         df = pd.read_csv(file_name, sep="\t")
         # add same safety checks len > 1
         # Flag for pride pipeline, or to set from second to minute as input rt time scale
-        moff_pride_flag = 0
+        moff_pride_flag = True
         if moff.check_ps_input_data(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'moffpride_format'))) == 1:
             # if it is a moff_pride data I do not check aany other requirement
             log.critical('moffPride input detected')
-            moff_pride_flag = 1
+            moff_pride_flag = True
         else:
             if not 'matched' in df.columns:
                 # check if it is a PS file ,
@@ -315,15 +323,15 @@ if __name__ == '__main__':
             #log.critical( 'starting estimation of quality measures..')
             # run estimation _parameter
             rt_drift, not_used_measure, error_ratio = moff.estimate_parameter(
-                df, name, raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,  rt_list, id_list,  moff_pride_flag, ptm_map, args.sample_size, args.quantile_thr_filtering, args.match_filter, log_file)
+                df, name, raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,  rt_list, id_list,  moff_pride_flag, ptm_map, args.sample_size, args.quantile_thr_filtering, args.match_filter, log_file,num_CPU)
             log.critical(
                 'quality threhsold estimated : MAD_retetion_time  %r  Ratio Int. FakeIsotope/1estIsotope: %r ' % (rt_drift, error_ratio))
             log.critical('starting apex quantification of MS2 peptides..')
             log.info('log of MS2 identified peptide not retrived :  ..')
             moff.clean_json_temp_file(loc_output)
-            myPool = multiprocessing.Pool(multiprocessing.cpu_count())
+            myPool = multiprocessing.Pool(num_CPU)
             data_split = np.array_split(
-                df[df['matched'] == 0], multiprocessing.cpu_count())
+                df[df['matched'] == 0], num_CPU)
             result = {}
             offset = 0
             for df_index in range(0, len(data_split)):
@@ -340,7 +348,7 @@ if __name__ == '__main__':
             moff.clean_json_temp_file(loc_output)
             log.info('Log Matched Peptides filtered :')
             data_split = np.array_split(
-                df[df['matched'] == 1],  multiprocessing.cpu_count())
+                df[df['matched'] == 1], num_CPU)
             result = {}
             offset = 0
             for df_index in range(0, len(data_split)):
@@ -366,8 +374,8 @@ if __name__ == '__main__':
             moff.set_logger(log_file)
             log.critical(
                 'starting  peptide quantification (ms2 / matched ) ..')
-            myPool = multiprocessing.Pool(multiprocessing.cpu_count())
-            data_split = np.array_split(df, multiprocessing.cpu_count())
+            myPool = multiprocessing.Pool(num_CPU)
+            data_split = np.array_split(df, num_CPU)
             result = {}
             offset = 0
             log.info('log of MS2 identified peptide not retrived ')
@@ -394,6 +402,6 @@ if __name__ == '__main__':
     moff.clean_json_temp_file(loc_output)
     if args.peptide_summary == 1:
         state = moff.compute_peptide_matrix(args.loc_out, log, args.tag_pepsum)
-        if state == -1:
+        if not state :
             log.critical(
                 'Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')

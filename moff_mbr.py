@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import ConfigParser
-import argparse
 import ast
 import copy
 import itertools
@@ -544,38 +543,3 @@ def run_mbr(args):
     log.removeHandler(w_mbr)
     return out_flag, exp_out_name
 
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        description='moFF match between run input parameter')
-
-    parser.add_argument('--loc_in', dest='loc_in', action='store',
-                        help='specify the folder of the input MS2 peptide files  REQUIRED]', required=True)
-
-    parser.add_argument('--sample', dest='sample', action='store',
-                        help='specify which replicate files are used fot mbr [regular expr. are valid] ',
-                        required=False)
-
-    parser.add_argument('--ext', dest='ext', action='store', default='txt',
-                        help='specify the exstension of the input file (txt as default value)', required=False)
-
-    parser.add_argument('--log_label', dest='log_label', default='moFF', action='store',
-                        help='a label name for the log file (moFF_mbr.log as default log file name)', required=False)
-
-    parser.add_argument('--w_filt', dest='w_filt', action='store', default=2,
-                        help='width value of the filter (k * mean(Dist_Malahobi , k = 2 as default) ', required=False)
-
-    parser.add_argument('--out_flag', dest='out_flag', action='store', default=1,
-                        help='filter outlier in each rt time allignment (active as default)', required=False)
-
-    parser.add_argument('--w_comb', dest='w_comb', action='store', default=0,
-                        help='weights for model combination combination : 0 for no weight (default) 1 weighted devised by model errors.',
-                        required=False)
-
-    parser.add_argument('--rt_feat_file', dest='rt_feat_file', action='store',
-                        help='specify the file that contains the features to use in the match-between-run RT prediction ',
-                        required=False)
-
-    args = parser.parse_args()
-
-    run_mbr(args)
