@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import ConfigParser
+import configparser
 import argparse
 import ast
 import json
@@ -32,17 +32,17 @@ if __name__ == '__main__':
                           help='specify a moFF parameter file ', required=False)
     args, remaining_argv = parser_1.parse_known_args()
     if args.config_file:
-        config = ConfigParser.SafeConfigParser(allow_no_value=True)
+        config = configparser.SafeConfigParser(allow_no_value=True)
         config.read([args.config_file])
         moFF_parameters = dict(config.items("moFF_parameters"))
         # check if loc_in  is set in the input file
-        if not ('loc_in' in moFF_parameters.keys() and 'raw_repo' in moFF_parameters.keys()):
+        if not (moFF_parameters.has_key('loc_in') and moFF_parameters.has_key('raw_repo')):
             moFF_parameters['tsv_list'] = moFF_parameters['tsv_list'].split(
                 ' ')
-        if not ('raw_repo' in moFF_parameters.keys()):
+        if not moFF_parameters.has_key('raw_repo'):
             moFF_parameters['raw_list'] = moFF_parameters['raw_list'].split(
                 ' ')
-        if not ('tol' in moFF_parameters.keys()):
+        if not moFF_parameters.has_key('tol'):
             exit('you must specify the tollerance in the configuration file ')
         moFF_parameters['tol'] = float(moFF_parameters['tol'])
         moFF_parameters['xic_length'] = float(moFF_parameters['xic_length'])
@@ -250,7 +250,7 @@ if __name__ == '__main__':
         loc_raw = args.raw_repo
         loc_output = args.loc_out
 
-        config = ConfigParser.RawConfigParser()
+        config = configparser.RawConfigParser()
         config.read(os.path.join(os.path.dirname(
             os.path.realpath(sys.argv[0])), 'moff_setting.properties'))
         df = pd.read_csv(file_name, sep="\t")
