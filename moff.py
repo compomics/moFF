@@ -21,6 +21,7 @@ import simplejson as json
 from brainpy import isotopic_variants
 from pyteomics.mass import std_aa_comp
 from scipy.stats import spearmanr
+from functools import reduce
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -107,7 +108,7 @@ def compute_peptide_matrix(loc_output, log, tag_filename):
         # print grouped.agg({'prot':'max', 'intensity':'sum'}).columns
         df.ix[:, i + 1] = grouped.agg({'prot': 'max',
                                        'intensity': 'sum'})['intensity']
-        df.ix[np.intersect1d(df.index, grouped.groups.keys()), 0] = grouped.agg({'prot': 'max', 'intensity': 'sum'})[
+        df.ix[np.intersect1d(df.index, list(grouped.groups.keys())), 0] = grouped.agg({'prot': 'max', 'intensity': 'sum'})[
             'prot']
     # print df.head(5)
     df.reset_index(level=0, inplace=True)
@@ -140,7 +141,6 @@ def save_moff_apex_result(result):
 
     except Exception as e:
         traceback.print_exc()
-        print
         raise e
     return (final_res)
 
@@ -751,7 +751,7 @@ def apex_multithr(data_ms2, name_file, raw_name, tol, h_rt_w, s_w, s_w_match, lo
                                     'mz', 'tol', 'ts', 'te']], loc_output, name_file, txic_path, loc, 1)
             # new filtering
             # not needed
-            all_isotope_df['prog_xic_index'] = range(0, len(xic_data))
+            all_isotope_df['prog_xic_index'] = list(range(0, len(xic_data)))
             all_isotope_df['original_ptm'] = np.repeat(data_ms2.index, 4)
             all_isotope_df["intensity"] = -1
             all_isotope_df["rt_peak"] = -1
@@ -790,7 +790,6 @@ def apex_multithr(data_ms2, name_file, raw_name, tol, h_rt_w, s_w, s_w_match, lo
 
     except Exception as e:
         traceback.print_exc()
-        print
         raise e
     return (data_ms2, 1)
 
@@ -839,7 +838,7 @@ def build_matched_modification(data, ptm_map, tol, moff_pride_flag, h_rt_w):
                         comps["C"] += (ptm_map[ptm]['deltaChem'][1] * ptm_c)
                         comps["N"] += (ptm_map[ptm]['deltaChem'][2] * ptm_c)
                         comps["O"] += (ptm_map[ptm]['deltaChem'][3] * ptm_c)
-            # add eventually fixed mod/
+                # add eventually fixed mod/
                 fix_mod_count = row.mod_peptide.count('C')
                 if fix_mod_count > 0:
                     comps["H"] += (ptm_map['cC']['deltaChem']
