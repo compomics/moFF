@@ -16,6 +16,8 @@ from sklearn.metrics import mean_absolute_error
 
 import moff
 
+"""moFF: matching between runs module """
+
 # debug
 
 log = logging.getLogger(__name__)
@@ -24,6 +26,12 @@ log.setLevel(logging.DEBUG)
 
 # filtering _outlier
 def MahalanobisDist(x, y):
+    """
+    Computee the Mahalanobis distance to filter outlier in the RT allignment
+    :param x:
+    :param y:
+    :return:
+    """
     covariance_xy = np.cov(x, y, rowvar=0)
     inv_covariance_xy = np.linalg.inv(covariance_xy)
     xy_mean = np.mean(x), np.mean(y)
@@ -39,6 +47,13 @@ def MahalanobisDist(x, y):
 
 # remove outlier
 def MD_removeOutliers(x, y, width):
+    """
+    Remove outliers point using MahalanobisDist function
+    :param x:
+    :param y:
+    :param width:
+    :return:
+    """
     MD = MahalanobisDist(x, y)
     threshold = np.mean(MD) * float(width)  # adjust 1.5 accordingly
     nx, ny, outliers = [], [], []
@@ -48,7 +63,7 @@ def MD_removeOutliers(x, y, width):
             ny.append(y[i])
         else:
             outliers.append(i)  # position of removed pair
-    return (np.array(nx), np.array(ny), np.array(outliers))
+    return np.array(nx), np.array(ny), np.array(outliers)
 
 
 # combination of rt predicted by each single model
@@ -77,6 +92,9 @@ def combine_model(x, model, err, weight_flag):
 
 '''
 def train_gp(data_A,data_B,c=None):
+    """
+    Using GP for retention time alligment 
+    """
     bins = np.linspace(data_B.min()-2, data_B.max()+1,20)
     digitized = np.digitize(data_B, bins)
     size_bin = [  digitized[digitized == i].shape[0]  for i in range(1, len(bins))]
@@ -127,7 +145,9 @@ def train_gp(data_A,data_B,c=None):
 
 
 def combine_model_GP(x, model, err, weight_flag):
-
+    """
+    Combination of GP model 
+    """
     ra_flag= 0
 
 
@@ -186,6 +206,11 @@ def combine_model_GP(x, model, err, weight_flag):
 
 
 def run_mbr(args):
+    """
+    Macthing Between Run module.
+    :param args:
+    :return:
+    """
     ch = logging.StreamHandler()
     ch.setLevel(logging.ERROR)
     log.addHandler(ch)
@@ -257,9 +282,10 @@ def run_mbr(args):
             exp_set.append(id_name)
     else:
         for item in os.listdir(args.loc_in):
-            log.critical(item)
+
             if os.path.isfile(os.path.join(args.loc_in, item)):
                 if os.path.join(args.loc_in, item).endswith('.' + args.ext):
+                    log.critical(item)
                     exp_set.append(os.path.join(args.loc_in, item))
 
                 # sample optiion is valid only if  folder iin option is valid
@@ -278,7 +304,6 @@ def run_mbr(args):
         log.critical('Reading file: %s ', a)
         exp_subset.append(a)
         data_moff = pd.read_csv(a, sep="\t", header=0)
-        data_moff['rt'] = data_moff['rt'] / 60
         list_name = data_moff.columns.values.tolist()
         # get the lists of PS  defaultcolumns from properties file
         list_ps_def = ast.literal_eval(

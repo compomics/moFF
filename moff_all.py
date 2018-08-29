@@ -18,6 +18,8 @@ import moff_mbr
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
+"""moFF: entry point where to run moFF and all its functions """
+
 
 if __name__ == '__main__':
 
@@ -58,8 +60,9 @@ if __name__ == '__main__':
         moFF_parameters['match_filter'] = int(moFF_parameters['match_filter'])
     args_1, remaining_argv = parser_1.parse_known_args()
 
-    parser = argparse.ArgumentParser(parents=[
-                                     parser_1], description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter, )
+    parser = argparse.ArgumentParser(parents=[parser_1],
+                                     description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter,)
 
     parser = argparse.ArgumentParser(
         description='moFF match between run and apex module input parameter')
@@ -253,7 +256,7 @@ if __name__ == '__main__':
         df = pd.read_csv(file_name, sep="\t")
         # add same safety checks len > 1
         # Flag for pride pipeline, or to set from second to minute as input rt time scale
-        moff_pride_flag = True
+        moff_pride_flag = False
         if moff.check_ps_input_data(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'moffpride_format'))) == 1:
             # if it is a moff_pride data I do not check aany other requirement
             log.critical('moffPride input detected')
@@ -305,7 +308,8 @@ if __name__ == '__main__':
                 ptm_map = json.load(data_file)
 
         name = os.path.basename(file_name).split('.')[0]
-        #  IF raw_list contains mzML file -->  I m going to  read the file, one time just to save all the scan  Id and their RT.
+        #  IF raw_list contains mzML file -->  I m going to  read the file,
+        #  one time just to save all the scan  Id and their RT.
         rt_list, id_list = moff.scan_mzml(raw_list)
 
         # control id the folder exist
@@ -325,7 +329,7 @@ if __name__ == '__main__':
             rt_drift, not_used_measure, error_ratio = moff.estimate_parameter(
                 df, name, raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,  rt_list, id_list,  moff_pride_flag, ptm_map, args.sample_size, args.quantile_thr_filtering, args.match_filter, log_file,num_CPU)
             log.critical(
-                'quality threhsold estimated : MAD_retetion_time  %r  Ratio Int. FakeIsotope/1estIsotope: %r ' % (rt_drift, error_ratio))
+                'quality threhsold estimated : MAD_retetion_time %r  Ratio Int. FakeIsotope/1estIsotope: %r' % (rt_drift, error_ratio))
             log.critical('starting apex quantification of MS2 peptides..')
             log.info('log of MS2 identified peptide not retrived :  ..')
             moff.clean_json_temp_file(loc_output)
@@ -339,10 +343,10 @@ if __name__ == '__main__':
                                                                                 loc_raw, loc_output, offset,  rt_list, id_list,  moff_pride_flag, ptm_map, 0, rt_drift, error_ratio, 0, log_file))
                 offset += len(data_split[df_index])
             # save ms2 resulr
-            ms2_data = moff.save_moff_apex_result(data_split, result, )
+            ms2_data = moff.save_moff_apex_result( result )
             log.critical('end  apex quantification of MS2 peptides..')
             log.critical(
-                'starting quantification with matched peaks using the quality filtering  ...')
+                'starting quantification with matched peaks using the quality filtering...')
             log.critical('initial # matched peaks: %r',
                          df[df['matched'] == 1].shape)
             moff.clean_json_temp_file(loc_output)
@@ -360,8 +364,7 @@ if __name__ == '__main__':
             log.critical('end apex quantification matched peptide ')
             log.critical('Computational time (sec):  %4.4f ' %
                          (time.time() - start_time))
-            #print 'Time no result collect',  time.time() -start_time
-            matched_peak = moff.save_moff_apex_result(data_split, result)
+            matched_peak = moff.save_moff_apex_result( result)
             log.critical('after filtering matched peak #%r ',
                          matched_peak.shape[0])
             # concat the ms2 res  + mateched result
@@ -375,7 +378,7 @@ if __name__ == '__main__':
             log.critical(
                 'starting  peptide quantification (ms2 / matched ) ..')
             myPool = multiprocessing.Pool(num_CPU)
-            data_split = np.array_split(df, num_CPU)
+            data_split = np.array_split(df,num_CPU)
             result = {}
             offset = 0
             log.info('log of MS2 identified peptide not retrived ')
@@ -390,7 +393,7 @@ if __name__ == '__main__':
             log.critical('computational time (sec):  %4.4f ' %
                          (time.time() - start_time))
             start_time_2 = time.time()
-            result = moff.save_moff_apex_result(data_split, result)
+            result = moff.save_moff_apex_result(result)
             result.to_csv(os.path.join(loc_output, os.path.basename(name).split(
                 '.')[0] + "_moff_result.txt"), sep="\t", index=False)
             moff.clean_json_temp_file(loc_output)
