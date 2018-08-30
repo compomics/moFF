@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import ConfigParser
+import configparser
 import ast
 import copy
 import itertools
@@ -15,6 +15,7 @@ from sklearn import linear_model
 from sklearn.metrics import mean_absolute_error
 
 import moff
+from functools import reduce
 
 """moFF: matching between runs module """
 
@@ -223,7 +224,7 @@ def run_mbr(args):
         else:
             # if the user does not use  --output_folder the mbr folder will be created on moFF path location
             output_dir = os.path.join('mbr_output')
-            print os.path.abspath(output_dir)
+            print(os.path.abspath(output_dir))
 
     else:
         # the user use the --inputF option
@@ -260,7 +261,7 @@ def run_mbr(args):
     log.addHandler(w_mbr)
 
     moff_path = os.path.dirname(os.path.realpath(sys.argv[0]))
-    config = ConfigParser.RawConfigParser()
+    config = configparser.RawConfigParser()
     config.read(os.path.join(moff_path, 'moff_setting.properties'))
 
     # it s always placed in same folder of moff_mbr.py
