@@ -122,8 +122,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--tag_pepsum', dest='tag_pepsum', action='store', type=str, default='moFF_run',
                         help='a tag text used for peptide summary file name (peptide_summary_intensity_ + tag + .tab ). Default value: moFF_run ', required=False)
-    parser.add_argument('--match_filter', dest='match_filter', action='store', type=int,
-                        default=0, help='filtering on the matched peak. Default value: 0', required=False)
+    parser.add_argument('--match_filter', dest='match_filter', action='store-true',
+                        default=False, help='If set, filtering on the matched peak is activated.', required=False)
     parser.add_argument('--ptm_file', dest='ptm_file', action='store', default='ptm_setting.json',
                         help='name of json ptm file. default file ptm_setting.json ', required=False)
     parser.add_argument('--quantile_thr_filtering', dest='quantile_thr_filtering', action='store', type=float, default=0.75,
