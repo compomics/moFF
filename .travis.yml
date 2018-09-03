@@ -17,5 +17,5 @@ install:
 
 script:
   - flake8 . --ignore E501 E203
-  - ./moff_all.py --help
+  - python moff_all.py --help
 
