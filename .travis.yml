@@ -3,6 +3,9 @@ language: python
 python:
   - "3.5"
 
+notifications:
+  email: false
+
 install:
     - wget http://bit.ly/miniconda -O miniconda.sh
     - bash miniconda.sh -b -p $HOME/miniconda
@@ -13,6 +16,6 @@ install:
     - source activate TEST
 
 script:
-  - flake8 . --ignore E501
-  - ./moff.py --help
+  - flake8 . --ignore E501 E203
+  - ./moff_all.py --help
 

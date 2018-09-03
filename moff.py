@@ -30,7 +30,6 @@ log.setLevel(logging.DEBUG)
 moFF: this module contains all core utilities such as apex computation, peak apex computation etc..
 """
 
-
 TXIC_PATH = os.environ.get('TXIC_PATH', './')
 
 
@@ -94,7 +93,7 @@ def compute_peptide_matrix(loc_output, log, tag_filename):
                      os.path.basename(name), data.shape[0])
         # cleaning peptide fragmented more than one time. we keep the earliest one
         data.drop_duplicates(subset=[
-                             'prot', 'peptide', 'mod_peptide', 'mass', 'charge'], keep='first', inplace=True)
+            'prot', 'peptide', 'mod_peptide', 'mass', 'charge'], keep='first', inplace=True)
         d.append(data[['prot', 'peptide', 'mod_peptide', 'mass',
                        'charge', 'rt_peak', 'rt', 'intensity']])
 
@@ -108,7 +107,8 @@ def compute_peptide_matrix(loc_output, log, tag_filename):
         # print grouped.agg({'prot':'max', 'intensity':'sum'}).columns
         df.ix[:, i + 1] = grouped.agg({'prot': 'max',
                                        'intensity': 'sum'})['intensity']
-        df.ix[np.intersect1d(df.index, list(grouped.groups.keys())), 0] = grouped.agg({'prot': 'max', 'intensity': 'sum'})[
+        df.ix[np.intersect1d(df.index, list(grouped.groups.keys())), 0] = \
+        grouped.agg({'prot': 'max', 'intensity': 'sum'})[
             'prot']
     # print df.head(5)
     df.reset_index(level=0, inplace=True)
@@ -152,11 +152,10 @@ def map_ps2moff(data, type_mapping):
         data.rename(columns={'sequence': 'peptide', 'modified sequence': 'mod_peptide', 'measured charge': 'charge',
                              'theoretical mass': 'mass', 'protein(s)': 'prot', 'm/z': 'mz'}, inplace=True)
     if type_mapping == 'col_must_have_apex':
-        data.rename(columns={'sequence': 'peptide', 'modified sequence': 'mod_peptide', 'measured charge': 'charge', 'theoretical mass': 'mass',
+        data.rename(columns={'sequence': 'peptide', 'modified sequence': 'mod_peptide', 'measured charge': 'charge',
+                             'theoretical mass': 'mass',
                              'protein(s)': 'prot', 'm/z': 'mz'}, inplace=True)
     return data, data.columns.values.tolist()
-
-
 
 
 def check_ps_input_data(input_column_name, list_col_ps_default):
@@ -319,7 +318,8 @@ def compute_log_LR(data_xic, index, v_max, disc):
     return log_time
 
 
-def compute_peak_simple(x, xic_array, log, mbr_flag, h_rt_w, s_w, s_w_match, offset_index, moff_pride_flag, rt_match_peak, count_match, filt_flag):
+def compute_peak_simple(x, xic_array, log, mbr_flag, h_rt_w, s_w, s_w_match, offset_index, moff_pride_flag,
+                        rt_match_peak, count_match, filt_flag):
     """
 
     Apex computation method
@@ -347,13 +347,13 @@ def compute_peak_simple(x, xic_array, log, mbr_flag, h_rt_w, s_w, s_w_match, off
         time_w = rt_match_peak
     else:
         time_w = x['rt']
-        if not moff_pride_flag :
+        if not moff_pride_flag:
             # NOT moff pride data
             # dealling with rt in minutes
             # standar cases rt must be in second
             time_w = time_w / 60
     # print time_w, x['rt'] , moff_pride_flag, rt_match_peak,time_w, s_w,s_w_match
-    if not mbr_flag :
+    if not mbr_flag:
         temp_w = s_w
     else:
         # row['matched'])
@@ -365,20 +365,26 @@ def compute_peak_simple(x, xic_array, log, mbr_flag, h_rt_w, s_w, s_w_match, off
         # data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].to_csv('thermo_testXIC_'+str(c)+'.txt',index=False,sep='\t')
         ind_v = data_xic.index
         pp = data_xic[data_xic["intensity"] == data_xic[(data_xic['rt'] > (
-            time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))]['intensity'].max()].index
+                time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))]['intensity'].max()].index
         pos_p = ind_v[pp]
         if pos_p.values.shape[0] > 1:
             log.info('error, no apex found')
-            return pd.Series({'intensity': -1, 'rt_peak': -1, 'lwhm': -1, 'rwhm': -1, '5p_noise': -1, '10p_noise': -1, 'SNR': -1, 'log_L_R': -1, 'log_int': -1})
+            return pd.Series(
+                {'intensity': -1, 'rt_peak': -1, 'lwhm': -1, 'rwhm': -1, '5p_noise': -1, '10p_noise': -1, 'SNR': -1,
+                 'log_L_R': -1, 'log_int': -1})
         val_max = data_xic.ix[pos_p, 1].values
     else:
         if filt_flag == 1:
-            if 'matched'in x.axes[0].tolist():
-                log.info('peptide %r -->  MZ: %4.4f RT: %4.4f matched (yes=1/no=0): %i Peak not detected  Xic shape %r ',
-                         x['mod_peptide'], x['mz'], time_w, x['matched'], data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0])
+            if 'matched' in x.axes[0].tolist():
+                log.info(
+                    'peptide %r -->  MZ: %4.4f RT: %4.4f matched (yes=1/no=0): %i Peak not detected  Xic shape %r ',
+                    x['mod_peptide'], x['mz'], time_w, x['matched'],
+                    data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0])
             else:
-                log.info('peptide %r -->  MZ: %4.4f RT: %4.4f matched (yes=1/no=0): %i Peak not detected  Xic shape %r ',
-                         x['mod_peptide'], x['mz'], time_w, 0, data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0])
+                log.info(
+                    'peptide %r -->  MZ: %4.4f RT: %4.4f matched (yes=1/no=0): %i Peak not detected  Xic shape %r ',
+                    x['mod_peptide'], x['mz'], time_w, 0,
+                    data_xic[(data_xic['rt'] > (time_w - temp_w)) & (data_xic['rt'] < (time_w + temp_w))].shape[0])
         # log.info('peptide at line %i -->  MZ: %4.4f RT: %4.4f ', (offset_index +c +2), x['mz'], time_w)
         # log.info("\t LW_BOUND window  %4.4f", time_w - temp_w)
         # log.info("\t UP_BOUND window %4.4f", time_w + temp_w)
@@ -392,9 +398,9 @@ def compute_peak_simple(x, xic_array, log, mbr_flag, h_rt_w, s_w, s_w_match, off
                           'log_L_R': -1,
                           'log_int': -1})
     pnoise_5 = np.percentile(data_xic[(data_xic['rt'] > (
-        time_w - h_rt_w)) & (data_xic['rt'] < (time_w + h_rt_w))]['intensity'], 5)
+            time_w - h_rt_w)) & (data_xic['rt'] < (time_w + h_rt_w))]['intensity'], 5)
     pnoise_10 = np.percentile(data_xic[(data_xic['rt'] > (
-        time_w - h_rt_w)) & (data_xic['rt'] < (time_w + h_rt_w))]['intensity'], 10)
+            time_w - h_rt_w)) & (data_xic['rt'] < (time_w + h_rt_w))]['intensity'], 10)
     # find the lwhm and rwhm
     time_point = compute_log_LR(data_xic, pos_p[0], val_max, 0.5)
     if (time_point[0] * time_point[1] == 1) or (time_point[0] * time_point[1] < 0):
@@ -416,7 +422,7 @@ def compute_peak_simple(x, xic_array, log, mbr_flag, h_rt_w, s_w, s_w_match, off
         else:
             log.info('\t 5 percentile is %4.4f (added 0.5)', pnoise_5)
             SNR = 20 * \
-                np.log10(data_xic.ix[pos_p, 1].values / (pnoise_5 + 0.5))
+                  np.log10(data_xic.ix[pos_p, 1].values / (pnoise_5 + 0.5))
 
     return pd.Series({'intensity': val_max[0], 'rt_peak': data_xic.ix[pos_p, 0].values[0] * 60,
                       'lwhm': time_point[0],
@@ -430,7 +436,8 @@ def compute_peak_simple(x, xic_array, log, mbr_flag, h_rt_w, s_w, s_w_match, off
 
 # def estimate_parameter( df , name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,  rt_list , id_list, moff_pride_flag ,ptm_map,   log,sample_size, quantile_value, match_filter_flag   ):
 
-def estimate_parameter(df, name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, rt_list, id_list, moff_pride_flag, ptm_map, sample_size, quantile_value, match_filter_flag, log_file,num_CPU):
+def estimate_parameter(df, name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, rt_list, id_list,
+                       moff_pride_flag, ptm_map, sample_size, quantile_value, match_filter_flag, log_file, num_CPU):
     """
     Compute the quality metrics for the filtering during the estimation part
 
@@ -459,14 +466,16 @@ def estimate_parameter(df, name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
     sample = df[df['matched'] == 0].sample(frac=sample_size)
     log.critical(
         'quality measures estimation  using %r  MS2 ident. peptides randomly sampled' % sample.shape[0])
-    data_split = np.array_split(sample,num_CPU)
+    data_split = np.array_split(sample, num_CPU)
     result = {}
     offset = 0
     # run matchinf filtering for
-    #for result in data_split:
+    # for result in data_split:
     for df_index in range(0, len(data_split)):
-        result[df_index] = myPool.apply_async(apex_multithr, args=(data_split[df_index], name_file, raw_name, tol, h_rt_w, s_w, s_w_match,
-                                                                   loc_raw, loc_output, offset, rt_list, id_list, moff_pride_flag, ptm_map, 1, -1, -1, match_filter_flag, log_file))
+        result[df_index] = myPool.apply_async(apex_multithr, args=(
+        data_split[df_index], name_file, raw_name, tol, h_rt_w, s_w, s_w_match,
+        loc_raw, loc_output, offset, rt_list, id_list, moff_pride_flag, ptm_map, 1, -1, -1, match_filter_flag,
+        log_file))
         offset += len(data_split[df_index])
     myPool.close()
     myPool.join()
@@ -476,7 +485,8 @@ def estimate_parameter(df, name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc
                  ms2_data[ms2_data['RT_drift'] != -1]['RT_drift'].describe())
     log.critical('Estimated distribition ratio exp. int. left isotope vs. monoisotopic isotope %r ',
                  ms2_data[ms2_data['delta_log_int'] != -1]['delta_log_int'].describe())
-    error_relInr = ms2_data[ms2_data['Erro_RelIntensity_TheoExp'] != -1]['Erro_RelIntensity_TheoExp'].quantile(quantile_value)
+    error_relInr = ms2_data[ms2_data['Erro_RelIntensity_TheoExp'] != -1]['Erro_RelIntensity_TheoExp'].quantile(
+        quantile_value)
     rt_drift = ms2_data[ms2_data['RT_drift'] != -1]['RT_drift'].quantile(quantile_value)
     ratio_log_int = ms2_data[ms2_data['delta_log_int'] != -1]['delta_log_int'].quantile(quantile_value)
     return (rt_drift, error_relInr, ratio_log_int)
@@ -491,16 +501,17 @@ def compute_match_peak_quality_measure(input_data, moff_pride_flag, log):
     :param log:
     :return:
     """
-    sum_intensity =  input_data['intensity'].sum()
+    sum_intensity = input_data['intensity'].sum()
     mad_diff_int = np.mean(abs((input_data['intensity'] / sum_intensity) - (
-        input_data['ratio_iso'] / input_data['ratio_iso'].sum())))
+            input_data['ratio_iso'] / input_data['ratio_iso'].sum())))
     rank_spearman = spearmanr(
-        (input_data['intensity'] / sum_intensity ), input_data['ratio_iso'])[0]
+        (input_data['intensity'] / sum_intensity), input_data['ratio_iso'])[0]
     mad_rt = np.mean(abs(input_data['rt_peak'] - input_data['rt_peak'].mean()))
     return (mad_diff_int, rank_spearman, mad_rt)
 
 
-def estimate_on_match_peak(x, input_data, estimate_flag, moff_pride_flag, log, thr_q2, err_ratio_int, xic_data, mbr_flag, h_rt_w, s_w, s_w_match, offset_index):
+def estimate_on_match_peak(x, input_data, estimate_flag, moff_pride_flag, log, thr_q2, err_ratio_int, xic_data,
+                           mbr_flag, h_rt_w, s_w, s_w_match, offset_index):
     """
     Estimation of filter quality measures based on sampling of the MS2 identified peptides.
 
@@ -527,33 +538,35 @@ def estimate_on_match_peak(x, input_data, estimate_flag, moff_pride_flag, log, t
     # print 'output -->>  ',input_data.iloc[:,12:22]
     # print  input_data.iloc[0, input_data.columns.get_indexer(['log_L_R'])].all() != -1
     if (test.iloc[0, test.columns.get_indexer(['log_L_R'])]).any() != -1:
-        #if not moff_pride_flag :
-         #   new_point = test.iloc[0, test.columns.get_indexer(['rt_peak'])]
-        #else:
-            # to minute - second
-            # moffpride data -> convert again in second
         new_point = test.iloc[0,
-                                  test.columns.get_indexer(['rt_peak'])] / 60
+                              test.columns.get_indexer(['rt_peak'])] / 60
         test.iloc[1:4, 13:22] = test.iloc[1:4, :].apply(lambda x: compute_peak_simple(
             x, xic_data, log, mbr_flag, h_rt_w, 0.3, 0.3, offset_index, moff_pride_flag, new_point[0], 1, 0), axis=1)
         if (test.iloc[0:3, test.columns.get_indexer(['log_L_R'])] != -1).all()[0]:
             mad_diff_int, rank_spearman, mad_rt = compute_match_peak_quality_measure(
                 test.iloc[0:3, :], moff_pride_flag, log)
             if (test.iloc[3, test.columns.get_indexer(['log_L_R'])]).all() == -1:
-                return pd.Series({'Erro_RelIntensity_TheoExp': mad_diff_int, 'rankcorr': rank_spearman, 'RT_drift': mad_rt, 'delta_rt': -1, 'delta_log_int': -1})
+                return pd.Series(
+                    {'Erro_RelIntensity_TheoExp': mad_diff_int, 'rankcorr': rank_spearman, 'RT_drift': mad_rt,
+                     'delta_rt': -1, 'delta_log_int': -1})
             else:
                 delta_rt_wrong_iso = abs(
                     test.at[3, 'rt_peak'] - test.iloc[0:3, test.columns.get_indexer(['rt_peak'])].mean()[0])
                 delta_log_int = test.at[3, 'log_int'] / test.at[0, 'log_int']
                 # print pd.Series({'Erro_RelIntensity_TheoExp': mad_diff_int, 'rankcorr': rank_spearman,'RT_drift': mad_rt ,'delta_rt': delta_rt_wrong_iso ,'delta_log_int': delta_log_int})
-                return pd.Series({'Erro_RelIntensity_TheoExp': mad_diff_int, 'rankcorr': rank_spearman, 'RT_drift': mad_rt, 'delta_rt': delta_rt_wrong_iso, 'delta_log_int': delta_log_int})
+                return pd.Series(
+                    {'Erro_RelIntensity_TheoExp': mad_diff_int, 'rankcorr': rank_spearman, 'RT_drift': mad_rt,
+                     'delta_rt': delta_rt_wrong_iso, 'delta_log_int': delta_log_int})
         else:
-            return pd.Series({'Erro_RelIntensity_TheoExp': -1, 'rankcorr': -1, 'RT_drift': -1, 'delta_rt': -1, 'delta_log_int': -1})
+            return pd.Series(
+                {'Erro_RelIntensity_TheoExp': -1, 'rankcorr': -1, 'RT_drift': -1, 'delta_rt': -1, 'delta_log_int': -1})
     else:
-        return pd.Series({'Erro_RelIntensity_TheoExp': -1, 'rankcorr': -1, 'RT_drift': -1, 'delta_rt': -1, 'delta_log_int': -1})
+        return pd.Series(
+            {'Erro_RelIntensity_TheoExp': -1, 'rankcorr': -1, 'RT_drift': -1, 'delta_rt': -1, 'delta_log_int': -1})
 
 
-def filtering_match_peak(x, input_data, estimate_flag, moff_pride_flag, log, thr_q2, err_ratio_int, xic_data, mbr_flag, h_rt_w, s_w, s_w_match, offset_index):
+def filtering_match_peak(x, input_data, estimate_flag, moff_pride_flag, log, thr_q2, err_ratio_int, xic_data, mbr_flag,
+                         h_rt_w, s_w, s_w_match, offset_index):
     """
     Filtering of the matched peptides based on the isotopic envelope and quality measures estimated
     :param x:
@@ -578,11 +591,11 @@ def filtering_match_peak(x, input_data, estimate_flag, moff_pride_flag, log, thr
     test.iloc[0:1, 13:22] = test.iloc[0:1, :].apply(lambda x: compute_peak_simple(
         x, xic_data, log, mbr_flag, h_rt_w, s_w, s_w_match, offset_index, moff_pride_flag, -1, 1, 0), axis=1)
     if (test.iloc[0, test.columns.get_indexer(['log_L_R'])]).all() != -1:
-        #if not moff_pride_flag :
+        # if not moff_pride_flag :
         #    new_point = test.iloc[0, test.columns.get_indexer(['rt_peak'])]
-        #else:
-            # to minute - second
-            # moffpride data -> convert again in second
+        # else:
+        # to minute - second
+        # moffpride data -> convert again in second
         # from the ssecond isotope always convert to minute case : if new_point is provided
         new_point = test.iloc[0, test.columns.get_indexer(['rt_peak'])] / 60
         test.iloc[1:4, 13:22] = test.iloc[1:4, :].apply(lambda x: compute_peak_simple(
@@ -600,34 +613,52 @@ def filtering_match_peak(x, input_data, estimate_flag, moff_pride_flag, log, thr
                                             'log_int'] / test.at[0, 'log_int']
                     if (delta_rt_wrong_iso < thr_q2) and (delta_log_int > err_ratio_int):
                         # filter  overlapping peptide isotope
-                        log.info(' %r mz: %4.4f RT: %4.4f --> Not valid isotope envelope  overlapping detected -->  --  MAD RT  %r  -- rankCorr %r ',
-                                 x.mod_peptide, x.mz, x.rt, mad_rt, rank_spearman)
-                        return pd.Series({'intensity': -1, 'rt_peak': -1, 'lwhm': -1, 'rwhm': -1, '5p_noise': -1, '10p_noise': -1, 'SNR': -1, 'log_L_R': -1, 'log_int': -1})
+                        log.info(
+                            ' %r mz: %4.4f RT: %4.4f --> Not valid isotope envelope  overlapping detected -->  --  MAD RT  %r  -- rankCorr %r ',
+                            x.mod_peptide, x.mz, x.rt, mad_rt, rank_spearman)
+                        return pd.Series(
+                            {'intensity': -1, 'rt_peak': -1, 'lwhm': -1, 'rwhm': -1, '5p_noise': -1, '10p_noise': -1,
+                             'SNR': -1, 'log_L_R': -1, 'log_int': -1})
                     else:
-                        log.info('%r mz: %4.4f RT: %4.4f --> Valid isotope envelope detected after overlapping check -->  --  MAD RT  %r  -- rankCorr %r ',
-                                 x.mod_peptide, x.mz, x.rt, mad_rt, rank_spearman)
-                        return test.loc[test['ratio_iso'].idxmax(axis=1), ['intensity', 'rt_peak', 'lwhm', 'rwhm', '5p_noise', '10p_noise', 'SNR', 'log_L_R', 'log_int']]
+                        log.info(
+                            '%r mz: %4.4f RT: %4.4f --> Valid isotope envelope detected after overlapping check -->  --  MAD RT  %r  -- rankCorr %r ',
+                            x.mod_peptide, x.mz, x.rt, mad_rt, rank_spearman)
+                        return test.loc[
+                            test['ratio_iso'].idxmax(axis=1), ['intensity', 'rt_peak', 'lwhm', 'rwhm', '5p_noise',
+                                                               '10p_noise', 'SNR', 'log_L_R', 'log_int']]
                 else:
-                    log.info(' %r mz: %4.4f RT: %4.4f  --> Valid isotope envelope detected and no overlaping detected -->  --  MAD RT  %r  -- rankCorr %r ',
-                             x.mod_peptide, x.mz, x.rt, mad_rt, rank_spearman)
-                    return test.loc[test['ratio_iso'].idxmax(axis=1), ['intensity', 'rt_peak', 'lwhm', 'rwhm', '5p_noise', '10p_noise', 'SNR', 'log_L_R', 'log_int']]
+                    log.info(
+                        ' %r mz: %4.4f RT: %4.4f  --> Valid isotope envelope detected and no overlaping detected -->  --  MAD RT  %r  -- rankCorr %r ',
+                        x.mod_peptide, x.mz, x.rt, mad_rt, rank_spearman)
+                    return test.loc[
+                        test['ratio_iso'].idxmax(axis=1), ['intensity', 'rt_peak', 'lwhm', 'rwhm', '5p_noise',
+                                                           '10p_noise', 'SNR', 'log_L_R', 'log_int']]
             else:
                 # not pass the thr. control
-                log.info(' %r mz: %4.4f RT: %4.4f  --> Not valid isotope envelope detected  -->  --  MAD RT  %r  -- rankCorr %r ',
-                         x.mod_peptide, x.mz, x.rt, mad_rt, rank_spearman)
-                return pd.Series({'intensity': -1, 'rt_peak': -1, 'lwhm': -1, 'rwhm': -1, '5p_noise': -1, '10p_noise': -1, 'SNR': -1, 'log_L_R': -1, 'log_int': -1})
+                log.info(
+                    ' %r mz: %4.4f RT: %4.4f  --> Not valid isotope envelope detected  -->  --  MAD RT  %r  -- rankCorr %r ',
+                    x.mod_peptide, x.mz, x.rt, mad_rt, rank_spearman)
+                return pd.Series(
+                    {'intensity': -1, 'rt_peak': -1, 'lwhm': -1, 'rwhm': -1, '5p_noise': -1, '10p_noise': -1, 'SNR': -1,
+                     'log_L_R': -1, 'log_int': -1})
         else:
             # I have only the 1st valid isotope peak  but not the second or third
             log.info(' %r mz: %4.4f RT: %4.4f --> not enough isotope peaks detected  ',
                      x.mod_peptide, x.mz, x.rt)
-            return pd.Series({'intensity': -1, 'rt_peak': -1, 'lwhm': -1, 'rwhm': -1, '5p_noise': -1, '10p_noise': -1, 'SNR': -1, 'log_L_R': -1, 'log_int': -1})
+            return pd.Series(
+                {'intensity': -1, 'rt_peak': -1, 'lwhm': -1, 'rwhm': -1, '5p_noise': -1, '10p_noise': -1, 'SNR': -1,
+                 'log_L_R': -1, 'log_int': -1})
     else:
         log.info(' %r mz: %4.4f RT: %4.4f  --> first isotope peak not detected ',
                  x.mod_peptide, x.mz, x.rt)
-        return pd.Series({'intensity': -1, 'rt_peak': -1, 'lwhm': -1, 'rwhm': -1, '5p_noise': -1, '10p_noise': -1, 'SNR': -1, 'log_L_R': -1, 'log_int': -1})
+        return pd.Series(
+            {'intensity': -1, 'rt_peak': -1, 'lwhm': -1, 'rwhm': -1, '5p_noise': -1, '10p_noise': -1, 'SNR': -1,
+             'log_L_R': -1, 'log_int': -1})
 
 
-def apex_multithr(data_ms2, name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset_index, rt_list, id_list, moff_pride_flag, ptm_map, estimate_flag, rt_drift, err_ratio_int, match_filter_flag, log_file):
+def apex_multithr(data_ms2, name_file, raw_name, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, offset_index,
+                  rt_list, id_list, moff_pride_flag, ptm_map, estimate_flag, rt_drift, err_ratio_int, match_filter_flag,
+                  log_file):
     """
 
     General apex method used both for filtering and not filtering usage
@@ -698,7 +729,7 @@ def apex_multithr(data_ms2, name_file, raw_name, tol, h_rt_w, s_w, s_w_match, lo
     if not (os.path.isfile(loc)):
         log.critical(
             'ERROR: Wrong path or wrong raw file name included: %s' % loc)
-        return (None, -1)
+        return None, -1
 
     # index_offset = data_ms2.columns.shape[0] - 1
     data_ms2["intensity"] = -1
@@ -733,22 +764,22 @@ def apex_multithr(data_ms2, name_file, raw_name, tol, h_rt_w, s_w, s_w_match, lo
             mbr_flag = True
         else:
             if (data_ms2['matched'] == 0).all():
-                 # case valiD for estimation
+                # case valiD for estimation
                 mbr_flag = False
             else:
                 # case valid in case of not filtering
-                 mbr_flag = True
+                mbr_flag = True
     # get txic path: assumes txic is in the same directory as moff.py
     txic_executable_name = "txic_json.exe"
     txic_path = os.path.join(os.path.dirname(
         os.path.realpath(sys.argv[0])), txic_executable_name)
     # for all the input peptide in data_ms2
     try:
-        if match_filter_flag :
+        if match_filter_flag:
             all_isotope_df = build_matched_modification(
                 data_ms2, ptm_map, tol, moff_pride_flag, h_rt_w)
             xic_data = get_xic_data(flag_mzml, flag_windows, all_isotope_df[[
-                                    'mz', 'tol', 'ts', 'te']], loc_output, name_file, txic_path, loc, 1)
+                'mz', 'tol', 'ts', 'te']], loc_output, name_file, txic_path, loc, 1)
             # new filtering
             # not needed
             all_isotope_df['prog_xic_index'] = list(range(0, len(xic_data)))
@@ -763,11 +794,15 @@ def apex_multithr(data_ms2, name_file, raw_name, tol, h_rt_w, s_w, s_w_match, lo
             all_isotope_df["log_L_R"] = -1
             all_isotope_df["log_int"] = -1
             if estimate_flag == 0:
-                data_ms2[['intensity','rt_peak', 'lwhm',  'rwhm', '5p_noise','10p_noise' , 'SNR','log_L_R','log_int']] = data_ms2.apply(lambda x: filtering_match_peak(
-                    x, all_isotope_df, estimate_flag, moff_pride_flag, log, rt_drift, err_ratio_int, xic_data, mbr_flag, h_rt_w, s_w, s_w_match, offset_index), axis=1)
+                data_ms2[['intensity', 'rt_peak', 'lwhm', 'rwhm', '5p_noise', '10p_noise', 'SNR', 'log_L_R',
+                          'log_int']] = data_ms2.apply(lambda x: filtering_match_peak(
+                    x, all_isotope_df, estimate_flag, moff_pride_flag, log, rt_drift, err_ratio_int, xic_data, mbr_flag,
+                    h_rt_w, s_w, s_w_match, offset_index), axis=1)
             else:
-                data_ms2[['Erro_RelIntensity_TheoExp', 'rankcorr' , 'RT_drift',  'delta_rt','delta_log_int' ]] = data_ms2.apply(lambda x: estimate_on_match_peak(
-                    x, all_isotope_df, estimate_flag, moff_pride_flag, log, rt_drift, err_ratio_int, xic_data, mbr_flag, h_rt_w, s_w, s_w_match, offset_index), axis=1)
+                data_ms2[['Erro_RelIntensity_TheoExp', 'rankcorr', 'RT_drift', 'delta_rt',
+                          'delta_log_int']] = data_ms2.apply(lambda x: estimate_on_match_peak(
+                    x, all_isotope_df, estimate_flag, moff_pride_flag, log, rt_drift, err_ratio_int, xic_data, mbr_flag,
+                    h_rt_w, s_w, s_w_match, offset_index), axis=1)
             if estimate_flag != 1:
                 data_ms2 = data_ms2[(data_ms2[['10p_noise', '5p_noise', 'SNR', 'intensity',
                                                'log_L_R', 'log_int', 'lwhm', 'rt_peak', 'rwhm']] != -1).all(1)]
@@ -785,8 +820,10 @@ def apex_multithr(data_ms2, name_file, raw_name, tol, h_rt_w, s_w, s_w_match, lo
             xic_data = get_xic_data(
                 flag_mzml, flag_windows, temp, loc_output, name_file, txic_path, loc, 0)
             data_ms2.reset_index(inplace=True)
-            data_ms2[['intensity','rt_peak', 'lwhm',  'rwhm', '5p_noise','10p_noise' , 'SNR','log_L_R','log_int']] = data_ms2.apply(
-                lambda x: compute_peak_simple(x, xic_data, log, mbr_flag, h_rt_w, s_w, s_w_match, offset_index, moff_pride_flag, -1, -1, 1), axis=1)
+            data_ms2[['intensity', 'rt_peak', 'lwhm', 'rwhm', '5p_noise', '10p_noise', 'SNR', 'log_L_R',
+                      'log_int']] = data_ms2.apply(
+                lambda x: compute_peak_simple(x, xic_data, log, mbr_flag, h_rt_w, s_w, s_w_match, offset_index,
+                                              moff_pride_flag, -1, -1, 1), axis=1)
 
     except Exception as e:
         traceback.print_exc()
@@ -855,12 +892,12 @@ def build_matched_modification(data, ptm_map, tol, moff_pride_flag, h_rt_w):
             # fixed and variable mod are both in the sequence
             comps = Counter(
                 list(chain(*[list(std_aa_comp[aa].elements()) for aa in row.peptide])))
-            if '<' in row.mod_peptide :
+            if '<' in row.mod_peptide:
                 # check only if modificatio are present.
                 # for the future use dthe tag_mod_sequence_delimiter use in moFF_setting
                 for ptm in ptm_map.keys():
                     ptm_c = row.mod_peptide.count(ptm)
-                # ptm_c =  sum(ptm in s for s in row.mod_peptide)
+                    # ptm_c =  sum(ptm in s for s in row.mod_peptide)
                     if ptm_c >= 1:
                         comps["H"] += (ptm_map[ptm]['deltaChem'][0] * ptm_c)
                         comps["C"] += (ptm_map[ptm]['deltaChem'][1] * ptm_c)
@@ -883,8 +920,8 @@ def build_matched_modification(data, ptm_map, tol, moff_pride_flag, h_rt_w):
         isotopic_df.loc[:, 'tol'] = int(tol)
         isotopic_df.loc[:, 'rt'] = row.rt
         isotopic_df.loc[:, 'matched'] = 1
-        if moff_pride_flag :
-            #moffpridedata  rt is in minutes
+        if moff_pride_flag:
+            # moffpridedata  rt is in minutes
             isotopic_df['ts'] = (row.rt) - h_rt_w
             isotopic_df['te'] = (row.rt) + h_rt_w
         else:
@@ -919,21 +956,25 @@ def get_xic_data(flag_mzml, flag_windows, data, loc_output, name_file, txic_path
         if not flag_windows:
             # Linux  to avoid cmd  string too long  and its error. the thresold is mainly base on  from empirical evaluation.
             if len(data.to_json(orient='records')) >= 50000:
-                with open(os.path.join(loc_output, multiprocessing.current_process().name + '_' + name_file + '.json'), 'w') as f:
+                with open(os.path.join(loc_output, multiprocessing.current_process().name + '_' + name_file + '.json'),
+                          'w') as f:
                     f.write(data.to_json(orient='records'))
                 args_txic = shlex.split("mono " + txic_path + " -jf " + os.path.join(
-                    loc_output, multiprocessing.current_process().name + '_' + name_file + '.json') + " -f " + loc, posix=False)
+                    loc_output, multiprocessing.current_process().name + '_' + name_file + '.json') + " -f " + loc,
+                                        posix=False)
             else:
-                    #  small amount of char. in the request
+                #  small amount of char. in the request
                 args_txic = shlex.split(
                     "mono " + txic_path + " -j " + data.to_json(orient='records') + " -f " + loc, posix=True)
         else:
             # Windows to avoid cmd  string too long  and its error. the thresold is mainly base on  from empirical evaluation.
             if len(data.to_json(orient='records')) >= 10000:
-                with open(os.path.join(loc_output, multiprocessing.current_process().name + '_' + name_file + '.json'), 'w') as f:
+                with open(os.path.join(loc_output, multiprocessing.current_process().name + '_' + name_file + '.json'),
+                          'w') as f:
                     f.write(data.to_json(orient='records'))
                 args_txic = shlex.split(txic_path + " -jf " + os.path.join(
-                    loc_output, multiprocessing.current_process().name + '_' + name_file + '.json') + " -f " + loc, posix=False)
+                    loc_output, multiprocessing.current_process().name + '_' + name_file + '.json') + " -f " + loc,
+                                        posix=False)
             else:
                 #  small amount of char. in the request
                 args_txic = shlex.split(
@@ -945,7 +986,8 @@ def get_xic_data(flag_mzml, flag_windows, data, loc_output, name_file, txic_path
         for l in range(0, data.shape[0]):
             temp = json.loads(output.decode("utf-8").split('\n')[l])
             xic_data.append(pd.DataFrame(
-                {'rt': temp['results']['times'], 'intensity': temp['results']['intensities']}, columns=['rt', 'intensity']))
+                {'rt': temp['results']['times'], 'intensity': temp['results']['intensities']},
+                columns=['rt', 'intensity']))
     else:
         # this does not seem to work yet.
         pass
