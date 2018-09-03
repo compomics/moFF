@@ -6,4 +6,3 @@ pandas
 simplejson
 pymzml
 pyteomics
-brain-isotopic-distribution
