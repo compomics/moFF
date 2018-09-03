@@ -4,5 +4,4 @@ scipy
 scikit-learn
 pandas
 simplejson
-pymzml
 pyteomics

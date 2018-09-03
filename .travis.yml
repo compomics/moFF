@@ -15,6 +15,7 @@ install:
     - travis_retry conda create --yes -n TEST $CONDA --file ./requirements/development.txt
     - source activate TEST
     - pip install brain-isotopic-distribution
+    - pip install pymzml
 
 script:
   #- flake8 . --ignore E501 E203
