@@ -31,7 +31,11 @@ moFF is also available on bioconda. To install with conda, use the following com
 ```
 conda install -c bioconda moff
 ```
-This automatically installs all dependencies. Note that bioconda only supports 64-bit macOS and Linux. 
+This automatically installs all dependencies. Note that bioconda only supports 64-bit macOS and Linux.
+
+**NOTE : The current support of mzML file is still under testing so the current version works only on Thermo raw file**
+
+
 
 [Top of page](#moff)
 
@@ -49,7 +53,7 @@ Required java version :
 - Java Runtime Environment (JRE) 8
 
 Required python libraries :
-- Python 2.7
+- Python 3.5
 - pandas  >  0.23
 - numpy > 1.15.0
 - argparse > 1.2.1

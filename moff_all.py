@@ -1,7 +1,9 @@
 #!/usr/bin/env python
-import configparser
+from __future__ import absolute_import
+
 import argparse
 import ast
+import configparser
 import json
 import logging.config
 import multiprocessing
@@ -36,28 +38,29 @@ if __name__ == '__main__':
         config.read([args.config_file])
         moFF_parameters = dict(config.items("moFF_parameters"))
         # check if loc_in  is set in the input file
-        if not (moFF_parameters.has_key('loc_in') and moFF_parameters.has_key('raw_repo')):
+        if not ('loc_in' in moFF_parameters.keys() and 'raw_repo' in moFF_parameters.keys()):
+        #if not (moFF_parameters.has_key('loc_in') and moFF_parameters.has_key('raw_repo')):
             moFF_parameters['tsv_list'] = moFF_parameters['tsv_list'].split(
                 ' ')
-        if not moFF_parameters.has_key('raw_repo'):
+        if not ('raw_repo' in moFF_parameters.keys()):
             moFF_parameters['raw_list'] = moFF_parameters['raw_list'].split(
                 ' ')
-        if not moFF_parameters.has_key('tol'):
+        if not ('tol' in moFF_parameters.keys()):
             exit('you must specify the tollerance in the configuration file ')
         moFF_parameters['tol'] = float(moFF_parameters['tol'])
         moFF_parameters['xic_length'] = float(moFF_parameters['xic_length'])
         moFF_parameters['rt_peak_win'] = float(moFF_parameters['rt_peak_win'])
         moFF_parameters['rt_peak_win_match'] = float(
             moFF_parameters['rt_peak_win_match'])
-        moFF_parameters['peptide_summary'] = float(
-            moFF_parameters['peptide_summary'])
-        moFF_parameters['w_comb'] = int(moFF_parameters['w_comb'])
-        moFF_parameters['out_flag'] = int(moFF_parameters['out_flag'])
+        moFF_parameters['peptide_summary'] = True if moFF_parameters['peptide_summary'] != '' else False
+        #moFF_parameters['peptide_summary'] =  moFF_parameters['peptide_summary']
+        moFF_parameters['w_comb'] = True if moFF_parameters['w_comb'] != '' else False
+        moFF_parameters['out_flag'] =  True if moFF_parameters['out_flag'] != '' else False
         moFF_parameters['w_filt'] = float(moFF_parameters['w_filt'])
         moFF_parameters['quantile_thr_filtering'] = float(
             moFF_parameters['quantile_thr_filtering'])
         moFF_parameters['sample_size'] = float(moFF_parameters['sample_size'])
-        moFF_parameters['match_filter'] = int(moFF_parameters['match_filter'])
+        moFF_parameters['match_filter'] =  True if moFF_parameters['match_filter'] != '' else False
     args_1, remaining_argv = parser_1.parse_known_args()
 
     parser = argparse.ArgumentParser(parents=[parser_1],
@@ -87,11 +90,11 @@ if __name__ == '__main__':
     parser.add_argument('--w_filt', dest='w_filt', action='store', default=2,
                         help='width value of the filter  k * mean(Dist_Malahobis). Default value: 2', required=False)
 
-    parser.add_argument('--out_flag', dest='out_flag', action='store', default=1,
-                        help='filter outliers for  rt time allignment 1 (on) / 0 (off)  Default value: 1', required=False)
+    parser.add_argument('--out_flag', dest='out_flag', action='store_true', default=True,
+                        help='if set, outliers for rt time allignment are filtered. Default value: True', required=False)
 
-    parser.add_argument('--w_comb', dest='w_comb', action='store', default=0,
-                        help='weight or unweighted RT model combination using traing model error: 0 for no weight / 1  for weighted combination. Default value: 0',
+    parser.add_argument('--w_comb', dest='w_comb', action='store_true', default=False,
+                        help='if set, RT model combination is weighted using traing model errors: Default value: False',
                         required=False)
     parser.add_argument('--tol', dest='tol', action='store', default=10, type=float,
                         help='specify the tollerance  parameter in ppm. Default value: 10', required=False)
@@ -116,26 +119,26 @@ if __name__ == '__main__':
                         help='specify the file that contains the features to use in the match-between-run RT prediction ',
                         required=False)
 
-    parser.add_argument('--peptide_summary', dest='peptide_summary', action='store', type=int, default=0,
-                        help='Export a peptide intesity summary tab-delited file. Default value: 0 (not active) ',
+    parser.add_argument('--peptide_summary', dest='peptide_summary', action='store_true', default=False,
+                        help='if set, export a peptide intesity summary tab-delited file. Default value: False',
                         required=False)
 
     parser.add_argument('--tag_pepsum', dest='tag_pepsum', action='store', type=str, default='moFF_run',
                         help='a tag text used for peptide summary file name (peptide_summary_intensity_ + tag + .tab ). Default value: moFF_run ', required=False)
-    parser.add_argument('--match_filter', dest='match_filter', action='store', type=int,
-                        default=0, help='filtering on the matched peak. Default value: 0', required=False)
+    parser.add_argument('--match_filter', dest='match_filter', action='store_true',default=False,
+                         help='If set, filtering on the matched peak is activated. Default value: False', required=False)
     parser.add_argument('--ptm_file', dest='ptm_file', action='store', default='ptm_setting.json',
                         help='name of json ptm file. default file ptm_setting.json ', required=False)
     parser.add_argument('--quantile_thr_filtering', dest='quantile_thr_filtering', action='store', type=float, default=0.75,
-                        help='quantile value used to computed the filtering threshold for the matched peak .Default value: 0.75', required=False)
+                        help='quantile value used to compute the filtering threshold for the matched peak .Default value: 0.75', required=False)
     parser.add_argument('--sample_size', dest='sample_size', action='store', type=float, default=0.20,
                         help='percentage of MS2 peptide used to estimated the threshold. Default value: 0.20', required=False)
 
     parser.add_argument('--mbr', dest='mbr', action='store', type=str, default='on',
-                        help='select the moFF workflow: on to run mbr + apex , off to run only apex , only to run obnly mbr. Default value: on   ', required=False)
+                        help='select the moFF workflow: on to run mbr + apex , off to run only apex, only to run obnly mbr. Default value: on   ', required=False)
 
     parser.add_argument('--cpu',dest='cpu_num', action='store', type=int, default=0,
-                        help='number of cpu. as default value it will detect automaticaly the CPU number in your machine.   ',required=False)
+                        help='number of cpu. as default value it will detect automaticaly the CPU number in your machine.',required=False)
 
     if args.config_file:
         # load from config file and load the remaining parametes
@@ -271,14 +274,14 @@ if __name__ == '__main__':
                 # here it controls if the input file is a PS export; if yes it maps the input in right moFF name
                 if moff.check_ps_input_data(list_name, list) == 1:
                     # map  the columns name according to moFF input requirements
-                    if args.peptide_summary != 1:
+                    if not args.peptide_summary :
                         data_ms2, list_name = moff.map_ps2moff(
                             df, 'col_must_have_apex')
                     else:
                         data_ms2, list_name = moff.map_ps2moff(
                             df, 'col_must_have_mbr')
                 # check if the field names are     good, in case of pep summary we need same req as in  mbr
-            if args.peptide_summary == 1:
+            if args.peptide_summary :
                 if moff.check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_mbr')), log) == 1:
                     exit('ERROR minimal field requested are missing or wrong')
             else:
@@ -286,7 +289,7 @@ if __name__ == '__main__':
                     exit('ERROR minimal field requested are missing or wrong')
 
         # check if filtering is UP and the input data is not suitable for mbr filtering
-        if 'off' in args.mbr and args.match_filter == 1:
+        if 'off' in args.mbr and args.match_filter :
             if not 'matched' in df.columns:
                 exit('mbr peptide not detect in the input file, filtering of mbr peptides is not possible. Please set --match_filter to 0 and run again.')
             if not ('mod_peptide' in df.columns):
@@ -302,7 +305,7 @@ if __name__ == '__main__':
         # load the ptm file IF
         # mbr on with filtering  UP
         # mbr off with filtering flag UP (already check if inputdata contains matched field.)
-        if 'matched' in df.columns and args.match_filter == 1:
+        if 'matched' in df.columns and args.match_filter :
             log.critical('Apex module has detected mbr peptides')
             with open(os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), args.ptm_file)) as data_file:
                 ptm_map = json.load(data_file)
@@ -318,7 +321,7 @@ if __name__ == '__main__':
         # control if exist the same log file : avoid appending output
         #moff.check_log_existence(os.path.join(loc_output, name + '__moff.log'))
 
-        if args.match_filter == 1:
+        if args.match_filter :
             with open(os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), args.ptm_file)) as data_file:
                 ptm_map = json.load(data_file)
             start_time = time.time()
@@ -403,7 +406,7 @@ if __name__ == '__main__':
         moff.detach_handler()
 
     moff.clean_json_temp_file(loc_output)
-    if args.peptide_summary == 1:
+    if args.peptide_summary :
         state = moff.compute_peptide_matrix(args.loc_out, log, args.tag_pepsum)
         if not state :
             log.critical(

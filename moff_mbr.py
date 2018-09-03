@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
-import configparser
 import ast
+import configparser
 import copy
 import itertools
 import logging
 import os
 import re
 import sys
+from functools import reduce
 
 import numpy as np
 import pandas as pd
@@ -15,7 +16,6 @@ from sklearn import linear_model
 from sklearn.metrics import mean_absolute_error
 
 import moff
-from functools import reduce
 
 """moFF: matching between runs module """
 
@@ -76,7 +76,7 @@ def combine_model(x, model, err, weight_flag):
     app_sum_2 = 0
     for ii in range(0, len(x)):
         if ~  np.isnan(x[ii]):
-            if int(weight_flag) == 0:
+            if not weight_flag :
                 app_sum = app_sum + (model[ii].predict(x[ii])[0][0])
             else:
                 app_sum_2 = app_sum_2 + \
@@ -84,11 +84,13 @@ def combine_model(x, model, err, weight_flag):
                      (float(err[ii]) / float(tot_err)))
 
                 # " output weighted mean
-    if int(weight_flag) == 1:
-        return float(app_sum_2)
-    else:
-        # output not weight
+    if not  weight_flag :
+        # not weight outpuy
         return float(app_sum) / float(np.where(~ np.isnan(x))[0].shape[0])
+
+    else:
+        # output weight
+        return float(app_sum_2)
 
 
 '''
@@ -174,7 +176,7 @@ def combine_model_GP(x, model, err, weight_flag):
             #print 'intervall width length %4.4f' % abs((pred - (1.965 * var)) - (pred + (1.965 * var)))
 
 
-            if int(weight_flag) == 0:
+            if not weight_flag :
                 app_sum = app_sum + (pred)
                 app_var += var
             else:
@@ -189,7 +191,7 @@ def combine_model_GP(x, model, err, weight_flag):
     if  float(np.where(~ np.isnan(x))[0].shape[0]) == 0.0 :
         return pd.Series({'time_pred': -1 , 'uncertainty_win': -1})
 
-    if int(weight_flag) == 1:
+    if  weight_flag :
         f_p = app_sum_2
         mean_var = float(app_var) / float(np.where(~ np.isnan(x))[0].shape[0])
     else:
@@ -351,8 +353,8 @@ def run_mbr(args):
     out_flag = 1
     # input of the methods
 
-    log.info('Outlier Filtering is %s  ', 'active' if int(
-        args.out_flag) == 1 else 'not active')
+    log.info('Outlier Filtering is %s  ', 'active' if
+        args.out_flag else 'not active')
     log.info('Number of replicates %i,', n_replicates)
     log.info('Pairwise model computation ----')
 
@@ -432,7 +434,7 @@ def run_mbr(args):
                     continue
                 # filtering outlier option
                 else:
-                    if int(args.out_flag) == 1:
+                    if int(args.out_flag) :
                         filt_x, filt_y, pos_out = MD_removeOutliers(common['rt_y'].values, common['rt_x'].values,
                                                                     args.w_filt)
                         data_B = filt_x
@@ -475,8 +477,8 @@ def run_mbr(args):
         exit('ERROR : mbr cannnot be run, not enough shared pepetide among the replicates')
 
     log.info('Combination of the  model  --------')
-    log.info('Weighted combination  %s : ', 'Weighted' if int(
-        args.w_comb) == 1 else 'Unweighted')
+    log.info('Weighted combination  %s : ', 'Weighted' if
+        args.w_comb else 'Unweighted')
 
     diff_field = np.setdiff1d(exp_t[0].columns, [
                               'matched', 'mod_peptide', 'peptide', 'mass', 'mz', 'charge', 'prot', 'rt'])

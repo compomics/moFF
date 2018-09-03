@@ -11,6 +11,7 @@ import sys
 # import time
 import traceback
 from collections import Counter
+from functools import reduce
 from itertools import chain
 from sys import platform as _platform
 
@@ -21,7 +22,6 @@ import simplejson as json
 from brainpy import isotopic_variants
 from pyteomics.mass import std_aa_comp
 from scipy.stats import spearmanr
-from functools import reduce
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -606,11 +606,11 @@ def filtering_match_peak(x, input_data, estimate_flag, moff_pride_flag, log, thr
                     else:
                         log.info('%r mz: %4.4f RT: %4.4f --> Valid isotope envelope detected after overlapping check -->  --  MAD RT  %r  -- rankCorr %r ',
                                  x.mod_peptide, x.mz, x.rt, mad_rt, rank_spearman)
-                        return test.loc[test['ratio_iso'].idxmax(axis=1), ['10p_noise', '5p_noise', 'SNR', 'intensity', 'log_L_R', 'log_int', 'lwhm', 'rt_peak', 'rwhm']]
+                        return test.loc[test['ratio_iso'].idxmax(axis=1), ['intensity', 'rt_peak', 'lwhm', 'rwhm', '5p_noise', '10p_noise', 'SNR', 'log_L_R', 'log_int']]
                 else:
                     log.info(' %r mz: %4.4f RT: %4.4f  --> Valid isotope envelope detected and no overlaping detected -->  --  MAD RT  %r  -- rankCorr %r ',
                              x.mod_peptide, x.mz, x.rt, mad_rt, rank_spearman)
-                    return test.loc[test['ratio_iso'].idxmax(axis=1), ['10p_noise', '5p_noise', 'SNR', 'intensity', 'log_L_R', 'log_int', 'lwhm', 'rt_peak', 'rwhm']]
+                    return test.loc[test['ratio_iso'].idxmax(axis=1), ['intensity', 'rt_peak', 'lwhm', 'rwhm', '5p_noise', '10p_noise', 'SNR', 'log_L_R', 'log_int']]
             else:
                 # not pass the thr. control
                 log.info(' %r mz: %4.4f RT: %4.4f  --> Not valid isotope envelope detected  -->  --  MAD RT  %r  -- rankCorr %r ',
@@ -744,7 +744,7 @@ def apex_multithr(data_ms2, name_file, raw_name, tol, h_rt_w, s_w, s_w_match, lo
         os.path.realpath(sys.argv[0])), txic_executable_name)
     # for all the input peptide in data_ms2
     try:
-        if match_filter_flag == 1:
+        if match_filter_flag :
             all_isotope_df = build_matched_modification(
                 data_ms2, ptm_map, tol, moff_pride_flag, h_rt_w)
             xic_data = get_xic_data(flag_mzml, flag_windows, all_isotope_df[[
@@ -763,10 +763,10 @@ def apex_multithr(data_ms2, name_file, raw_name, tol, h_rt_w, s_w, s_w_match, lo
             all_isotope_df["log_L_R"] = -1
             all_isotope_df["log_int"] = -1
             if estimate_flag == 0:
-                data_ms2[['10p_noise', '5p_noise', 'SNR', 'intensity', 'log_L_R', 'log_int', 'lwhm', 'rt_peak', 'rwhm']] = data_ms2.apply(lambda x: filtering_match_peak(
+                data_ms2[['intensity','rt_peak', 'lwhm',  'rwhm', '5p_noise','10p_noise' , 'SNR','log_L_R','log_int']] = data_ms2.apply(lambda x: filtering_match_peak(
                     x, all_isotope_df, estimate_flag, moff_pride_flag, log, rt_drift, err_ratio_int, xic_data, mbr_flag, h_rt_w, s_w, s_w_match, offset_index), axis=1)
             else:
-                data_ms2[['Erro_RelIntensity_TheoExp', 'RT_drift', 'delta_log_int', 'delta_rt', 'rankcorr']] = data_ms2.apply(lambda x: estimate_on_match_peak(
+                data_ms2[['Erro_RelIntensity_TheoExp', 'rankcorr' , 'RT_drift',  'delta_rt','delta_log_int' ]] = data_ms2.apply(lambda x: estimate_on_match_peak(
                     x, all_isotope_df, estimate_flag, moff_pride_flag, log, rt_drift, err_ratio_int, xic_data, mbr_flag, h_rt_w, s_w, s_w_match, offset_index), axis=1)
             if estimate_flag != 1:
                 data_ms2 = data_ms2[(data_ms2[['10p_noise', '5p_noise', 'SNR', 'intensity',
@@ -785,7 +785,7 @@ def apex_multithr(data_ms2, name_file, raw_name, tol, h_rt_w, s_w, s_w_match, lo
             xic_data = get_xic_data(
                 flag_mzml, flag_windows, temp, loc_output, name_file, txic_path, loc, 0)
             data_ms2.reset_index(inplace=True)
-            data_ms2[['10p_noise', '5p_noise', 'SNR', 'intensity', 'log_L_R', 'log_int', 'lwhm', 'rt_peak', 'rwhm']] = data_ms2.apply(
+            data_ms2[['intensity','rt_peak', 'lwhm',  'rwhm', '5p_noise','10p_noise' , 'SNR','log_L_R','log_int']] = data_ms2.apply(
                 lambda x: compute_peak_simple(x, xic_data, log, mbr_flag, h_rt_w, s_w, s_w_match, offset_index, moff_pride_flag, -1, -1, 1), axis=1)
 
     except Exception as e:
@@ -943,7 +943,7 @@ def get_xic_data(flag_mzml, flag_windows, data, loc_output, name_file, txic_path
         output, err = p.communicate()
         xic_data = []
         for l in range(0, data.shape[0]):
-            temp = json.loads(output.split('\n')[l].decode("utf-8"))
+            temp = json.loads(output.decode("utf-8").split('\n')[l])
             xic_data.append(pd.DataFrame(
                 {'rt': temp['results']['times'], 'intensity': temp['results']['intensities']}, columns=['rt', 'intensity']))
     else:
