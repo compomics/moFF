@@ -341,17 +341,13 @@ def run_mbr(args):
     aa = range(0, n_replicates)
     out = list(itertools.product(aa, repeat=2))
     # just to save all the model
-    # list of the model saved
-    model_save = []
-    # list of the error in min/or sec
-    model_err = []
-    # list of the status of the model -1 means model not available for low points in the training set
-    model_status = []
     # add matched columns
     list_name.append('matched')
     # final status -1 if one of the output is empty
     out_flag = 1
     # input of the methods
+    diff_field = np.setdiff1d(exp_t[0].columns, [
+        'matched', 'mod_peptide', 'peptide', 'mass', 'mz', 'charge', 'prot', 'rt'])
 
     log.info('Outlier Filtering is %s  ', 'active' if
         args.out_flag else 'not active')
@@ -371,136 +367,47 @@ def run_mbr(args):
                  list_shared_pep.shape[0])
 
     for jj in aa:
-        log.info('matching  in %s', exp_set[jj])
-
-        for i in out:
-            if i[0] == jj and i[1] != jj:
-                if args.rt_feat_file is not None:
-                    # use of custom peptide
-                    comA = exp_t[i[0]][exp_t[i[0]]['code_unique'].isin(list_shared_pep)][
-                        ['code_unique', 'peptide', 'prot', 'rt']]
-                    comB = exp_t[i[1]][exp_t[i[1]]['code_unique'].isin(list_shared_pep)][
-                        ['code_unique', 'peptide', 'prot', 'rt']]
-                    comA = comA.groupby('code_unique', as_index=False).mean()
-                    comB = comB.groupby('code_unique', as_index=False).mean()
-                    common = pd.merge(
-                        comA, comB, on=['code_unique'], how='inner')
-                else:
-                    # use of shared peptdes.
-                    log.info('  Matching  %s peptide in   searching in %s ',
-                             exp_set[i[0]], exp_set[i[1]])
-                    list_pep_repA = exp_t[i[0]]['code_unique'].unique()
-                    list_pep_repB = exp_t[i[1]]['code_unique'].unique()
-                    log.info('Peptide unique (mass + sequence) %i , %i ',
-                             list_pep_repA.shape[0],
-                             list_pep_repB.shape[0])
-                    set_dif_s_in_1 = np.setdiff1d(list_pep_repB, list_pep_repA)
-                    add_pep_frame = exp_t[i[1]][exp_t[i[1]]['code_unique'].isin(
-                        set_dif_s_in_1)].copy()
-                    pep_shared = np.intersect1d(list_pep_repA, list_pep_repB)
-                    log.info(
-                        '  Peptide (mass + sequence)  added size  %i ', add_pep_frame.shape[0])
-                    log.info('  Peptide (mass + sequence) )shared  %i ',
-                             pep_shared.shape[0])
-                    comA = exp_t[i[0]][exp_t[i[0]]['code_unique'].isin(pep_shared)][
-                        ['code_unique', 'peptide', 'prot', 'rt']]
-                    comB = exp_t[i[1]][exp_t[i[1]]['code_unique'].isin(pep_shared)][
-                        ['code_unique', 'peptide', 'prot', 'rt']]
-                    # filtering using the variance added 17_08
-                    flag_var_filt = False
-                    if flag_var_filt:
-                        dd = comA.groupby('code_unique', as_index=False)
-                        top_res = dd.agg(['std', 'mean', 'count'])
-                        # print np.nanpercentile(top_res['rt']['std'].values,[5,10,20,30,50,60,80,90,95,97,99,100])
-                        th = np.nanpercentile(top_res['rt']['std'].values, 60)
-                        comA = comA[~ comA['code_unique'].isin(
-                            top_res[top_res['rt']['std'] > th].index)]
-                        # data B '
-                        dd = comB.groupby('code_unique', as_index=False)
-
-                        top_res = dd.agg(['std', 'mean', 'count'])
-                        # print comB.shape
-                        # print np.nanpercentile(top_res['rt']['std'].values,[5,10,20,30,50,60,80,90,95,97,99,100])
-                        th = np.nanpercentile(top_res['rt']['std'].values, 60)
-                        comB = comB[~ comB['code_unique'].isin(
-                            top_res[top_res['rt']['std'] > th].index)]
-
-                    comA = comA.groupby('code_unique', as_index=False).mean()
-                    comB = comB.groupby('code_unique', as_index=False).mean()
-                    common = pd.merge(
-                        comA, comB, on=['code_unique'], how='inner')
-                if common.shape[0] <= 10 and args.rt_feat_file is not None:
-                    model_status.append(-1)
-                    continue
-                # filtering outlier option
-                else:
-                    if int(args.out_flag) :
-                        filt_x, filt_y, pos_out = MD_removeOutliers(common['rt_y'].values, common['rt_x'].values,
-                                                                    args.w_filt)
-                        data_B = filt_x
-                        data_A = filt_y
-                        data_B = np.reshape(data_B, [filt_x.shape[0], 1])
-                        data_A = np.reshape(data_A, [filt_y.shape[0], 1])
-                        log.info('Outlier founded %i  w.r.t %i',
-                                 pos_out.shape[0], common['rt_y'].shape[0])
-                    else:
-                        data_B = common['rt_y'].values
-                        data_A = common['rt_x'].values
-                        data_B = np.reshape(data_B, [common.shape[0], 1])
-                        data_A = np.reshape(data_A, [common.shape[0], 1])
-
-                    log.info(' Size trainig shared peptide , %i %i ',
-                             data_A.shape[0], data_B.shape[0])
-                    clf = linear_model.RidgeCV(alphas=np.power(
-                        2, np.linspace(-30, 30)), scoring='neg_mean_absolute_error')
-                    clf.fit(data_B, data_A)
-                    clf_final = linear_model.Ridge(alpha=clf.alpha_)
-                    clf_final.fit(data_B, data_A)
-                    # save the model
-                    model_save.append(clf_final)
-                    model_err.append(mean_absolute_error(
-                        data_A, clf_final.predict(data_B)))
-                    log.info(' Mean absolute error training : %4.4f sec',
-                             mean_absolute_error(data_A, clf_final.predict(data_B)))
-                    '''
-                    # GP version
-                    model_gp, predicted_train, error = train_gp(data_A, data_B,c= str(i[0])+'_'+str(i[1]))
-                    #print i[1], comA.shape, error
-
-                    model_err.append(error)
-                    model_save.append(model_gp)
-                    model_status.append(1)
-                    '''
-    if np.where(np.array(model_status) == -1)[0].shape[0] >= (len(aa) / 2):
-        log.error(
-            'MBR aborted :  mbr cannnot be run, not enough shared pepetide among the replicates ')
-        exit('ERROR : mbr cannnot be run, not enough shared pepetide among the replicates')
-
-    log.info('Combination of the  model  --------')
-    log.info('Weighted combination  %s : ', 'Weighted' if
-        args.w_comb else 'Unweighted')
-
-    diff_field = np.setdiff1d(exp_t[0].columns, [
-                              'matched', 'mod_peptide', 'peptide', 'mass', 'mz', 'charge', 'prot', 'rt'])
-
-    for jj in aa:
-        pre_pep_save = []
-        log.critical('Predict rt for the exp.  in %s ', exp_set[jj])
+        # list of the model saved
+        model_save = []
+        # list of the error in min/or sec
+        model_err = []
+        # list of the status of the model -1 means model not available for low points in the training set
+        model_status = []
         c_rt = 0
-        for i in out:
-            if i[0] == jj and i[1] != jj:
-                log.info('Matching peptides found  in  %s ', exp_set[i[1]])
-                list_pep_repA = exp_t[i[0]]['peptide'].unique()
-                list_pep_repB = exp_t[i[1]]['peptide'].unique()
+        pre_pep_save = []
+        log.info('matching  in %s', exp_set[jj])
+        result = itertools.filterfalse(lambda x: x[0] != jj or x[1] == jj, out)
+        for i in result:
+            #if i[0] == jj and i[1] != jj:
+            if args.rt_feat_file is not None:
+                # use of custom peptide
+                comA = exp_t[i[0]][exp_t[i[0]]['code_unique'].isin(list_shared_pep)][
+                    ['code_unique', 'peptide', 'prot', 'rt']]
+                comB = exp_t[i[1]][exp_t[i[1]]['code_unique'].isin(list_shared_pep)][
+                    ['code_unique', 'peptide', 'prot', 'rt']]
+                comA = comA.groupby('code_unique', as_index=False).mean()
+                comB = comB.groupby('code_unique', as_index=False).mean()
+                common = pd.merge(
+                    comA, comB, on=['code_unique'], how='inner')
+            else:
+                # use of shared peptdes.
+                log.info('  Matching  %s peptide in   searching in %s ',
+                         exp_set[i[0]], exp_set[i[1]])
+                list_pep_repA = exp_t[i[0]]['code_unique'].unique()
+                list_pep_repB = exp_t[i[1]]['code_unique'].unique()
+                log.info('Peptide unique (mass + sequence) %i , %i ',
+                         list_pep_repA.shape[0],
+                         list_pep_repB.shape[0])
                 set_dif_s_in_1 = np.setdiff1d(list_pep_repB, list_pep_repA)
-                add_pep_frame = exp_t[i[1]][exp_t[i[1]]
-                                            ['peptide'].isin(set_dif_s_in_1)].copy()
+                add_pep_frame = exp_t[i[1]][exp_t[i[1]]['code_unique'].isin(
+                    set_dif_s_in_1)].copy()
+                #-- prepare the testing set
                 add_pep_frame = add_pep_frame[[
                     'peptide', 'mod_peptide', 'mass', 'mz', 'charge', 'prot', 'rt']]
                 # add_pep_frame['code_unique'] = '_'.join([add_pep_frame['peptide'], add_pep_frame['prot'], add_pep_frame['mass'].astype(str), add_pep_frame['charge'].astype(str)])
                 add_pep_frame['code_unique'] = add_pep_frame['mod_peptide'] + '_' + \
-                    add_pep_frame['prot'] + '_' + '_' + \
-                    add_pep_frame['charge'].astype(str)
+                                               add_pep_frame['prot'] + '_' + '_' + \
+                                               add_pep_frame['charge'].astype(str)
                 add_pep_frame = add_pep_frame.groupby('code_unique', as_index=False)[
                     'peptide', 'mod_peptide', 'mass', 'charge', 'mz', 'prot', 'rt'].aggregate(max)
                 add_pep_frame = add_pep_frame[[
@@ -511,7 +418,90 @@ def run_mbr(args):
                 add_pep_frame.columns = list_name
                 pre_pep_save.append(add_pep_frame)
                 c_rt += 1
-                # print 'input columns',pre_pep_save[0].columns
+                #--------
+                pep_shared = np.intersect1d(list_pep_repA, list_pep_repB)
+                log.info(
+                    '  Peptide (mass + sequence)  added size  %i ', add_pep_frame.shape[0])
+                log.info('  Peptide (mass + sequence) )shared  %i ',
+                         pep_shared.shape[0])
+                comA = exp_t[i[0]][exp_t[i[0]]['code_unique'].isin(pep_shared)][
+                    ['code_unique', 'peptide', 'prot', 'rt']]
+                comB = exp_t[i[1]][exp_t[i[1]]['code_unique'].isin(pep_shared)][
+                    ['code_unique', 'peptide', 'prot', 'rt']]
+                # filtering using the variance added 17_08
+                flag_var_filt = False
+                if flag_var_filt:
+                    dd = comA.groupby('code_unique', as_index=False)
+                    top_res = dd.agg(['std', 'mean', 'count'])
+                    # print np.nanpercentile(top_res['rt']['std'].values,[5,10,20,30,50,60,80,90,95,97,99,100])
+                    th = np.nanpercentile(top_res['rt']['std'].values, 60)
+                    comA = comA[~ comA['code_unique'].isin(
+                        top_res[top_res['rt']['std'] > th].index)]
+                    # data B '
+                    dd = comB.groupby('code_unique', as_index=False)
+
+                    top_res = dd.agg(['std', 'mean', 'count'])
+                    # print comB.shape
+                    # print np.nanpercentile(top_res['rt']['std'].values,[5,10,20,30,50,60,80,90,95,97,99,100])
+                    th = np.nanpercentile(top_res['rt']['std'].values, 60)
+                    comB = comB[~ comB['code_unique'].isin(
+                        top_res[top_res['rt']['std'] > th].index)]
+
+                comA = comA.groupby('code_unique', as_index=False).mean()
+                comB = comB.groupby('code_unique', as_index=False).mean()
+                common = pd.merge(
+                    comA, comB, on=['code_unique'], how='inner')
+            if common.shape[0] <= 10 and args.rt_feat_file is not None:
+                model_status.append(-1)
+                continue
+            # filtering outlier option
+            else:
+                if args.out_flag :
+                    filt_x, filt_y, pos_out = MD_removeOutliers(common['rt_y'].values, common['rt_x'].values,
+                                                                args.w_filt)
+                    data_B = filt_x
+                    data_A = filt_y
+                    data_B = np.reshape(data_B, [filt_x.shape[0], 1])
+                    data_A = np.reshape(data_A, [filt_y.shape[0], 1])
+                    log.info('Outlier founded %i  w.r.t %i',
+                             pos_out.shape[0], common['rt_y'].shape[0])
+                else:
+                    data_B = common['rt_y'].values
+                    data_A = common['rt_x'].values
+                    data_B = np.reshape(data_B, [common.shape[0], 1])
+                    data_A = np.reshape(data_A, [common.shape[0], 1])
+
+                log.info(' Size trainig shared peptide , %i %i ',
+                         data_A.shape[0], data_B.shape[0])
+                clf = linear_model.RidgeCV(alphas=np.power(
+                    2, np.linspace(-30, 30)), scoring='neg_mean_absolute_error')
+                clf.fit(data_B, data_A)
+                clf_final = linear_model.Ridge(alpha=clf.alpha_)
+                clf_final.fit(data_B, data_A)
+                # save the model
+                model_save.append(clf_final)
+                model_err.append(mean_absolute_error(
+                    data_A, clf_final.predict(data_B)))
+                log.info(' Mean absolute error training : %4.4f sec',
+                         mean_absolute_error(data_A, clf_final.predict(data_B)))
+                model_status.append(1)
+                '''
+                # GP version
+                model_gp, predicted_train, error = train_gp(data_A, data_B,c= str(i[0])+'_'+str(i[1]))
+                #print i[1], comA.shape, error
+
+                model_err.append(error)
+                model_save.append(model_gp)
+                model_status.append(1)
+                    '''
+        if np.where(np.array(model_status) == -1)[0].shape[0] >= (len(aa) / 2):
+            log.error(
+                'MBR aborted :  mbr cannnot be run, not enough shared pepetide among the replicates ')
+            exit('ERROR : mbr cannnot be run, not enough shared pepetide among the replicates')
+
+        log.info('Combination of the  model  --------')
+        log.info('Weighted combination  %s : ', 'Weighted' if
+        args.w_comb else 'Unweighted')
         if n_replicates == 2:
             test = pre_pep_save[0]
         else:
@@ -519,17 +509,15 @@ def run_mbr(args):
                 lambda left, right: pd.merge(left, right, on=[
                                              'code_unique', 'peptide', 'mod_peptide', 'mass', 'mz', 'charge', 'prot'], how='outer'),
                 pre_pep_save)
-
-        # aggregated by code_unique,  to avoid duplicates
         test = test.groupby('code_unique', as_index=False).aggregate(max)
         test.drop('code_unique', axis=1, inplace=True)
-
+        print (test.iloc[:, 6: (6 + (n_replicates - 1))].head(5))
         test['time_pred'] = test.iloc[:, 6: (6 + (n_replicates - 1))].apply(
-            lambda x: combine_model(x, model_save[(jj * (n_replicates - 1)):((jj + 1) * (n_replicates - 1))],
-                                    model_err[(jj * (n_replicates - 1)):((jj + 1) * (n_replicates - 1))], args.w_comb), axis=1)
-        # test[['time_pred','uncertainty_win']] = test.ix[:, 6: (6 + (n_replicates - 1))].apply(lambda x: combine_model_GP(x, model_save[(jj * (n_replicates - 1)):((jj + 1) * (n_replicates - 1))],
-        #                            model_err[(jj * (n_replicates - 1)):((jj + 1) * (n_replicates - 1))], args.w_comb), axis=1)
-
+            lambda x: combine_model(x, model_save, model_err, args.w_comb),axis=1)
+        #test['time_pred'] = test.iloc[:, 6: (6 + (n_replicates - 1))].apply(
+        #    lambda x: combine_model(x, model_save[(jj * (n_replicates - 1)):((jj + 1) * (n_replicates - 1))],
+        #                            model_err[(jj * (n_replicates - 1)):((jj + 1) * (n_replicates - 1))], args.w_comb),
+        #    axis=1)
         test['matched'] = 1
 
         # still to check better
@@ -541,14 +529,13 @@ def run_mbr(args):
         list_name = [w.replace('time_pred', 'rt') for w in list_name]
         test.columns = list_name
 
-        # test = test[['peptide','mod_peptide', 'mass', 'mz', 'charge', 'prot', 'rt', 'matched','uncertainty_win']]
-
+        # test = test[['peptide','mod_peptide', 'mass', 'mz', 'charge',
+        # 'prot', 'rt', 'matched','uncertainty_win']]
         test = test[['peptide', 'mod_peptide', 'mass',
                      'mz', 'charge', 'prot', 'rt', 'matched']]
         # just put nan with the missing values
         for field in diff_field.tolist():
-            test[field] = np.nan  # -1
-
+            test[field] = np.nan
         log.info('Before adding %s contains %i ',
                  exp_set[jj], exp_t[jj].shape[0])
         exp_out[jj] = pd.concat(
@@ -566,6 +553,7 @@ def run_mbr(args):
             out_flag = 1 * out_flag
         else:
             out_flag = -1 * out_flag
+
 
     w_mbr.close()
     log.removeHandler(w_mbr)
