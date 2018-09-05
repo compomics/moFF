@@ -511,7 +511,6 @@ def run_mbr(args):
                 pre_pep_save)
         test = test.groupby('code_unique', as_index=False).aggregate(max)
         test.drop('code_unique', axis=1, inplace=True)
-        print (test.iloc[:, 6: (6 + (n_replicates - 1))].head(5))
         test['time_pred'] = test.iloc[:, 6: (6 + (n_replicates - 1))].apply(
             lambda x: combine_model(x, model_save, model_err, args.w_comb),axis=1)
         #test['time_pred'] = test.iloc[:, 6: (6 + (n_replicates - 1))].apply(
