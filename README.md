@@ -1,9 +1,12 @@
 # moFF #
+[![Build Status](https://travis-ci.org/compomics/moFF.svg?branch=master)](https://travis-ci.org/compomics/moFF)
+
 
  * [Introduction](#introduction)
  * [Minimum Requirements](#minimum-requirements)
  * [Input Data](#input-data)
  * [Sample Data](#sample-data)
+ * [Absence of Peak Sample Sata](#absence-of-peak-sample-data#)
  * [Match between runs](#match-between-runs)
  * [Apex Intensity](#apex-intensity)
  * [Entire workflow](#entire-workflow)
@@ -16,14 +19,13 @@
 
 moFF is an OS independent tool designed to extract apex MS1 intensity using a set of identified MS2 peptides. It currently uses a Go library to directly extract data from Thermo Raw spectrum files, eliminating the need for conversions from other formats. Moreover, moFF also allows to work directly with mzML files.
 
-moFF is built up from two standalone modules :
-- *moff_mbr.py* :  match between run (mbr)
+moFF is built up from two  modules :
+- *moff_mbr.py* : match between run (mbr)
 - *moff.py*: apex intensity
 
 NOTE : Please use *moff_all.py* script to run the entire pipeline with both MBR and apex strategies.
 
 The version presented here is a commandline tool that can easily be adapted to a cluster environment. A graphical user interface can be found [here](https://github.com/compomics/moff-gui). The latter is designed to be able to use [PeptideShaker](https://github.com/compomics/peptide-shaker) results as an input format. Please refer to the [moff-GUI](https://github.com/compomics/moff-gui) manual for more information on how to do this.
-
 
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat-square)](http://bioconda.github.io/recipes/moff/README.html) 
 
@@ -61,7 +63,7 @@ Required python libraries :
 - scikit-learn > 0.19
 - pymzML > 0.7.7
 - brain-isotopic-distribution > 1.3.2
--  pyteomics >  3.5
+- pyteomics >  3.5
 
 
 Required linux library:
@@ -111,7 +113,37 @@ NOTE 2 : Users can also provide the default PSM export provided by PeptideShaker
 
 ## Sample data  ##
 
-The  *sample_folder* contains a resultset for 3 runs of the CPTAC study 6 (Paulovich, MCP Proteomics, 2010). These MS2  peptides are identified by  X!Tandem and MSGF+ using SearchGUI and then processed by PeptidesShaker . The [raw files]( https://goo.gl/ukbpCI) for this study are required to apply moFF to the sample data.
+The  *sample_folder* contains a result set for 3 runs of the CPTAC study 6 (Paulovich, MCP Proteomics, 2010).
+These MS2 peptides are identified by X!Tandem and MSGF+ using SearchGUI and then processed by PeptidesShaker. The [raw files]( https://goo.gl/ukbpCI) for this study are required to apply moFF to the sample data.
+
+---
+
+## Absence of Peak Sample Data ##
+
+To evaluate the filtering of the matched peak, we provide a data set composed by 4 runs :
+
+| File name  | iRT | yeast |
+| ------------- | ------------- | ------------- |
+| B002413_Ap_22cm_Yeast_171215184201 |    | x |
+| B002417_Ap_22cm_iRT_PRC-Hans_equimolar_100fmol |  x  |  |
+| B002419_Ap_22cm_iRT_PRC-Hans_equimolar_100fmol_inYeast   |  x  | x |
+| B002421_Ap_22cm_iRT_PRC-Hans_equimolar_100fmoll  |  x  |  |
+
+Run *B002413_* does not contain iRT peptides and it works as controll. No iRT peptides are expected after the matching-between-runs across all four runs.
+
+To test the filter of the matched peak, you can follow the steps:
+- clone the moFF repository
+- download the .zip file that contains all Thermo raw file from [here](http://genesis.ugent.be/uvpublicdata//moFF_absence_of_peak_dataset/)
+- unzip it iniside  the folder *absence_peak_data*
+- check the input/output paths in the *coinfiguration_iRT.ini*
+
+The identification peptides are computed by MaxQuant, so to use them in moFF you need to set manually:
+
+```mq_mod_flag ``` from `False` to ` True`   (moff.py line 858)
+
+then you an run moFF using:
+
+`python moff_mbr.py  --config_file  absense_peak_data/config_iRT.ini `
 
 ---
 
@@ -282,10 +314,6 @@ For example a ptm file (ptm_setting_ps.json) with Carboxyamidomethylation of Cys
 "<ox>": {"deltaChem":[0,0,0,1],"desc":"oxidation oxidation unimod:35" }
 }
 ```
-
-
-WARNING: The handling of the modification is still a working part; so maybe in the future could be changed.
-
 
 
 [Top of page](#moff)

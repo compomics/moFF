@@ -301,18 +301,26 @@ def compute_log_LR(data_xic, index, v_max, disc):
     find_5 = False
     stop = False
     while c_left <= (index - 1) and not stop:
-        if not find_5 and (data_xic.ix[(index - 1) - c_left, 1] <= (disc * v_max)):
+        if not find_5 and (data_xic.ix[(index - 1) - c_left, 1] <= (disc * v_max)) :
             find_5 = True
             log_time[0] = data_xic.ix[(index - 1) - c_left, 0] * 60
+            stop = True
+        if data_xic.ix[(index - 1) -  c_left, 1] > v_max:
+            # avoid local minima
+            # intensity must decrease
             stop = True
         c_left += 1
     find_5 = False
     stop = False
     r_left = 0
     while ((index + 1) + r_left < data_xic.shape[0]) and not stop:
-        if not find_5 and data_xic.ix[(index + 1) + r_left, 1] <= (disc * v_max):
+        if not find_5 and data_xic.ix[(index + 1) + r_left, 1] <= (disc * v_max) :
             find_5 = True
             log_time[1] = data_xic.ix[(index + 1) + r_left, 0] * 60
+            stop = True
+        if data_xic.ix[(index + 1) + r_left, 1] > v_max:
+            # avoid local minima
+            # intensity must decrease
             stop = True
         r_left += 1
     return log_time
@@ -604,7 +612,7 @@ def filtering_match_peak(x, input_data, estimate_flag, moff_pride_flag, log, thr
         if (test.iloc[1:3, test.columns.get_indexer(['log_L_R'])] != -1).all()[0]:
             mad_diff_int, rank_spearman, mad_rt = compute_match_peak_quality_measure(
                 test.iloc[0:3, :], moff_pride_flag, log)
-            if (mad_rt < thr_q2 and rank_spearman > 0.8):
+            if (mad_rt < thr_q2 and rank_spearman > 0.9):
                 # check isotope -1
                 if (test.iloc[3, test.columns.get_indexer(['log_L_R'])]).all() != -1:
                     delta_rt_wrong_iso = abs(

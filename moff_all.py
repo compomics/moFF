@@ -21,7 +21,6 @@ log.setLevel(logging.DEBUG)
 
 """moFF: entry point where to run moFF and all its functions """
 
-
 if __name__ == '__main__':
 
     multiprocessing.freeze_support()
@@ -38,7 +37,6 @@ if __name__ == '__main__':
         moFF_parameters = dict(config.items("moFF_parameters"))
         # check if loc_in  is set in the input file
         if not ('loc_in' in moFF_parameters.keys() and 'raw_repo' in moFF_parameters.keys()):
-        #if not (moFF_parameters.has_key('loc_in') and moFF_parameters.has_key('raw_repo')):
             moFF_parameters['tsv_list'] = moFF_parameters['tsv_list'].split(
                 ' ')
         if not ('raw_repo' in moFF_parameters.keys()):
@@ -52,19 +50,18 @@ if __name__ == '__main__':
         moFF_parameters['rt_peak_win_match'] = float(
             moFF_parameters['rt_peak_win_match'])
         moFF_parameters['peptide_summary'] = True if moFF_parameters['peptide_summary'] != '' else False
-        #moFF_parameters['peptide_summary'] =  moFF_parameters['peptide_summary']
         moFF_parameters['w_comb'] = True if moFF_parameters['w_comb'] != '' else False
-        moFF_parameters['out_flag'] =  True if moFF_parameters['out_flag'] != '' else False
+        moFF_parameters['out_flag'] = True if moFF_parameters['out_flag'] != '' else False
         moFF_parameters['w_filt'] = float(moFF_parameters['w_filt'])
-        moFF_parameters['quantile_thr_filtering'] = float(
-            moFF_parameters['quantile_thr_filtering'])
+        moFF_parameters['quantile_thr_filtering'] = float(moFF_parameters['quantile_thr_filtering'])
+        moFF_parameters['cpu_num'] = int(moFF_parameters['cpu'])
         moFF_parameters['sample_size'] = float(moFF_parameters['sample_size'])
-        moFF_parameters['match_filter'] =  True if moFF_parameters['match_filter'] != '' else False
+        moFF_parameters['match_filter'] = True if moFF_parameters['match_filter'] != '' else False
     args_1, remaining_argv = parser_1.parse_known_args()
 
     parser = argparse.ArgumentParser(parents=[parser_1],
                                      description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter,)
+                                     formatter_class=argparse.RawDescriptionHelpFormatter, )
 
     parser = argparse.ArgumentParser(
         description='moFF match between run and apex module input parameter')
@@ -90,7 +87,8 @@ if __name__ == '__main__':
                         help='width value of the filter  k * mean(Dist_Malahobis). Default value: 2', required=False)
 
     parser.add_argument('--out_flag', dest='out_flag', action='store_true', default=True,
-                        help='if set, outliers for rt time allignment are filtered. Default value: True', required=False)
+                        help='if set, outliers for rt time allignment are filtered. Default value: True',
+                        required=False)
 
     parser.add_argument('--w_comb', dest='w_comb', action='store_true', default=False,
                         help='if set, RT model combination is weighted using traing model errors: Default value: False',
@@ -123,21 +121,27 @@ if __name__ == '__main__':
                         required=False)
 
     parser.add_argument('--tag_pepsum', dest='tag_pepsum', action='store', type=str, default='moFF_run',
-                        help='a tag text used for peptide summary file name (peptide_summary_intensity_ + tag + .tab ). Default value: moFF_run ', required=False)
-    parser.add_argument('--match_filter', dest='match_filter', action='store_true',default=False,
-                         help='If set, filtering on the matched peak is activated. Default value: False', required=False)
+                        help='a tag text used for peptide summary file name (peptide_summary_intensity_ + tag + .tab ). Default value: moFF_run ',
+                        required=False)
+    parser.add_argument('--match_filter', dest='match_filter', action='store_true', default=False,
+                        help='If set, filtering on the matched peak is activated. Default value: False', required=False)
     parser.add_argument('--ptm_file', dest='ptm_file', action='store', default='ptm_setting.json',
                         help='name of json ptm file. default file ptm_setting.json ', required=False)
-    parser.add_argument('--quantile_thr_filtering', dest='quantile_thr_filtering', action='store', type=float, default=0.75,
-                        help='quantile value used to compute the filtering threshold for the matched peak .Default value: 0.75', required=False)
+    parser.add_argument('--quantile_thr_filtering', dest='quantile_thr_filtering', action='store', type=float,
+                        default=0.75,
+                        help='quantile value used to compute the filtering threshold for the matched peak .Default value: 0.75',
+                        required=False)
     parser.add_argument('--sample_size', dest='sample_size', action='store', type=float, default=0.20,
-                        help='percentage of MS2 peptide used to estimated the threshold. Default value: 0.20', required=False)
+                        help='percentage of MS2 peptide used to estimated the threshold. Default value: 0.20',
+                        required=False)
 
     parser.add_argument('--mbr', dest='mbr', action='store', type=str, default='on',
-                        help='select the moFF workflow: on to run mbr + apex , off to run only apex, only to run obnly mbr. Default value: on   ', required=False)
+                        help='select the moFF workflow: on to run mbr + apex , off to run only apex, only to run obnly mbr. Default value: on   ',
+                        required=False)
 
-    parser.add_argument('--cpu',dest='cpu_num', action='store', type=int, default=0,
-                        help='number of cpu. as default value it will detect automaticaly the CPU number in your machine.',required=False)
+    parser.add_argument('--cpu', dest='cpu_num', action='store', type=int, default=0,
+                        help='number of cpu. as default value it will detect automaticaly the CPU number in your machine.',
+                        required=False)
 
     if args.config_file:
         # load from config file and load the remaining parametes
@@ -156,13 +160,16 @@ if __name__ == '__main__':
         exit('you must specify the tollerance in ppm ')
     if (args.tsv_list is None) and (args.loc_in is None) and (args.raw_list is None) and (args.raw_repo is None):
         exit('you must specify the input and raw files ')
-    if (args.tsv_list is not None) and (args.loc_in is not None) and (args.raw_list is not None) and (args.raw_repo is not None):
+    if (args.tsv_list is not None) and (args.loc_in is not None) and (args.raw_list is not None) and (
+            args.raw_repo is not None):
         exit('you must specify the input and raw files or using: --tsv_list and --raw_list or --loc_in and --raw_repo ')
     else:
-        if ((args.tsv_list is None) and (args.raw_list is not None)) or ((args.tsv_list is not None) and (args.raw_list is None)):
+        if ((args.tsv_list is None) and (args.raw_list is not None)) or (
+                (args.tsv_list is not None) and (args.raw_list is None)):
             exit(
                 'Missing information: using --tsv_list you must specify the raw file with --raw_list ')
-        if ((args.loc_in is None) and (args.raw_repo is not None)) or ((args.loc_in is not None) and (args.raw_repo is None)):
+        if ((args.loc_in is None) and (args.raw_repo is not None)) or (
+                (args.loc_in is not None) and (args.raw_repo is None)):
             exit(
                 'Missing information: using --loc_in you must specify the raw file with --raw_repo ')
 
@@ -174,11 +181,10 @@ if __name__ == '__main__':
     # fixed variable number of split and also number of CPU presence in the macine
     # change this variable  with repset to the machine setting of the user
 
-
     if args.cpu_num > 0:
-         num_CPU = args.cpu_num
+        num_CPU = args.cpu_num
     else:
-         num_CPU = multiprocessing.cpu_count()
+        num_CPU = multiprocessing.cpu_count()
 
     # only mbr
     if 'only' in args.mbr:
@@ -194,8 +200,8 @@ if __name__ == '__main__':
         log.critical('Matching between run module (mbr)')
         res_state, output_list_loc = moff_mbr.run_mbr(args)
         # --- debug version-- just to run skip the mbr in for special cases
-        #res_state= 1
-        #output_list_loc =[]
+        # res_state= 1
+        # output_list_loc =[]
         # for item in os.listdir(args.loc_in):
         #    #log.critical(item)
         #    if os.path.isfile(os.path.join(args.loc_in, item)):
@@ -273,26 +279,30 @@ if __name__ == '__main__':
                 # here it controls if the input file is a PS export; if yes it maps the input in right moFF name
                 if moff.check_ps_input_data(list_name, list) == 1:
                     # map  the columns name according to moFF input requirements
-                    if not args.peptide_summary :
+                    if not args.peptide_summary:
                         data_ms2, list_name = moff.map_ps2moff(
                             df, 'col_must_have_apex')
                     else:
                         data_ms2, list_name = moff.map_ps2moff(
                             df, 'col_must_have_mbr')
                 # check if the field names are     good, in case of pep summary we need same req as in  mbr
-            if args.peptide_summary :
-                if moff.check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_mbr')), log) == 1:
+            if args.peptide_summary:
+                if moff.check_columns_name(df.columns.tolist(),
+                                           ast.literal_eval(config.get('moFF', 'col_must_have_mbr')), log) == 1:
                     exit('ERROR minimal field requested are missing or wrong')
             else:
-                if moff.check_columns_name(df.columns.tolist(), ast.literal_eval(config.get('moFF', 'col_must_have_apex')), log) == 1:
+                if moff.check_columns_name(df.columns.tolist(),
+                                           ast.literal_eval(config.get('moFF', 'col_must_have_apex')), log) == 1:
                     exit('ERROR minimal field requested are missing or wrong')
 
         # check if filtering is UP and the input data is not suitable for mbr filtering
-        if 'off' in args.mbr and args.match_filter :
+        if 'off' in args.mbr and args.match_filter:
             if not 'matched' in df.columns:
-                exit('mbr peptide not detect in the input file, filtering of mbr peptides is not possible. Please set --match_filter to 0 and run again.')
+                exit(
+                    'mbr peptide not detect in the input file, filtering of mbr peptides is not possible. Please set --match_filter to 0 and run again.')
             if not ('mod_peptide' in df.columns):
-                exit('mod_peptide sequence is not present your the input file, filtering of mbr peptides is not possible. Please check your infput file or parameter settings')
+                exit(
+                    'mod_peptide sequence is not present your the input file, filtering of mbr peptides is not possible. Please check your infput file or parameter settings')
         log.critical('Starting Apex for %s ...', file_name)
         log.critical('moff Input file: %s  XIC_tol %s XIC_win %4.4f moff_rtWin_peak %4.4f ' % (
             file_name, tol, h_rt_w, s_w))
@@ -304,7 +314,7 @@ if __name__ == '__main__':
         # load the ptm file IF
         # mbr on with filtering  UP
         # mbr off with filtering flag UP (already check if inputdata contains matched field.)
-        if 'matched' in df.columns and args.match_filter :
+        if 'matched' in df.columns and args.match_filter:
             log.critical('Apex module has detected mbr peptides')
             with open(os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), args.ptm_file)) as data_file:
                 ptm_map = json.load(data_file)
@@ -318,20 +328,22 @@ if __name__ == '__main__':
         moff.check_output_folder_existence(loc_output)
 
         # control if exist the same log file : avoid appending output
-        #moff.check_log_existence(os.path.join(loc_output, name + '__moff.log'))
+        # moff.check_log_existence(os.path.join(loc_output, name + '__moff.log'))
 
-        if args.match_filter :
+        if args.match_filter:
             with open(os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), args.ptm_file)) as data_file:
                 ptm_map = json.load(data_file)
             start_time = time.time()
 
             moff.set_logger(log_file)
-            #log.critical( 'starting estimation of quality measures..')
-            # run estimation _parameter
+            log.critical('starting estimation of quality measures..')
+            # run estimation_parameter
             rt_drift, not_used_measure, error_ratio = moff.estimate_parameter(
-                df, name, raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output,  rt_list, id_list,  moff_pride_flag, ptm_map, args.sample_size, args.quantile_thr_filtering, args.match_filter, log_file,num_CPU)
+                df, name, raw_list, tol, h_rt_w, s_w, s_w_match, loc_raw, loc_output, rt_list, id_list, moff_pride_flag,
+                ptm_map, args.sample_size, args.quantile_thr_filtering, args.match_filter, log_file, num_CPU)
             log.critical(
-                'quality threhsold estimated : MAD_retetion_time %r  Ratio Int. FakeIsotope/1estIsotope: %r' % (rt_drift, error_ratio))
+                'quality threhsold estimated : MAD_retetion_time %r  Ratio Int. FakeIsotope/1estIsotope: %r' % (
+                rt_drift, error_ratio))
             log.critical('starting apex quantification of MS2 peptides..')
             log.info('log of MS2 identified peptide not retrived :  ..')
             moff.clean_json_temp_file(loc_output)
@@ -341,11 +353,13 @@ if __name__ == '__main__':
             result = {}
             offset = 0
             for df_index in range(0, len(data_split)):
-                result[df_index] = myPool.apply_async(moff.apex_multithr, args=(data_split[df_index], name, raw_list, tol, h_rt_w, s_w, s_w_match,
-                                                                                loc_raw, loc_output, offset,  rt_list, id_list,  moff_pride_flag, ptm_map, 0, rt_drift, error_ratio, 0, log_file))
+                result[df_index] = myPool.apply_async(moff.apex_multithr, args=(
+                data_split[df_index], name, raw_list, tol, h_rt_w, s_w, s_w_match,
+                loc_raw, loc_output, offset, rt_list, id_list, moff_pride_flag, ptm_map, 0, rt_drift, error_ratio, 0,
+                log_file))
                 offset += len(data_split[df_index])
             # save ms2 resulr
-            ms2_data = moff.save_moff_apex_result( result )
+            ms2_data = moff.save_moff_apex_result(result)
             log.critical('end  apex quantification of MS2 peptides..')
             log.critical(
                 'starting quantification with matched peaks using the quality filtering...')
@@ -358,15 +372,17 @@ if __name__ == '__main__':
             result = {}
             offset = 0
             for df_index in range(0, len(data_split)):
-                result[df_index] = myPool.apply_async(moff.apex_multithr, args=(data_split[df_index], name, raw_list, tol, h_rt_w, s_w, s_w_match,
-                                                                                loc_raw, loc_output, offset,  rt_list, id_list,  moff_pride_flag, ptm_map, 0, rt_drift, error_ratio, args.match_filter, log_file))
+                result[df_index] = myPool.apply_async(moff.apex_multithr, args=(
+                data_split[df_index], name, raw_list, tol, h_rt_w, s_w, s_w_match,
+                loc_raw, loc_output, offset, rt_list, id_list, moff_pride_flag, ptm_map, 0, rt_drift, error_ratio,
+                args.match_filter, log_file))
                 offset += len(data_split[df_index])
             myPool.close()
             myPool.join()
             log.critical('end apex quantification matched peptide ')
             log.critical('Computational time (sec):  %4.4f ' %
                          (time.time() - start_time))
-            matched_peak = moff.save_moff_apex_result( result)
+            matched_peak = moff.save_moff_apex_result(result)
             log.critical('after filtering matched peak #%r ',
                          matched_peak.shape[0])
             # concat the ms2 res  + mateched result
@@ -380,18 +396,20 @@ if __name__ == '__main__':
             log.critical(
                 'starting  peptide quantification (ms2 / matched ) ..')
             myPool = multiprocessing.Pool(num_CPU)
-            data_split = np.array_split(df,num_CPU)
+            data_split = np.array_split(df, num_CPU)
             result = {}
             offset = 0
             log.info('log of MS2 identified peptide not retrived ')
             start_time = time.time()
             for df_index in range(0, len(data_split)):
-                result[df_index] = myPool.apply_async(moff.apex_multithr, args=(data_split[df_index], name, raw_list, tol, h_rt_w,
-                                                                                s_w, s_w_match, loc_raw, loc_output, offset,  rt_list, id_list,  moff_pride_flag, None, 0, -1, -1, 0, log_file))
+                result[df_index] = myPool.apply_async(moff.apex_multithr,
+                                                      args=(data_split[df_index], name, raw_list, tol, h_rt_w,
+                                                            s_w, s_w_match, loc_raw, loc_output, offset, rt_list,
+                                                            id_list, moff_pride_flag, None, 0, -1, -1, 0, log_file))
                 offset += len(data_split[df_index])
             myPool.close()
             myPool.join()
-            log.critical('end apex quantification  (ms2 / matched ) peptides')
+            log.critical('end apex quantification (ms2 / matched ) peptides')
             log.critical('computational time (sec):  %4.4f ' %
                          (time.time() - start_time))
             start_time_2 = time.time()
@@ -405,8 +423,8 @@ if __name__ == '__main__':
         moff.detach_handler()
 
     moff.clean_json_temp_file(loc_output)
-    if args.peptide_summary :
+    if args.peptide_summary:
         state = moff.compute_peptide_matrix(args.loc_out, log, args.tag_pepsum)
-        if not state :
+        if not state:
             log.critical(
                 'Error during the computation of the peptide intensity summary file: Check the output folder that contains the moFF results file')
