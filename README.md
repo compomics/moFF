@@ -193,7 +193,7 @@ use `python moff_all.py -mbr off `
   --raw_repo                    the folder containing all the raw files
   --tsv_list                    the input file with for MS2 peptides
   --raw_list                    pecify directly the  raw file
-  --toll                        mass tollerance (ppm)
+  --tol                         mass tollerance (ppm)
   --xic_length                  rt windows for xic (minutes). Default value is 3  min
   --rt_peak_win                 time windows used to get the apex for the ms2 peptide/feature  (minutes). Default value is 1
   --rt_peak_win_match           time windows used to get the apex for machted features (minutes). Default value is 1.2
@@ -210,12 +210,12 @@ use `python moff_all.py -mbr off `
 
 You can run the apex module in two ways:
 
-`python moff_all.py  --mbr off --tsv_list sample_folder/20080311_CPTAC6_07_6A005.txt  --raw_list sample_folder/20080311_CPTAC6_07_6A005.RAW --toll 1O --loc_out output_moff --peptide_summary 1 `
+`python moff_all.py  --mbr off --tsv_list sample_folder/20080311_CPTAC6_07_6A005.txt  --raw_list sample_folder/20080311_CPTAC6_07_6A005.RAW --tol 1O --loc_out output_moff --peptide_summary 1 `
 in this case you specify more than a file separated by a blanck space
 
 In case you want to run the apex module  on all the files in a folder (all so the raw files shold located in a foder)
 
-`python moff_all.py  --mbr on  --loc_in sample_folder/sample_data/  --raw_repo sample_folder/sample_data/your_raw_folder   --toll 1O --loc_out output_moff --peptide_summary 1 `
+`python moff_all.py  --mbr on  --loc_in sample_folder/sample_data/  --raw_repo sample_folder/sample_data/your_raw_folder   --tol 1O --loc_out output_moff --peptide_summary 1 `
 
 You can activate the filtering of the matching peptides setting `--match_filter 1`. In order to do the filtering:
 - `--ptm_file` MUST be specified and input files MUST contain a matched field.
@@ -254,7 +254,7 @@ use `python moff_all.py -mbr on`
   --out_flag                    filtering (on/off) of the outlier in the training set. Default 1
   --w_comb                      combination weighting : 0 for no weight 1 for a weighted schema. Default 1
 
-  --toll                        mass tollerance (ppm)
+  --tol                        mass tollerance (ppm)
   --xic_length                  rt windows for xic (minutes). Default value is 3  min
   --rt_peak_win                 time windows used to get the apex for the ms2 peptide/feature  (minutes). Default value is 1
   --rt_peak_win_match           time windows used to get the apex for machted features (minutes). Default value is 1.2
@@ -271,11 +271,11 @@ use `python moff_all.py -mbr on`
 
 Like for the apex module, you input  you input data specifing the folder :
 
-`python moff_all.py --mbr all  --loc_in  sample_folder/   --raw_repo sample_folder/ --toll 10  --loc_out output_moff --peptide_summary 1`
+`python moff_all.py --mbr all  --loc_in  sample_folder/   --raw_repo sample_folder/ --tol 10  --loc_out output_moff --peptide_summary 1`
 
 OR, specifing a list of input and raw files using:
 
-`python moff_all.py  --mbr all --tsv_list  sample_folder/input_file1.txt sample_folder/input_file2.txt  --raw_list sample_folder/input_file1.raw sample_folder/input_file2.raw --toll 10 --loc_out output_moff --peptide_summary 1 `
+`python moff_all.py  --mbr all --tsv_list  sample_folder/input_file1.txt sample_folder/input_file2.txt  --raw_list sample_folder/input_file1.raw sample_folder/input_file2.raw --tol 10 --loc_out output_moff --peptide_summary 1 `
 
 The options are identical for both apex and MBR modules.The output for the latter (MBR) is stored in the folder sample_folder/mbr_output, while the former (apex) generates files in the specified output_moff folder.Log files for both algorithms are generated in the respective folders.
 
