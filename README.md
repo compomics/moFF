@@ -156,8 +156,8 @@ use :  `python moff_all.py -mbr only `
   --ext                         file extention of the input file. Default .txt)
   --log_label                   filename for the mbr log file. Default moFF_mbr
   --w_filt                      width value for outlier filtering. Default 3
-  --out_flag                    filtering (on/off) of the outlier in the training set. Default 1
-  --w_comb                      combination weighting : 0 for no weight 1 for a weighted schema. Default 1
+  --out_flag                    if set, outliers for rt time allignment are filtered. Default value: True
+  --w_comb                      if set, RT model combination is weighted using traing model errors: Default value: False
 ```
 
 `python moff_mbr.py --loc_in sample_folder/ --mbr only `
@@ -202,7 +202,7 @@ use `python moff_all.py -mbr off `
   --loc_out                     output folder
   --tag_pepsum                  a tag that is used in the peptide summary file name
 
-  --match_filter                filtering on the matched peak . default 0
+  --match_filter                If set, filtering on the matched peak is activated. Default value: False
   --ptm_file                    modification json ptm file. Default file ptm_setting.json
   --quantile_thr_filtering      quantile value used to computed the filtering threshold for the matched peak . Default is 0.75
   --sample_size                 percentage of MS2 identified peptides used to estimated the threshold
@@ -210,17 +210,17 @@ use `python moff_all.py -mbr off `
 
 You can run the apex module in two ways:
 
-`python moff_all.py  --mbr off --tsv_list sample_folder/20080311_CPTAC6_07_6A005.txt  --raw_list sample_folder/20080311_CPTAC6_07_6A005.RAW --tol 1O --loc_out output_moff --peptide_summary 1 `
+`python moff_all.py  --mbr off --tsv_list sample_folder/20080311_CPTAC6_07_6A005.txt  --raw_list sample_folder/20080311_CPTAC6_07_6A005.RAW --tol 1O --loc_out output_moff --peptide_summary  `
 in this case you specify more than a file separated by a blanck space
 
 In case you want to run the apex module  on all the files in a folder (all so the raw files shold located in a foder)
 
-`python moff_all.py  --mbr on  --loc_in sample_folder/sample_data/  --raw_repo sample_folder/sample_data/your_raw_folder   --tol 1O --loc_out output_moff --peptide_summary 1 `
+`python moff_all.py  --mbr on  --loc_in sample_folder/sample_data/  --raw_repo sample_folder/sample_data/your_raw_folder   --tol 1O --loc_out output_moff --peptide_summary  `
 
-You can activate the filtering of the matching peptides setting `--match_filter 1`. In order to do the filtering:
+You can activate the filtering of the matching peptides setting `--match_filter`. In order to do the filtering:
 - `--ptm_file` MUST be specified and input files MUST contain a matched field.
 
-This option is usefull in the case you have run the mbr module alone and later you want to run the apex module separately.
+This option is useful in the case you have run the mbr module alone and later you want to run the apex module separately.
 
 WARNING :  in case of  --loc_in  and  --raw_repo  raw file names MUST be the same of the input file otherwise the script gives you an error !
 
@@ -251,19 +251,19 @@ use `python moff_all.py -mbr on`
   --ext                         file extention of the input file. Default .txt)
   --log_label                   filename for the mbr log file. Default moFF_mbr
   --w_filt                      width value for outlier filtering. Default 3
-  --out_flag                    filtering (on/off) of the outlier in the training set. Default 1
-  --w_comb                      combination weighting : 0 for no weight 1 for a weighted schema. Default 1
+  --out_flag                    if set, outliers for rt time allignment are filtered. Default value: True
+  --w_comb                      if set, RT model combination is weighted using traing model errors: Default value: False
 
   --tol                        mass tollerance (ppm)
   --xic_length                  rt windows for xic (minutes). Default value is 3  min
   --rt_peak_win                 time windows used to get the apex for the ms2 peptide/feature  (minutes). Default value is 1
   --rt_peak_win_match           time windows used to get the apex for machted features (minutes). Default value is 1.2
-  --peptide_summary             flag that allows have as output the peptided summary intensity file. Default is disable (0)
+  --peptide_summary             if set, export a peptide intesity summary tab-delited file. Default value: False
   --tag_pepsum                  tag string that will be part of the  peptided summary intensity file name. Default value is moFF_run
   --loc_out                     output folder  default is the input folder, raw_repo)
    --tag_pepsum                  a tag that is used in the peptide summary file name
 
-  --match_filter                filtering on the matched peak . default 0
+  --match_filter                If set, filtering on the matched peak is activated. Default value: False
   --ptm_file                    modification json ptm file. Default file ptm_setting.json
   --quantile_thr_filtering      quantile value used to computed the filtering threshold for the matched peak . Default is 0.75
   --sample_size                 percentage of MS2 identified peptides used to estimated the threshold
@@ -271,13 +271,13 @@ use `python moff_all.py -mbr on`
 
 Like for the apex module, you input  you input data specifing the folder :
 
-`python moff_all.py --mbr all  --loc_in  sample_folder/   --raw_repo sample_folder/ --tol 10  --loc_out output_moff --peptide_summary 1`
+`python moff_all.py --mbr all  --loc_in  sample_folder/   --raw_repo sample_folder/ --tol 10  --loc_out output_moff --peptide_summary`
 
 OR, specifing a list of input and raw files using:
 
-`python moff_all.py  --mbr all --tsv_list  sample_folder/input_file1.txt sample_folder/input_file2.txt  --raw_list sample_folder/input_file1.raw sample_folder/input_file2.raw --tol 10 --loc_out output_moff --peptide_summary 1 `
+`python moff_all.py  --mbr all --tsv_list  sample_folder/input_file1.txt sample_folder/input_file2.txt  --raw_list sample_folder/input_file1.raw sample_folder/input_file2.raw --tol 10 --loc_out output_moff --peptide_summary `
 
-The options are identical for both apex and MBR modules.The output for the latter (MBR) is stored in the folder sample_folder/mbr_output, while the former (apex) generates files in the specified output_moff folder.Log files for both algorithms are generated in the respective folders.
+The options are identical for both apex and MBR modules. The output for the latter (MBR) is stored in the folder sample_folder/mbr_output, while the former (apex) generates files in the specified output_moff folder.Log files for both algorithms are generated in the respective folders.
 
 In case you activate the filtering of the mached peptides  you have to specify with `--ptm_file` a valid json file that describes the modificatiuon used in your experiment. See section
 
