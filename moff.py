@@ -235,16 +235,20 @@ def pyMZML_xic_out(name, ppmPrecision, minRT, maxRT, MZValue, run, runid_list, r
 
     for specpos in range(minpos, maxpos):
         specid = runid_list[specpos]
-        spectrum = run[specid]
+        try:
+            spectrum = run[specid]
+        except:
+            print(specid)
         if spectrum['scan start time'] > maxRT:
             break
         if spectrum['scan start time'] > minRT and spectrum['scan start time'] < maxRT:
+            peaks = list(map(tuple, spectrum.peaks("raw")))
             lower_index = bisect.bisect(
-                spectrum.peaks, (float(MZValue - ppmPrecision * MZValue), None))
+                peaks, (float(MZValue - ppmPrecision * MZValue), None))
             upper_index = bisect.bisect(
-                spectrum.peaks, (float(MZValue + ppmPrecision * MZValue), None))
+                peaks, (float(MZValue + ppmPrecision * MZValue), None))
             maxI = 0.0
-            for sp in spectrum.peaks[lower_index: upper_index]:
+            for sp in peaks[lower_index: upper_index]:
                 if sp[1] > maxI:
                     maxI = sp[1]
             if maxI > 0:
@@ -698,6 +702,7 @@ def apex_multithr(data_ms2, name_file, raw_name, tol, h_rt_w, s_w, s_w_match, lo
     flag_windows = False
     mbr_flag = False
 
+
     # set platform
     if _platform in ["linux", "linux2", 'darwin']:
         flag_windows = False
@@ -787,7 +792,7 @@ def apex_multithr(data_ms2, name_file, raw_name, tol, h_rt_w, s_w, s_w_match, lo
             all_isotope_df = build_matched_modification(
                 data_ms2, ptm_map, tol, moff_pride_flag, h_rt_w)
             xic_data = get_xic_data(flag_mzml, flag_windows, all_isotope_df[[
-                'mz', 'tol', 'ts', 'te']], loc_output, name_file, txic_path, loc, 1)
+                'mz', 'tol', 'ts', 'te']], loc_output, name_file, txic_path, loc, 1, tol)
             # new filtering
             # not needed
             all_isotope_df['prog_xic_index'] = list(range(0, len(xic_data)))
@@ -826,7 +831,7 @@ def apex_multithr(data_ms2, name_file, raw_name, tol, h_rt_w, s_w, s_w_match, lo
                 temp['te'] = (data_ms2['rt'] / 60) + h_rt_w
             temp.drop('rt', 1, inplace=True)
             xic_data = get_xic_data(
-                flag_mzml, flag_windows, temp, loc_output, name_file, txic_path, loc, 0)
+                flag_mzml, flag_windows, temp, loc_output, name_file, txic_path, loc, 0, tol)
             data_ms2.reset_index(inplace=True)
             data_ms2[['intensity', 'rt_peak', 'lwhm', 'rwhm', '5p_noise', '10p_noise', 'SNR', 'log_L_R',
                       'log_int']] = data_ms2.apply(
@@ -944,19 +949,20 @@ def build_matched_modification(data, ptm_map, tol, moff_pride_flag, h_rt_w):
     return all_isotope_df
 
 
-def get_xic_data(flag_mzml, flag_windows, data, loc_output, name_file, txic_path, loc, flag_filtering):
+def get_xic_data(flag_mzml, flag_windows, data, loc_output, name_file, txic_path, loc, flag_filtering, tol):
     """
 
     Run the txic_json.xe library to get all the xic requested by each process for Thermo raw file
 
     :param flag_mzml:
     :param flag_windows:
-    :param data:
+    :param data: called temp where the function it's called
     :param loc_output:
     :param name_file:
     :param txic_path:
     :param loc:
     :param flag_filtering:
+    :param tol: ms search tolerance in ppm
     :return:
     """
     if not flag_mzml:
@@ -998,8 +1004,7 @@ def get_xic_data(flag_mzml, flag_windows, data, loc_output, name_file, txic_path
                 columns=['rt', 'intensity']))
     else:
         # this does not seem to work yet.
-        pass
-        # run_temp = pymzml.run.Reader(raw_name)
-        # xic_data = mzML_get_all(temp, tol, loc, run_temp, rt_list, id_list)
-
+        run_temp = pymzml.run.Reader(loc)
+        rt_list, id_list = scan_mzml(loc)
+        xic_data = mzML_get_all(data, tol, loc, run_temp, rt_list, id_list)
     return xic_data

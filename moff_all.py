@@ -255,7 +255,7 @@ if __name__ == '__main__':
         else:
             raw_list = None
 
-        loc_raw = args.raw_repo
+        loc_raw = args.raw_repo if not None else raw_list
         loc_output = args.loc_out
 
         config = configparser.RawConfigParser()
