@@ -202,11 +202,20 @@ def scan_mzml(name):
 
         rt_list = []
         runid_list = []
-        run_temp = pymzml.run.Reader(name)
+        run_temp = pymzml.run.Reader(name,MS1_Precision=5e-6)
+        run = pymzml.run.Reader(name,MS1_Precision=5e-6)
+        #I use two reader, one as iterator and one to check if spectra has random access.
+        # The fact why some spectra are available  if iterarate them but not
+        # if you access directe them. it is a mistery.
         for spectrum in run_temp:
-            if spectrum['ms level'] == 1:
-                rt_list.append(spectrum['scan start time'])
-                runid_list.append(spectrum['id'])
+            try:
+                tt = run[spectrum.ID]
+                if spectrum.ms_level == 1:
+                    rt_list.append(spectrum.scan_time)
+                    runid_list.append(spectrum.ID)
+            except:
+                pass
+                #print(spectrum.ID)
 
         return (rt_list, runid_list)
     else:
@@ -216,44 +225,45 @@ def scan_mzml(name):
 
 def mzML_get_all(temp, tol, loc, run, rt_list1, runid_list1):
     app_list = []
+    ppm = float(  tol / (10 ** 6))
     for index_ms2, row in temp.iterrows():
-
-        data, status = pyMZML_xic_out(loc, float(
-            tol / (10 ** 6)), row['ts'], row['te'], row['mz'], run, runid_list1, rt_list1)
+        #start_time = time.time()
+        data, status = pyMZML_xic_out(ppm, row['ts'], row['te'], row['mz'], run, runid_list1, rt_list1)
         # status is evaluated only herenot used anymore
         if status != -1:
             app_list.append(data)
         else:
             app_list.append(pd.DataFrame(columns=['rt', 'intensity']))
+
     return app_list
 
 
-def pyMZML_xic_out(name, ppmPrecision, minRT, maxRT, MZValue, run, runid_list, rt_list):
+def pyMZML_xic_out( ppmPrecision, minRT, maxRT, MZValue, run, runid_list, rt_list):
     timeDependentIntensities = []
     minpos = bisect.bisect_left(rt_list, minRT)
     maxpos = bisect.bisect_left(rt_list, maxRT)
 
+    lmz =(float(MZValue - ppmPrecision * MZValue), None)
+    umz = (float(MZValue + ppmPrecision * MZValue), None)
+
     for specpos in range(minpos, maxpos):
         specid = runid_list[specpos]
-        try:
-            spectrum = run[specid]
-        except:
-            print(specid)
-        if spectrum['scan start time'] > maxRT:
+        spectrum = run[specid]
+        if spectrum.scan_time > maxRT:
             break
-        if spectrum['scan start time'] > minRT and spectrum['scan start time'] < maxRT:
+        if spectrum.scan_time> minRT and spectrum.scan_time< maxRT:
             peaks = list(map(tuple, spectrum.peaks("raw")))
             lower_index = bisect.bisect(
-                peaks, (float(MZValue - ppmPrecision * MZValue), None))
+                peaks,lmz)
             upper_index = bisect.bisect(
-                peaks, (float(MZValue + ppmPrecision * MZValue), None))
+                peaks, umz)
             maxI = 0.0
             for sp in peaks[lower_index: upper_index]:
                 if sp[1] > maxI:
                     maxI = sp[1]
             if maxI > 0:
                 timeDependentIntensities.append(
-                    [spectrum['scan start time'], maxI])
+                    [spectrum.scan_time, maxI])
 
     if len(timeDependentIntensities) > 5:
         return (pd.DataFrame(timeDependentIntensities, columns=['rt', 'intensity']), 1)
@@ -792,7 +802,7 @@ def apex_multithr(data_ms2, name_file, raw_name, tol, h_rt_w, s_w, s_w_match, lo
             all_isotope_df = build_matched_modification(
                 data_ms2, ptm_map, tol, moff_pride_flag, h_rt_w)
             xic_data = get_xic_data(flag_mzml, flag_windows, all_isotope_df[[
-                'mz', 'tol', 'ts', 'te']], loc_output, name_file, txic_path, loc, 1, tol)
+                'mz', 'tol', 'ts', 'te']], loc_output, name_file, txic_path, loc, 1, tol,rt_list,id_list)
             # new filtering
             # not needed
             all_isotope_df['prog_xic_index'] = list(range(0, len(xic_data)))
@@ -831,7 +841,7 @@ def apex_multithr(data_ms2, name_file, raw_name, tol, h_rt_w, s_w, s_w_match, lo
                 temp['te'] = (data_ms2['rt'] / 60) + h_rt_w
             temp.drop('rt', 1, inplace=True)
             xic_data = get_xic_data(
-                flag_mzml, flag_windows, temp, loc_output, name_file, txic_path, loc, 0, tol)
+                flag_mzml, flag_windows, temp, loc_output, name_file, txic_path, loc, 0, tol,rt_list,id_list)
             data_ms2.reset_index(inplace=True)
             data_ms2[['intensity', 'rt_peak', 'lwhm', 'rwhm', '5p_noise', '10p_noise', 'SNR', 'log_L_R',
                       'log_int']] = data_ms2.apply(
@@ -949,7 +959,7 @@ def build_matched_modification(data, ptm_map, tol, moff_pride_flag, h_rt_w):
     return all_isotope_df
 
 
-def get_xic_data(flag_mzml, flag_windows, data, loc_output, name_file, txic_path, loc, flag_filtering, tol):
+def get_xic_data(flag_mzml, flag_windows, data, loc_output, name_file, txic_path, loc, flag_filtering, tol,rt_list,id_list):
     """
 
     Run the txic_json.xe library to get all the xic requested by each process for Thermo raw file
@@ -1003,8 +1013,7 @@ def get_xic_data(flag_mzml, flag_windows, data, loc_output, name_file, txic_path
                 {'rt': temp['results']['times'], 'intensity': temp['results']['intensities']},
                 columns=['rt', 'intensity']))
     else:
-        # this does not seem to work yet.
-        run_temp = pymzml.run.Reader(loc)
-        rt_list, id_list = scan_mzml(loc)
+        run_temp = pymzml.run.Reader(loc,MS1_Precision=5e-6)
+        #rt_list, id_list = scan_mzml(loc)
         xic_data = mzML_get_all(data, tol, loc, run_temp, rt_list, id_list)
     return xic_data
