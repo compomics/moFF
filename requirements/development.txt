@@ -5,4 +5,3 @@ scikit-learn
 pandas
 simplejson
 pyteomics
-brain-isotopic-distribution

@@ -215,7 +215,6 @@ def scan_mzml(name):
                     runid_list.append(spectrum.ID)
             except:
                 pass
-                #print(spectrum.ID)
 
         return (rt_list, runid_list)
     else:
@@ -223,7 +222,7 @@ def scan_mzml(name):
         return (-1, -1)
 
 
-def mzML_get_all(temp, tol, loc, run, rt_list1, runid_list1):
+def mzML_get_all(temp, tol,  run, rt_list1, runid_list1):
     app_list = []
     ppm = float(  tol / (10 ** 6))
     for index_ms2, row in temp.iterrows():
@@ -1015,5 +1014,5 @@ def get_xic_data(flag_mzml, flag_windows, data, loc_output, name_file, txic_path
     else:
         run_temp = pymzml.run.Reader(loc,MS1_Precision=5e-6)
         #rt_list, id_list = scan_mzml(loc)
-        xic_data = mzML_get_all(data, tol, loc, run_temp, rt_list, id_list)
+        xic_data = mzML_get_all(data, tol,  run_temp, rt_list, id_list)
     return xic_data
