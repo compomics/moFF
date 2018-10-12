@@ -7,19 +7,19 @@ notifications:
   email: false
 
 install:
-    - wget http://bit.ly/miniconda -O miniconda.sh
-    - bash miniconda.sh -b -p $HOME/miniconda
-    - export PATH="$HOME/miniconda/bin:$PATH"
-    - conda update --yes conda
-    - conda config --add channels bioconda
-    - travis_retry conda create --yes -n TEST python=3.6 $CONDA --file ./requirements/development.txt
-    - source activate TEST
-    - pip install brain-isotopic-distribution
-    - pip install pymzml
-    - wget http://genesis.ugent.be/uvpublicdata/moFF_test/B002417_Ap_22cm_iRT_PRC-Hans_equimolar_100fmol.raw -O test/
+    #- wget http://bit.ly/miniconda -O miniconda.sh
+    #- bash miniconda.sh -b -p $HOME/miniconda
+    #- export PATH="$HOME/miniconda/bin:$PATH"
+    #- conda update --yes conda
+    #- conda config --add channels bioconda
+    #- travis_retry conda create --yes -n TEST python=3.6 $CONDA --file ./requirements/development.txt
+    #- source activate TEST
+    #- pip install brain-isotopic-distribution
+    #- pip install pymzml
+    - wget http://genesis.ugent.be/uvpublicdata/moFF_test/B002417_Ap_22cm_iRT_PRC-Hans_equimolar_100fmol.raw
 
 script:
   #- flake8 . --ignore E501 E203
-  - ls test/
-  - python moff_all.py --help
+  - ls
+  #- python moff_all.py --help
 
