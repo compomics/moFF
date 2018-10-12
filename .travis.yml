@@ -16,8 +16,10 @@ install:
     - source activate TEST
     - pip install brain-isotopic-distribution
     - pip install pymzml
+    - wget http://genesis.ugent.be/uvpublicdata/moFF_test/B002417_Ap_22cm_iRT_PRC-Hans_equimolar_100fmol.raw -O test/
 
 script:
   #- flake8 . --ignore E501 E203
+  - ls test/
   - python moff_all.py --help
 
