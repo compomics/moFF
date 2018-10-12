@@ -17,7 +17,7 @@
 
 ## Introduction ##
 
-moFF is an OS independent tool designed to extract apex MS1 intensity using a set of identified MS2 peptides. It currently uses a Go library to directly extract data from Thermo Raw spectrum files, eliminating the need for conversions from other formats. Moreover, moFF also allows to work directly with mzML files.
+moFF is an OS independent tool designed to extract apex MS1 intensity using a set of identified MS2 peptides. It currently uses a Thermo library to directly extract data from Thermo Raw spectrum files, eliminating the need for conversions from other formats. Moreover, moFF also allows to work directly with mzML files.
 
 moFF is built up from two  modules :
 - *moff_mbr.py* : match between run (mbr)
