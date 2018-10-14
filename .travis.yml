@@ -14,7 +14,7 @@ install:
     - conda config --add channels bioconda
     - travis_retry conda create --yes -n TEST python=3.6 $CONDA --file ./requirements/development.txt
     - source activate TEST
-    - conda install -c conda-forge mono
+    - conda install  --yes -c conda-forge mono
     - pip install brain-isotopic-distribution
     - pip install pymzml
     - wget http://genesis.ugent.be/uvpublicdata/moFF_test/B002417_Ap_22cm_iRT_PRC-Hans_equimolar_100fmol.raw
