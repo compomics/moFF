@@ -21,6 +21,6 @@ def test_apex(data_apex):
     assert not(data_apex.iloc[:, 19].isnull().all()), 'missing value on SNR'
     assert not(data_apex.iloc[:, 20].isnull().all()), 'missing value on log_L_R'
     assert not(data_apex.iloc[:, 21].isnull().all()), 'missing value on log_int'
-    assert data_apex.shape[0]== 100 , "wrong data size"
-    assert data_apex[data_apex.log_L_R == -1].shape[0] ==8, " worng number of record with log_L_R "
-    assert data_apex.log_int.mean() == 19.918118610664852, "wrong log_int mean "
+    assert data_apex.shape[0]== 106 , "wrong data size"
+    assert data_apex[data_apex.log_L_R == -1].shape[0] ==10," worng number of record with log_L_R "
+    assert data_apex.log_int.mean() == 19.892951681679005, "wrong log_int mean "
