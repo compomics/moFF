@@ -17,6 +17,7 @@ install:
     - conda install  --yes -c conda-forge mono
     - pip install brain-isotopic-distribution
     - pip install pymzml
+    - conda install --yes pytest
     - wget http://genesis.ugent.be/uvpublicdata/moFF_test/B002417_Ap_22cm_iRT_PRC-Hans_equimolar_100fmol.raw
 
 
@@ -25,6 +26,7 @@ install:
 script:
   #- flake8 . --ignore E501 E203
   -  python moff_all.py --tsv test/B002417_Ap_22cm_iRT_PRC-Hans_equimolar_100fmol.txt --raw_list B002417_Ap_22cm_iRT_PRC-Hans_equimolar_100fmol.raw  --xic_length 2 --rt_peak_win 1  --loc_out test/ --tol  4 --mbr off
+  -  pytest test/
   - ls test/
   #- python moff_all.py --help
 
