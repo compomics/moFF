@@ -4,7 +4,7 @@ import pytest
 @pytest.fixture
 def data_apex():
     import pandas
-    return  pandas.read_csv('D:\\moFF_winDev\\test\\B002417_Ap_22cm_iRT_PRC-Hans_equimolar_100fmol_moff_result.txt',sep="\t")
+    return  pandas.read_csv('test/B002417_Ap_22cm_iRT_PRC-Hans_equimolar_100fmol_moff_result.txt',sep="\t")
 
 
 def test_apex(data_apex):
