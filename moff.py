@@ -195,23 +195,35 @@ def check_columns_name(col_list, col_must_have, log):
 
 
 def scan_mzml(name):
+    """
+        This function scan all the mzml file , and save all MS1 spectrum scan time and ID to speed the XIC calculation
+    :param name:
+    :return: list of scan rt , list of spectrum id
+
+    """
+
     # when I am using thermo raw and --raw_repo option used
     if name is None:
         return (-1, -1)
     if 'MZML' in name.upper():
-
         rt_list = []
         runid_list = []
         run_temp = pymzml.run.Reader(name,MS1_Precision=5e-6)
         run = pymzml.run.Reader(name,MS1_Precision=5e-6)
         #I use two reader, one as iterator and one to check if spectra has random access.
         # The fact why some spectra are available  if iterarate them but not
-        # if you access directe them. it is a mistery.
+        # if you access direct them. it is a mistery.
         for spectrum in run_temp:
             try:
                 tt = run[spectrum.ID]
                 if spectrum.ms_level == 1:
-                    rt_list.append(spectrum.scan_time)
+                    ## reminder:  weird thing: in python 3.6 (virt env) spectrum.scan_time is a float.
+                    # but in native py3.6+ env : spectrum.scan_time is a tuple (float,'unit measure')
+                    # that why i check .
+                    if isinstance(spectrum.scan_time,tuple):
+                        rt_list.append(spectrum.scan_time[0])
+                    else:
+                        rt_list.append(spectrum.scan_time)
                     runid_list.append(spectrum.ID)
             except:
                 pass
@@ -223,6 +235,15 @@ def scan_mzml(name):
 
 
 def mzML_get_all(temp, tol,  run, rt_list1, runid_list1):
+    """
+        run pyMZML_xic_out for all the requested peptide in
+    :param temp: dataframe with the input peptide information
+    :param tol:  tollerance
+    :param run:  pyzml reader on the mzmml file
+    :param rt_list1:  list of all the scan time  in the current mzml
+    :param runid_list1: list of all the spectum ID in the current mzml file
+    :return: list of dataframe
+    """
     app_list = []
     ppm = float(  tol / (10 ** 6))
     for index_ms2, row in temp.iterrows():
@@ -238,6 +259,17 @@ def mzML_get_all(temp, tol,  run, rt_list1, runid_list1):
 
 
 def pyMZML_xic_out( ppmPrecision, minRT, maxRT, MZValue, run, runid_list, rt_list):
+    """
+        EXtract XiC using pymzml library
+    :param ppmPrecision:
+    :param minRT:
+    :param maxRT:
+    :param MZValue:
+    :param run:
+    :param runid_list:
+    :param rt_list:
+    :return: pandas  dataframe
+    """
     timeDependentIntensities = []
     minpos = bisect.bisect_left(rt_list, minRT)
     maxpos = bisect.bisect_left(rt_list, maxRT)
@@ -248,9 +280,13 @@ def pyMZML_xic_out( ppmPrecision, minRT, maxRT, MZValue, run, runid_list, rt_lis
     for specpos in range(minpos, maxpos):
         specid = runid_list[specpos]
         spectrum = run[specid]
-        if spectrum.scan_time > maxRT:
+        if isinstance(spectrum.scan_time, tuple):
+            curr_rt= spectrum.scan_time[0]
+        else:
+            curr_rt = spectrum.scan_time
+        if curr_rt > maxRT:
             break
-        if spectrum.scan_time> minRT and spectrum.scan_time< maxRT:
+        if curr_rt > minRT and  curr_rt < maxRT:
             peaks = list(map(tuple, spectrum.peaks("raw")))
             lower_index = bisect.bisect(
                 peaks,lmz)
@@ -262,7 +298,7 @@ def pyMZML_xic_out( ppmPrecision, minRT, maxRT, MZValue, run, runid_list, rt_lis
                     maxI = sp[1]
             if maxI > 0:
                 timeDependentIntensities.append(
-                    [spectrum.scan_time, maxI])
+                    [curr_rt, maxI])
 
     if len(timeDependentIntensities) > 5:
         return (pd.DataFrame(timeDependentIntensities, columns=['rt', 'intensity']), 1)
