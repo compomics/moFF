@@ -11,6 +11,7 @@
  * [Apex Intensity](#apex-intensity)
  * [Entire workflow](#entire-workflow)
  * [Post Translation Modification file](#post-translation-modification-file)
+ * [Docker](#docker)
  * [Output Data](#output-data)
 
 ---
@@ -29,7 +30,7 @@ The version presented here is a commandline tool that can easily be adapted to a
 
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat-square)](http://bioconda.github.io/recipes/moff/README.html) 
 
-moFF is also available on bioconda. To install with conda, use the following command: 
+moFF is also available on bioconda. To install with conda, use the following command:
 ```
 conda install -c bioconda moff
 ```
@@ -49,9 +50,6 @@ This automatically installs all dependencies. Note that bioconda only supports 6
 
 ## Minimum Requirements ##
 
-Required java version :
-- Java Runtime Environment (JRE) 8
-
 Required python libraries :
 - Python 3.6+
 - pandas  >  0.23
@@ -59,7 +57,7 @@ Required python libraries :
 - argparse > 1.2.1
 - scipy 1.1.0
 - scikit-learn > 0.19
-- pymzML > 0.7.7
+- pymzML > 2.0.3
 - brain-isotopic-distribution > 1.3.2
 - pyteomics >  3.5
 
@@ -114,6 +112,8 @@ NOTE 2 : Users can also provide the default PSM export provided by PeptideShaker
 The  *sample_folder* contains a result set for 3 runs of the CPTAC study 6 (Paulovich, MCP Proteomics, 2010).
 These MS2 peptides are identified by X!Tandem and MSGF+ using SearchGUI and then processed by PeptidesShaker. The [raw files]( https://goo.gl/ukbpCI) for this study are required to apply moFF to the sample data.
 
+[Top of page](#moff)
+
 ---
 
 ## Absence of Peak Sample Data ##
@@ -142,6 +142,8 @@ The identification peptides are computed by MaxQuant, so to use them in moFF you
 then you an run moFF using:
 
 `python moff_mbr.py  --config_file  absense_peak_data/config_iRT.ini `
+
+[Top of page](#moff)
 
 ---
 
@@ -317,6 +319,26 @@ For example a ptm file (ptm_setting_ps.json) with Carboxyamidomethylation of Cys
 [Top of page](#moff)
 
 ---
+
+## Docker ##
+
+
+One you have cloned or downloaded moFF repository, inside the moFF folder you can build  docker with the the command
+```
+docker build . -t moff
+```
+
+Inside the docker you can run moFf with all commands showed above. Run example with the apex module:
+```
+docker run -v /home/user/data:/data_input -i -t moff python moff_all.py --tsv_list /data_input/input_file.tab --raw_list /data_input/input_file.raw --tol 10 -rt_win_peak 1 --xic_length 3 --loc_out /data_input/output folder --mbr off
+```
+
+[Top of page](#moff)
+
+---
+
+
+
 ## Output data ##
 
 The output consists of : 
