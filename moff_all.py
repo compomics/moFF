@@ -3,6 +3,7 @@
 import argparse
 import ast
 import configparser
+import gc
 import json
 import logging.config
 import multiprocessing
@@ -178,6 +179,38 @@ if __name__ == '__main__':
             os.makedirs(args.loc_out)
             log.critical("created output folder  %r", args.loc_out)
 
+    config = configparser.RawConfigParser()
+    config.read(os.path.join(os.path.dirname(
+        os.path.realpath(sys.argv[0])), 'moff_setting.properties'))
+
+    # just for Galaxy input is possible to use one big input file and a list of raw file.
+    # the big file must have the result of each raw file and the columns 'Spectrum File' should be availabe
+    # This option work only with PS report using only --tsv_list and --raw_list
+    if  ( args.tsv_list is not None) and  ( args.raw_list is not None) and (len(args.tsv_list)==1)  :
+        data_temp= pd.read_csv(args.tsv_list[0],sep="\t")
+        if moff.check_ps_input_data(data_temp.columns.tolist(), ast.literal_eval(config.get('moFF', 'ps_default_export_v1'))) == 1:
+            # split the data input file only if inave more than ONE raw file and tha input file contain identification for more the ONE run
+            if  len(data_temp['Spectrum File'].unique())> 1 and len(args.raw_list) > 1:
+
+                output_list_loc=[]
+                for file in data_temp['Spectrum File'].unique():
+                    data_temp[data_temp['Spectrum File']== file].to_csv(os.path.join(os.path.split(args.tsv_list[0])[0],file.split('.')[0]+ '.txt')
+                                                                        , sep='\t' , index=False )
+                    output_list_loc.append(os.path.join(os.path.split(args.tsv_list[0])[0],file.split('.')[0]+ '.txt') )
+
+                if len(args.raw_list) != len(output_list_loc):
+                    exit('-- Number of raw file is different to the number of input sources detectd in your one input file --')
+                #sort them to be sure about the association between input - raw file
+                args.raw_list= sorted(args.raw_list)
+                args.tsv_list= sorted(output_list_loc)
+                #clean dataset thta I don use anymore
+                del data_temp
+                gc.collect()
+
+
+
+    ##---
+
     # fixed variable number of split and also number of CPU presence in the macine
     # change this variable  with repset to the machine setting of the user
 
@@ -258,9 +291,7 @@ if __name__ == '__main__':
         loc_raw = args.raw_repo if not None else raw_list
         loc_output = args.loc_out
 
-        config = configparser.RawConfigParser()
-        config.read(os.path.join(os.path.dirname(
-            os.path.realpath(sys.argv[0])), 'moff_setting.properties'))
+
         df = pd.read_csv(file_name, sep="\t")
         # add same safety checks len > 1
         # Flag for pride pipeline, or to set from second to minute as input rt time scale
