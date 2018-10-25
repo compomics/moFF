@@ -77,10 +77,10 @@ def combine_model(x, model, err, weight_flag):
     for ii in range(0, len(x)):
         if ~  np.isnan(x[ii]):
             if not weight_flag :
-                app_sum = app_sum + (model[ii].predict(x[ii])[0][0])
+                app_sum = app_sum + (model[ii].predict(x[ii].reshape(-1,1))[0][0])
             else:
                 app_sum_2 = app_sum_2 + \
-                    (model[ii].predict(x[ii])[0][0] *
+                    (model[ii].predict(x[ii].reshape(-1,1))[0][0] *
                      (float(err[ii]) / float(tot_err)))
 
                 # " output weighted mean
