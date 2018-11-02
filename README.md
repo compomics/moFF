@@ -132,7 +132,7 @@ Run *B002413_* does not contain iRT peptides and it works as controll. No iRT pe
 To test the filter of the matched peak, you can follow the steps:
 - clone the moFF repository
 - download the .zip file that contains all Thermo raw file from [here](http://genesis.ugent.be/uvpublicdata//moFF_absence_of_peak_dataset/)
-- unzip it iniside  the folder *absence_peak_data*
+- unzip it inside  the folder *absence_peak_data*
 - check the input/output paths in the *coinfiguration_iRT.ini*
 
 The identification peptides are computed by MaxQuant, so to use them in moFF you need to set manually:
@@ -141,7 +141,8 @@ The identification peptides are computed by MaxQuant, so to use them in moFF you
 
 then you an run moFF using:
 
-`python moff_mbr.py  --config_file  absense_peak_data/config_iRT.ini `
+`python moff_all.py  --config_file  absense_peak_data/config_iRT.ini `
+to run  mbr + apex and filtering function
 
 [Top of page](#moff)
 
