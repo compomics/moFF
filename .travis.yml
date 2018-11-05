@@ -16,7 +16,7 @@ install:
     - source activate TEST
     - conda install  --yes -c conda-forge mono
     - conda update pymzml
-    - conda install -c conda-forge brain-isotopic-distribution
+    - conda install --yes  -c conda-forge brain-isotopic-distribution
     - conda install --yes pytest
     - wget http://genesis.ugent.be/uvpublicdata/moFF_test/B002417_Ap_22cm_iRT_PRC-Hans_equimolar_100fmol.raw
 
