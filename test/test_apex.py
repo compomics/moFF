@@ -24,3 +24,5 @@ def test_apex(data_apex):
     assert data_apex.shape[0]== 106 , "wrong data size"
     assert data_apex[data_apex.log_L_R == -1].shape[0] ==10," worng number of record with log_L_R "
     assert data_apex.log_int.mean() == 19.892951681679005, "wrong log_int mean "
+
+
