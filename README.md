@@ -127,17 +127,13 @@ To evaluate the filtering of the matched peak, we provide a data set composed by
 | B002419_Ap_22cm_iRT_PRC-Hans_equimolar_100fmol_inYeast   |  x  | x |
 | B002421_Ap_22cm_iRT_PRC-Hans_equimolar_100fmoll  |  x  |  |
 
-Run *B002413_* does not contain iRT peptides and it works as controll. No iRT peptides are expected after the matching-between-runs across all four runs.
+Run *B002413* does not contain iRT peptides and it works as controll. No iRT peptides are expected after the matching-between-runs across all four runs.
 
 To test the filter of the matched peak, you can follow the steps:
 - clone the moFF repository
 - download the .zip file that contains all Thermo raw file from [here](http://genesis.ugent.be/uvpublicdata//moFF_absence_of_peak_dataset/)
 - unzip it inside  the folder *absence_peak_data*
 - check the input/output paths in the *coinfiguration_iRT.ini*
-
-The identification peptides are computed by MaxQuant, so to use them in moFF you need to set manually:
-
-```mq_mod_flag ``` from `False` to ` True`   (moff.py line 858)
 
 then you an run moFF using:
 
@@ -329,7 +325,7 @@ One you have cloned or downloaded moFF repository, inside the moFF folder you ca
 docker build . -t moff
 ```
 
-Inside the docker you can run moFf with all commands showed above. Run example with the apex module:
+Inside the docker you can run moFF with all commands showed above. Run example with the apex module:
 ```
 docker run -v /home/user/data:/data_input -i -t moff python moff_all.py --tsv_list /data_input/input_file.tab --raw_list /data_input/input_file.raw --tol 10 -rt_win_peak 1 --xic_length 3 --loc_out /data_input/output folder --mbr off
 ```
