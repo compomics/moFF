@@ -950,7 +950,7 @@ def build_matched_modification(data, ptm_map, tol, moff_pride_flag, h_rt_w):
             # fixed and variable mod are both in the sequence
             comps = Counter(
                 list(chain(*[list(std_aa_comp[aa].elements()) for aa in row.peptide])))
-            if '<' in row.mod_peptide:
+            if '<' in row.mod_peptide or '-' in row.mod_peptide:
                 # check only if modificatio are present.
                 # for the future use dthe tag_mod_sequence_delimiter use in moFF_setting
                 for ptm in ptm_map.keys():
@@ -965,7 +965,7 @@ def build_matched_modification(data, ptm_map, tol, moff_pride_flag, h_rt_w):
             comps["O"] += 1
 
         theoretical_isotopic_cluster = isotopic_variants(
-            comps, charge=int(round(row.mass / float(row.mz))), npeaks=3)
+            comps,   charge= int(round(row.mass / float(row.mz))) , npeaks=3)
         mz_iso = [peak.mz for peak in theoretical_isotopic_cluster]
         delta = mz_iso[0] - mz_iso[1]
         mz_iso.append(mz_iso[0] + delta)
