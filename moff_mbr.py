@@ -208,7 +208,7 @@ def train_local_gp(data_A,data_B,c=None):
     for ii in range(1, len(bins_train)):
         centroid_x = all_train[np.where(digitized_train == ii)[0]].mean()
         centroid_x_list.append(centroid_x)
-        kernel =  DotProduct()
+        kernel =  RBF(length_scale=1, length_scale_bounds=(1e-5, 1e5))  + WhiteKernel(noise_level=0.2,noise_level_bounds=(1e-5, 1e6))
         #kernel = ConstantKernel(1.0, (1e-2, 1e2)) * RBF(length_scale=1, length_scale_bounds=(1e-5, 1e5)) + WhiteKernel(noise_level=0.2,noise_level_bounds=(1e-5, 1e2))
         m = GaussianProcessRegressor(kernel=kernel, alpha=0.5, normalize_y=False, n_restarts_optimizer=4).fit(all_train[np.where(digitized_train == ii)[0]],
                                                                                                               all_train_y[np.where(digitized_train == ii)[0]])
