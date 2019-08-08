@@ -15,6 +15,8 @@ import pandas as pd
 
 import moff
 import moff_mbr
+#import moff_mbr_BF
+import moff_anchor_peptide
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -49,9 +51,9 @@ if __name__ == '__main__':
         moFF_parameters['rt_peak_win'] = float(moFF_parameters['rt_peak_win'])
         moFF_parameters['rt_peak_win_match'] = float(
             moFF_parameters['rt_peak_win_match'])
-        moFF_parameters['peptide_summary'] = True if moFF_parameters['peptide_summary'] != '' else False
-        moFF_parameters['w_comb'] = True if moFF_parameters['w_comb'] != '' else False
-        moFF_parameters['out_flag'] = True if moFF_parameters['out_flag'] != '' else False
+        moFF_parameters['peptide_summary'] = True if moFF_parameters['peptide_summary'] == 'True' else False
+        moFF_parameters['w_comb'] = True if moFF_parameters['w_comb'] == 'True' else False
+        moFF_parameters['out_flag'] = True if moFF_parameters['out_flag'] == 'True' else False
         moFF_parameters['w_filt'] = float(moFF_parameters['w_filt'])
         moFF_parameters['quantile_thr_filtering'] = float(moFF_parameters['quantile_thr_filtering'])
         moFF_parameters['cpu_num'] = int(moFF_parameters['cpu'])
@@ -189,6 +191,7 @@ if __name__ == '__main__':
     # only mbr
     if 'only' in args.mbr:
         log.critical('starting matching between run module (mbr)')
+        #res_state, output_list_loc = moff_anchor_peptide.run_anchor(args)
         res_state, output_list_loc = moff_mbr.run_mbr(args)
         if res_state == -1:
             exit('An error is occurred during the writing of the mbr file')
