@@ -2,7 +2,8 @@ from  conda/miniconda3
 
 RUN apt-get update
 RUN conda install python=3.6
-RUN conda install numpy pandas scikit-learn
+RUN conda install numpy scikit-learn
+RUN conda pandas=0.24.2 
 RUN conda install -c conda-forge pynumpress
 RUN conda install simplejson
 RUN pip install  pymzML pyteomics brain-isotopic-distribution
