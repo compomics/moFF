@@ -408,8 +408,8 @@ def run_mbr(args):
                 add_pep_frame['code_unique'] = add_pep_frame['mod_peptide'] + '_' + \
                                                add_pep_frame['prot'] + '_' + '_' + \
                                                add_pep_frame['charge'].astype(str)
-                add_pep_frame = add_pep_frame.groupby('code_unique', as_index=False)[
-                    'peptide', 'mod_peptide', 'mass', 'charge', 'mz', 'prot', 'rt'].aggregate(max)
+                add_pep_frame = add_pep_frame.groupby('code_unique', as_index=False)[[
+                    'peptide', 'mod_peptide', 'mass', 'charge', 'mz', 'prot', 'rt']].aggregate(max)
                 add_pep_frame = add_pep_frame[[
                     'code_unique', 'peptide', 'mod_peptide', 'mass', 'mz', 'charge', 'prot', 'rt']]
                 list_name = add_pep_frame.columns.tolist()

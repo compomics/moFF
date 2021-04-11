@@ -103,15 +103,16 @@ def compute_peptide_matrix(loc_output, log, tag_filename):
     df = pd.DataFrame(index=index, columns=name_col)
     df = df.fillna(0)
     for i in range(0, len(d)):
-        grouped = d[i].groupby('peptide', as_index=True)['prot', 'intensity']
+        grouped = d[i].groupby('peptide', as_index=True)[['prot', 'intensity']]
         # print grouped.agg({'prot':'max', 'intensity':'sum'}).columns
-        df.ix[:, i + 1] = grouped.agg({'prot': 'max',
+        df.iloc[:, i + 1] = grouped.agg({'prot': 'max',
                                        'intensity': 'sum'})['intensity']
-        df.ix[np.intersect1d(df.index, list(grouped.groups.keys())), 0] = \
+        df.loc[np.intersect1d(df.index, list(grouped.groups.keys())), 'prot'] = \
         grouped.agg({'prot': 'max', 'intensity': 'sum'})[
             'prot']
     # print df.head(5)
-    df.reset_index(level=0, inplace=True)
+    df.reset_index(inplace=True)
+    #df.reset_index(level=0, inplace=True)
     df = df.fillna(0)
     df.rename(columns={'index': 'peptide'}, inplace=True)
     log.critical('Writing peptide_summary intensity file')
@@ -350,11 +351,11 @@ def compute_log_LR(data_xic, index, v_max, disc):
     find_5 = False
     stop = False
     while c_left <= (index - 1) and not stop:
-        if not find_5 and (data_xic.ix[(index - 1) - c_left, 1] <= (disc * v_max)) :
+        if not find_5 and (data_xic.iloc[(index - 1) - c_left, 1] <= (disc * v_max)) :
             find_5 = True
-            log_time[0] = data_xic.ix[(index - 1) - c_left, 0] * 60
+            log_time[0] = data_xic.iloc[(index - 1) - c_left, 0] * 60
             stop = True
-        if data_xic.ix[(index - 1) -  c_left, 1] > v_max:
+        if data_xic.iloc[(index - 1) -  c_left, 1] > v_max:
             # avoid local minima
             # intensity must decrease
             stop = True
@@ -363,11 +364,11 @@ def compute_log_LR(data_xic, index, v_max, disc):
     stop = False
     r_left = 0
     while ((index + 1) + r_left < data_xic.shape[0]) and not stop:
-        if not find_5 and data_xic.ix[(index + 1) + r_left, 1] <= (disc * v_max) :
+        if not find_5 and data_xic.iloc[(index + 1) + r_left, 1] <= (disc * v_max) :
             find_5 = True
-            log_time[1] = data_xic.ix[(index + 1) + r_left, 0] * 60
+            log_time[1] = data_xic.iloc[(index + 1) + r_left, 0] * 60
             stop = True
-        if data_xic.ix[(index + 1) + r_left, 1] > v_max:
+        if data_xic.iloc[(index + 1) + r_left, 1] > v_max:
             # avoid local minima
             # intensity must decrease
             stop = True
@@ -429,7 +430,7 @@ def compute_peak_simple(x, xic_array, log, mbr_flag, h_rt_w, s_w, s_w_match, off
             return pd.Series(
                 {'intensity': -1, 'rt_peak': -1, 'lwhm': -1, 'rwhm': -1, '5p_noise': -1, '10p_noise': -1, 'SNR': -1,
                  'log_L_R': -1, 'log_int': -1})
-        val_max = data_xic.ix[pos_p, 1].values
+        val_max = data_xic.iloc[pos_p, 1].values
     else:
         if filt_flag == 1:
             if 'matched' in x.axes[0].tolist():
@@ -472,16 +473,16 @@ def compute_peak_simple(x, xic_array, log, mbr_flag, h_rt_w, s_w, s_w_match, off
             abs(time_w - time_point[0]) / abs(time_w - time_point[1]))
 
     if pnoise_5 == 0 and pnoise_10 > 0:
-        SNR = 20 * np.log10(data_xic.ix[pos_p, 1].values / pnoise_10)
+        SNR = 20 * np.log10(data_xic.iloc[pos_p, 1].values / pnoise_10)
     else:
         if pnoise_5 != 0:
-            SNR = 20 * np.log10(data_xic.ix[pos_p, 1].values / pnoise_5)
+            SNR = 20 * np.log10(data_xic.iloc[pos_p, 1].values / pnoise_5)
         else:
             log.info('\t 5 percentile is %4.4f (added 0.5)', pnoise_5)
             SNR = 20 * \
-                  np.log10(data_xic.ix[pos_p, 1].values / (pnoise_5 + 0.5))
+                  np.log10(data_xic.iloc[pos_p, 1].values / (pnoise_5 + 0.5))
 
-    return pd.Series({'intensity': val_max[0], 'rt_peak': data_xic.ix[pos_p, 0].values[0] * 60,
+    return pd.Series({'intensity': val_max[0], 'rt_peak': data_xic.iloc[pos_p, 0].values[0] * 60,
                       'lwhm': time_point[0],
                       'rwhm': time_point[1],
                       '5p_noise': pnoise_5,
@@ -867,7 +868,7 @@ def apex_multithr(data_ms2, name_file, raw_name, tol, h_rt_w, s_w, s_w_match, lo
         else:
             # not match  filter
             temp = data_ms2[['mz', 'rt']].copy()  # strange cases
-            temp.ix[:, 'tol'] = int(tol)
+            temp['tol'] = int(tol)
             if moff_pride_flag == 1:
                 temp['ts'] = (data_ms2['rt']) - h_rt_w
                 temp['te'] = (data_ms2['rt']) + h_rt_w
