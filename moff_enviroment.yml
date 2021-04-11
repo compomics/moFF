@@ -1,0 +1,24 @@
+name: moff_env
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+
+  - brain-isotopic-distribution=1.5.3=py36_0
+
+  - mono=6.12.0.90
+
+  - numpy=1.19.5
+
+  - pandas=1.1.5
+
+  - pymzml=2.4.7=py_0
+  - pynumpress=0.0.5
+  - pyteomics=4.4.2
+  - python=3.6.13
+  - scikit-learn=0.24.1
+  - scipy=1.5.3
+  - simplejson=3.17.2
+
+prefix: /home/andrea/anaconda3/envs/moff_env
