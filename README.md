@@ -327,7 +327,7 @@ docker build . -t moff
 
 Inside the docker you can run moFF with all commands showed above. Run example with the apex module:
 ```
-docker run -v /home/user/data:/data_input -i -t moff python moff_all.py --tsv_list /data_input/input_file.tab --raw_list /data_input/input_file.raw --tol 10 -rt_win_peak 1 --xic_length 3 --loc_out /data_input/output folder --mbr off
+docker run -v /home/user/data:/data_input -i -t moff python moff_all.py --tsv_list /data_input/input_file.tab --raw_list /data_input/input_file.raw --tol 10 --rt_peak_win 1 --xic_length 3 --loc_out /data_input/output folder --mbr off
 ```
 
 [Top of page](#moff)
